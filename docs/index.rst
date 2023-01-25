@@ -1,8 +1,8 @@
-========================
-python3_project_template
-========================
+===============
+python3-commons
+===============
 
-This is the documentation of **python3_project_template**.
+This is the documentation of **python3-commons**.
 
 .. note::
 

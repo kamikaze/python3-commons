@@ -1,3 +1,3 @@
-Python3 based project
-=====================
+Re-usable Python3 code
+======================
 

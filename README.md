@@ -1,2 +1,2 @@
-# python3_project_template
-Template repo for Python 3 projects
+# python3-commons
+Re-usable code for Python 3 projects

@@ -1,22 +1,13 @@
 import sys
 
 from pkg_resources import VersionConflict, require
-from setuptools import setup, Extension
+from setuptools import setup
 
 try:
-    require('setuptools>=60.5')
+    require('setuptools>=66.1.1')
 except VersionConflict:
-    print('Error: version of setuptools is too old (<60.5)!')
+    print('Error: version of setuptools is too old (<66.1.1)!')
     sys.exit(1)
 
 if __name__ == '__main__':
-    ext_modules = [
-        Extension(
-            'python3_project_template.extmod',
-            ['lib/extmod.c', ],
-            include_dirs=['lib'],
-            py_limited_api=True
-        )
-    ]
-
-    setup(use_pyscaffold=True, ext_modules=ext_modules)
+    setup(use_pyscaffold=True)
