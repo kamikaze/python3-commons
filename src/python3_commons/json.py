@@ -8,7 +8,7 @@ from typing import Any
 class CustomJSONEncoder(json.JSONEncoder):
     def default(self, o) -> Any:
         try:
-            return json.JSONEncoder.default(self, o)
+            return super(CustomJSONEncoder, self).default(o)
         except TypeError:
             if isinstance(o, datetime):
                 return o.isoformat()
@@ -16,9 +16,7 @@ class CustomJSONEncoder(json.JSONEncoder):
                 return o.isoformat()
             elif isinstance(o, bytes):
                 return base64.b64encode(o).decode('ascii')
-            elif isinstance(o, socket):
-                return str(o)
-            elif isinstance(o, type):
+            elif isinstance(o, (socket, type, Exception)):
                 return str(o)
 
         return type(o).__name__
