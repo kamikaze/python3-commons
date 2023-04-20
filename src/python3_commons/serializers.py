@@ -29,7 +29,10 @@ def msgpack_decoder(code, data):
 def serialize_msgpack(data) -> bytes:
     logger.debug('Serializing to msgpack', extra={'data': data})
 
-    result = msgpack.packb(data, default=msgpack_encoder)
+    if isinstance(data, dict):
+        result = msgpack.packb({k: serialize_msgpack(v) for k, v in data.items()}, default=msgpack_encoder)
+    else:
+        result = msgpack.packb(data, default=msgpack_encoder)
 
     logger.debug('Serialized to msgpack', extra={'result': result})
 
@@ -40,6 +43,9 @@ def deserialize_msgpack(data: bytes):
     logger.debug('De-serializing from msgpack', extra={'data': data})
 
     result = msgpack.unpackb(data, ext_hook=msgpack_decoder)
+
+    if isinstance(result, dict):
+        result = {k: deserialize_msgpack(v) for k, v in result.items()}
 
     logger.debug('De-serialized from msgpack', extra={'result': result})
 
