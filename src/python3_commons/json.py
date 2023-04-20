@@ -1,6 +1,7 @@
 import base64
 import json
 from datetime import datetime, date
+from decimal import Decimal
 from socket import socket
 from typing import Any
 
@@ -16,7 +17,7 @@ class CustomJSONEncoder(json.JSONEncoder):
                 return o.isoformat()
             elif isinstance(o, bytes):
                 return base64.b64encode(o).decode('ascii')
-            elif isinstance(o, (socket, type, Exception)):
+            elif isinstance(o, (Decimal, socket, type, Exception)):
                 return str(o)
 
         return type(o).__name__
