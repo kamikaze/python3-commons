@@ -42,5 +42,8 @@ def tries(times):
     return func_wrapper
 
 
-def round_decimal(value: Decimal, decimal_places=2, rounding_mode=ROUND_HALF_UP):
-    return value.quantize(Decimal(10) ** -decimal_places, rounding=rounding_mode)
+def round_decimal(value: Decimal, decimal_places=2, rounding_mode=ROUND_HALF_UP) -> Decimal:
+    try:
+        return value.quantize(Decimal(10) ** -decimal_places, rounding=rounding_mode)
+    except AttributeError:
+        return value
