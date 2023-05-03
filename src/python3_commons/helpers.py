@@ -1,6 +1,9 @@
 import datetime
 import logging
 
+from decimal import Decimal, ROUND_HALF_UP
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -37,3 +40,7 @@ def tries(times):
         return wrapper
 
     return func_wrapper
+
+
+def round_decimal(value: Decimal, decimal_places=2, rounding_mode=ROUND_HALF_UP):
+    return value.quantize(Decimal(10) ** -decimal_places, rounding=rounding_mode)
