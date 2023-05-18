@@ -15,9 +15,9 @@ def msgpack_encoder(obj):
     if isinstance(obj, Decimal):
         return ExtType(1, str(obj).encode())
     elif isinstance(obj, datetime):
-        return ExtType(2, obj.isoformat())
+        return ExtType(2, obj.isoformat().encode())
     elif isinstance(obj, date):
-        return ExtType(3, obj.isoformat())
+        return ExtType(3, obj.isoformat().encode())
 
     return f'no encoder for {obj}'
 
