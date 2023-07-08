@@ -1,58 +1,73 @@
 import logging
-from io import RawIOBase
+from io import IOBase
+from typing import Sequence, Generator
 
 from minio import Minio
-from pydantic import SecretStr
+from minio.datatypes import Object
 
 from python3_commons import minio
+from python3_commons.conf import s3_settings
 
 logger = logging.getLogger(__name__)
-_CLIENT = None
+__CLIENT = None
 
 
-def get_s3_client(endpoint_url: str, region_name: str, access_key_id: SecretStr, secret_access_key: SecretStr,
-                  secure: bool = True) -> Minio:
-    global _CLIENT
+def get_s3_client() -> Minio:
+    global __CLIENT
 
-    if not _CLIENT:
-        _CLIENT = minio.get_client(endpoint_url, region_name, access_key_id, secret_access_key, secure)
+    if not __CLIENT and s3_settings.s3_endpoint_url:
+        __CLIENT = minio.get_client(
+            s3_settings.s3_endpoint_url,
+            s3_settings.s3_region_name,
+            s3_settings.s3_access_key_id,
+            s3_settings.s3_secret_access_key,
+            s3_settings.s3_secure
+        )
 
-    return _CLIENT
+    return __CLIENT
 
 
-def get_absolute_path(path: str, root: str = None) -> str:
+def get_absolute_path(path: str) -> str:
     if path.startswith('/'):
         path = path[1:]
 
-    if root:
-        path = f'{root[:1] if root.startswith("/") else root}/{path}'
+    if bucket_root := s3_settings.s3_bucket_root:
+        path = f'{bucket_root[:1] if bucket_root.startswith("/") else bucket_root}/{path}'
 
     return path
 
 
-def put_object(bucket_name: str, path: str, data: bytes | RawIOBase, length: int):
-    path = get_absolute_path(path)
+def put_object(bucket_name: str, path: str, data: IOBase, length: int):
     s3_client = get_s3_client()
 
-    result = s3_client.put_object(bucket_name, path, data, length)
+    if s3_client:
+        path = get_absolute_path(path)
+        result = s3_client.put_object(bucket_name, path, data, length)
 
-    return result.location
+        logger.debug(f'Stored object into object storage: {bucket_name}:{path}')
+
+        return result.location
+    else:
+        logger.warning(f'No S3 client available, skipping object put')
 
 
 def get_object_stream(bucket_name: str, path: str):
-    path = get_absolute_path(path)
     s3_client = get_s3_client()
 
-    logger.debug(f'Getting object from object storage: {bucket_name}:{path}')
+    if s3_client:
+        path = get_absolute_path(path)
+        logger.debug(f'Getting object from object storage: {bucket_name}:{path}')
 
-    try:
-        response = s3_client.get_object(bucket_name, path)
-    except Exception as e:
-        logger.exception(f'Failed getting object from object storage: {bucket_name}:{path}', exc_info=e)
+        try:
+            response = s3_client.get_object(bucket_name, path)
+        except Exception as e:
+            logger.debug(f'Failed getting object from object storage: {bucket_name}:{path}', exc_info=e)
 
-        raise
+            raise
 
-    return response
+        return response
+    else:
+        logger.warning(f'No S3 client available, skipping object put')
 
 
 def get_object(bucket_name: str, path: str) -> bytes:
@@ -67,3 +82,22 @@ def get_object(bucket_name: str, path: str) -> bytes:
     logger.debug(f'Loaded object from object storage: {bucket_name}:{path}')
 
     return body
+
+
+def list_objects(bucket_name: str, path: str, recursive: bool = True) -> Generator[Object, None, None]:
+    path = get_absolute_path(path)
+    s3_client = get_s3_client()
+
+    yield from s3_client.list_objects(bucket_name, path, recursive)
+
+
+def get_objects(bucket_name: str, path: str, recursive: bool = True) -> Generator[tuple[str, bytes], None, None]:
+    for obj in list_objects(bucket_name, path, recursive):
+        object_name = obj.object_name
+
+        if obj.size:
+            data = get_object(bucket_name, object_name)
+        else:
+            data = b''
+
+        yield object_name, data
