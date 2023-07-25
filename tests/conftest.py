@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime, date
-from typing import Any
+from decimal import Decimal
 
 import msgspec
 import pytest
@@ -14,6 +14,7 @@ def data_dict():
         'C': None,
         'D': datetime(2023, 7, 25, 1, 2, 3),
         'E': date(2023, 7, 24),
+        'F': Decimal('1.23'),
     }
 
 
@@ -24,6 +25,7 @@ class TestData:
     c: str | None
     d: datetime
     e: date
+    f: Decimal
 
 
 @pytest.fixture
@@ -34,6 +36,7 @@ def data_dataclass():
         c=None,
         d=datetime(2023, 7, 25, 1, 2, 3),
         e=date(2023, 7, 24),
+        f=Decimal('1.23')
     )
 
 
@@ -43,6 +46,7 @@ class TestStruct(msgspec.Struct):
     c: str | None
     d: datetime
     e: date
+    f: Decimal
 
 
 @pytest.fixture
@@ -53,4 +57,5 @@ def data_struct():
         c=None,
         d=datetime(2023, 7, 25, 1, 2, 3),
         e=date(2023, 7, 24),
+        f=Decimal('1.23')
     )

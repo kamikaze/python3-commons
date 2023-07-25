@@ -8,6 +8,7 @@ def test_encode_decode_dict_to_msgpack(data_dict):
         'C': None,
         'D': '2023-07-25T01:02:03',
         'E': '2023-07-24',
+        'F': '1.23',
     }
     binary_data = msgspec.serialize_msgpack(data_dict)
 
