@@ -1,6 +1,6 @@
 import logging
 from io import IOBase
-from typing import Sequence, Generator
+from typing import Generator
 
 from minio import Minio
 from minio.datatypes import Object

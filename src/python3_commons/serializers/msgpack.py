@@ -1,3 +1,5 @@
+import dataclasses
+import json
 import logging
 from datetime import datetime, date
 from decimal import Decimal
@@ -5,6 +7,7 @@ from decimal import Decimal
 import msgpack
 from msgpack import ExtType
 
+from python3_commons.serializers.json import CustomJSONEncoder
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +21,8 @@ def msgpack_encoder(obj):
         return ExtType(2, obj.isoformat().encode())
     elif isinstance(obj, date):
         return ExtType(3, obj.isoformat().encode())
+    elif dataclasses.is_dataclass(obj):
+        return ExtType(4, json.dumps(dataclasses.asdict(obj), cls=CustomJSONEncoder).encode())
 
     return f'no encoder for {obj}'
 
@@ -31,6 +36,8 @@ def msgpack_decoder(code, data):
         return datetime.fromisoformat(data.decode())
     elif code == 3:
         return date.fromisoformat(data.decode())
+    elif code == 4:
+        return json.loads(data)
 
     return f'no decoder for type {code}'
 

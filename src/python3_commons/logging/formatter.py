@@ -2,7 +2,7 @@ import json
 import logging
 import traceback
 
-from python3_commons.json import CustomJSONEncoder
+from python3_commons.serializers.json import CustomJSONEncoder
 
 
 class JSONFormatter(logging.Formatter):
