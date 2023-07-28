@@ -7,7 +7,7 @@ def get_client(endpoint_url: str, region_name: str, access_key_id: SecretStr, se
                secure: bool = True) -> Minio:
     http_client = urllib3.PoolManager(
         timeout=urllib3.util.Timeout(connect=300, read=300),
-        maxsize=10,
+        maxsize=50,
         cert_reqs='CERT_REQUIRED' if secure else 'CERT_NONE',
         retries=urllib3.Retry(
             total=5,
