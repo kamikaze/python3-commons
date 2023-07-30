@@ -82,10 +82,10 @@ def get_object(bucket_name: str, path: str) -> bytes:
     return body
 
 
-def list_objects(bucket_name: str, path: str, recursive: bool = True) -> Generator[Object, None, None]:
+def list_objects(bucket_name: str, prefix: str, recursive: bool = True) -> Generator[Object, None, None]:
     s3_client = get_s3_client()
 
-    yield from s3_client.list_objects(bucket_name, path, recursive)
+    yield from s3_client.list_objects(bucket_name, prefix=prefix, recursive=recursive)
 
 
 def get_objects(bucket_name: str, path: str, recursive: bool = True) -> Generator[tuple[str, bytes], None, None]:

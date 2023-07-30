@@ -3,4 +3,4 @@ databases[postgresql]==0.7.0
 minio==7.1.15
 msgpack==1.0.5
 msgspec==0.17.0
-pydantic[email]==1.10.9
+pydantic[email]==1.10.12
