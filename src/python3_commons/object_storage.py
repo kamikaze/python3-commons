@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 from io import IOBase
-from typing import Generator
+from typing import Generator, Iterable, Any
 
 from minio import Minio
 from minio.datatypes import Object
@@ -39,7 +39,7 @@ def get_absolute_path(path: str) -> str:
     return path
 
 
-def put_object(bucket_name: str, path: str, data: IOBase, length: int):
+def put_object(bucket_name: str, path: str, data: IOBase, length: int) -> str:
     s3_client = get_s3_client()
 
     if s3_client:
@@ -103,12 +103,25 @@ def get_objects(bucket_name: str, path: str,
         yield object_name, obj.last_modified, data
 
 
-def remove_objects(bucket_name: str, prefix: str):
+def remove_object(bucket_name: str, object_name: str):
+    s3_client = get_s3_client()
+    s3_client.remove_object(bucket_name, object_name)
+
+
+def remove_objects(bucket_name: str, prefix: str = None,
+                   object_names: Iterable[str] = None) -> Generator[Any, Any, None] | None:
     s3_client = get_s3_client()
 
-    delete_object_list = map(
-        lambda obj: DeleteObject(obj.object_name), s3_client.list_objects(bucket_name, prefix=prefix, recursive=True)
-    )
+    if prefix:
+        delete_object_list = map(
+            lambda obj: DeleteObject(obj.object_name), s3_client.list_objects(bucket_name, prefix=prefix,
+                                                                              recursive=True)
+        )
+    elif object_names:
+        delete_object_list = map(DeleteObject, object_names)
+    else:
+        return None
+
     errors = s3_client.remove_objects(bucket_name, delete_object_list)
 
     return errors
