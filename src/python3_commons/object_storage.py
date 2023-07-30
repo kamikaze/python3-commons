@@ -5,6 +5,7 @@ from typing import Generator
 
 from minio import Minio
 from minio.datatypes import Object
+from minio.deleteobjects import DeleteObject
 
 from python3_commons import minio
 from python3_commons.conf import s3_settings
@@ -100,3 +101,14 @@ def get_objects(bucket_name: str, path: str,
             data = b''
 
         yield object_name, obj.last_modified, data
+
+
+def remove_objects(bucket_name: str, prefix: str):
+    s3_client = get_s3_client()
+
+    delete_object_list = map(
+        lambda obj: DeleteObject(obj.object_name), s3_client.list_objects(bucket_name, prefix=prefix, recursive=True)
+    )
+    errors = s3_client.remove_objects(bucket_name, delete_object_list)
+
+    return errors
