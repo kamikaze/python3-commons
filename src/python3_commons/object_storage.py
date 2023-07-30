@@ -1,6 +1,7 @@
 import logging
+from datetime import datetime
 from io import IOBase
-from typing import Generator, Any
+from typing import Generator
 
 from minio import Minio
 from minio.datatypes import Object
@@ -88,7 +89,8 @@ def list_objects(bucket_name: str, prefix: str, recursive: bool = True) -> Gener
     yield from s3_client.list_objects(bucket_name, prefix=prefix, recursive=recursive)
 
 
-def get_objects(bucket_name: str, path: str, recursive: bool = True) -> Generator[tuple[str, Any, bytes], None, None]:
+def get_objects(bucket_name: str, path: str,
+                recursive: bool = True) -> Generator[tuple[str, datetime, bytes], None, None]:
     for obj in list_objects(bucket_name, path, recursive):
         object_name = obj.object_name
 
