@@ -41,7 +41,6 @@ def put_object(bucket_name: str, path: str, data: IOBase, length: int):
     s3_client = get_s3_client()
 
     if s3_client:
-        path = get_absolute_path(path)
         result = s3_client.put_object(bucket_name, path, data, length)
 
         logger.debug(f'Stored object into object storage: {bucket_name}:{path}')
@@ -55,7 +54,6 @@ def get_object_stream(bucket_name: str, path: str):
     s3_client = get_s3_client()
 
     if s3_client:
-        path = get_absolute_path(path)
         logger.debug(f'Getting object from object storage: {bucket_name}:{path}')
 
         try:
@@ -85,7 +83,6 @@ def get_object(bucket_name: str, path: str) -> bytes:
 
 
 def list_objects(bucket_name: str, path: str, recursive: bool = True) -> Generator[Object, None, None]:
-    path = get_absolute_path(path)
     s3_client = get_s3_client()
 
     yield from s3_client.list_objects(bucket_name, path, recursive)
