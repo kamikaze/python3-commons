@@ -2,13 +2,12 @@ import asyncio
 import logging
 
 from asyncpg import CannotConnectNowError
-from databases import Database
 from pydantic import PostgresDsn
 
 logger = logging.getLogger(__name__)
 
 
-async def connect_to_db(database: Database, dsn: PostgresDsn):
+async def connect_to_db(database, dsn: PostgresDsn):
     logger.info('Waiting for services')
     logger.debug(f'DB_DSN: {dsn}')
     timeout = 0.001
