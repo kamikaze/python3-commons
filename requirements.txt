@@ -1,6 +1,6 @@
 asyncpg==0.29.0
 minio==7.2.3
 msgpack==1.0.7
-msgspec==0.18.5
-pydantic[email]==2.5.3
+msgspec==0.18.6
+pydantic[email]==2.6.0
 pydantic-settings==2.1.0
