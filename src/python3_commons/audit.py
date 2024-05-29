@@ -57,7 +57,7 @@ async def archive_audit_data(root_path: str = 'audit'):
 
     if object_names:
         archive_path = object_storage.get_absolute_path(
-            f'.archive/{year}_{month:02}_{day:02}.tar.bz2')
+            f'audit/.archive/{year}_{month:02}_{day:02}.tar.bz2')
         object_storage.put_object(bucket_name, archive_path, fo, fo.getbuffer().nbytes)
 
         if errors := object_storage.remove_objects(bucket_name, object_names=object_names):
