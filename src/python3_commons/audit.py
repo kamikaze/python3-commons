@@ -11,7 +11,7 @@ from zeep.plugins import Plugin
 from zeep.wsdl.definitions import AbstractOperation
 
 from python3_commons import object_storage
-from python3_commons.conf import s3_settings
+from python3_commons.conf import S3Settings, s3_settings
 
 logger = logging.getLogger(__name__)
 
