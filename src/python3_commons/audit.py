@@ -1,7 +1,14 @@
+import asyncio
 import logging
 import tarfile
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, UTC
 from io import BytesIO
+from uuid import uuid4
+from zoneinfo import ZoneInfo
+
+from lxml import etree
+from zeep.plugins import Plugin
+from zeep.wsdl.definitions import AbstractOperation
 
 from python3_commons import object_storage
 from python3_commons.conf import s3_settings
@@ -9,11 +16,62 @@ from python3_commons.conf import s3_settings
 logger = logging.getLogger(__name__)
 
 
+class ZeepAuditPlugin(Plugin):
+    def __init__(self, audit_name: str = 'zeep'):
+        super().__init__()
+        self.audit_name = audit_name
+
+    @staticmethod
+    def store_audit_in_s3(envelope, operation: AbstractOperation, direction: str):
+        xml = etree.tostring(envelope, encoding='UTF-8', pretty_print=True)
+        now = datetime.now(tz=UTC)
+        date_path = now.strftime('%Y/%m/%d')
+        timestamp = now.strftime('%H%M%S')
+        coro = object_storage.store_bytes_in_s3(
+            settings, xml,
+            f'audit/{date_path}/{self.audit_name}/{operation.name}/{timestamp}_{str(uuid4())[-12:]}_{direction}.xml'
+        )
+
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+
+        if loop and loop.is_running():
+            loop.create_task(coro)
+        else:
+            asyncio.run(coro)
+
+    def ingress(self, envelope, http_headers, operation: AbstractOperation):
+        self.store_audit_in_s3(envelope, operation, 'ingress')
+
+        return envelope, http_headers
+
+    def egress(self, envelope, http_headers, operation: AbstractOperation, binding_options):
+        self.store_audit_in_s3(envelope, operation, 'egress')
+
+        return envelope, http_headers
+
+
+async def write_audit_data(settings: S3Settings, key: str, data: bytes):
+    if settings.s3_secret_access_key:
+        try:
+            client = get_s3_client(settings)
+
+            client.put_object(settings.s3_bucket, key, io.BytesIO(data), len(data))
+        except S3Error as e:
+            logger.error(f'Failed storing object in storage: {e}')
+        else:
+            logger.debug(f'Stored object in storage: {key}')
+    else:
+        logger.debug(f'S3 is not configured, not storing object in storage: {key}')
+
+
 async def archive_audit_data(root_path: str = 'audit'):
-    today = date.today() - timedelta(days=1)
-    year = today.year
-    month = today.month
-    day = today.day
+    now = datetime.now(tz=UTC) - timedelta(days=1)
+    year = now.year
+    month = now.month
+    day = now.day
     bucket_name = s3_settings.s3_bucket
     fo = BytesIO()
     object_names = []

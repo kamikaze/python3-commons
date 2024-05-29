@@ -125,17 +125,3 @@ def remove_objects(bucket_name: str, prefix: str = None,
     errors = s3_client.remove_objects(bucket_name, delete_object_list)
 
     return errors
-
-
-async def store_bytes_in_s3(settings: S3Settings, data: bytes, key: str):
-    if settings.s3_secret_access_key:
-        try:
-            client = get_s3_client(settings)
-
-            client.put_object(settings.s3_bucket, key, io.BytesIO(data), len(data))
-        except S3Error as e:
-            logger.error(f'Failed storing object in storage: {e}')
-        else:
-            logger.debug(f'Stored object in storage: {key}')
-    else:
-        logger.debug(f'S3 is not configured, not storing object in storage: {key}')
