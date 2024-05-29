@@ -43,6 +43,7 @@ def put_object(bucket_name: str, path: str, data: io.BytesIO, length: int) -> st
     s3_client = get_s3_client(s3_settings)
 
     if s3_client:
+        path = get_absolute_path(path)
         result = s3_client.put_object(bucket_name, path, data, length)
 
         logger.debug(f'Stored object into object storage: {bucket_name}:{path}')
@@ -56,6 +57,7 @@ def get_object_stream(bucket_name: str, path: str):
     s3_client = get_s3_client(s3_settings)
 
     if s3_client:
+        path = get_absolute_path(path)
         logger.debug(f'Getting object from object storage: {bucket_name}:{path}')
 
         try:
@@ -92,6 +94,8 @@ def list_objects(bucket_name: str, prefix: str, recursive: bool = True) -> Gener
 
 def get_objects(bucket_name: str, path: str,
                 recursive: bool = True) -> Generator[tuple[str, datetime, bytes], None, None]:
+    path = get_absolute_path(path)
+
     for obj in list_objects(bucket_name, path, recursive):
         object_name = obj.object_name
 
@@ -113,6 +117,7 @@ def remove_objects(bucket_name: str, prefix: str = None,
     s3_client = get_s3_client(s3_settings)
 
     if prefix:
+        prefix = get_absolute_path(prefix)
         delete_object_list = map(
             lambda obj: DeleteObject(obj.object_name), s3_client.list_objects(bucket_name, prefix=prefix,
                                                                               recursive=True)
