@@ -1,29 +1,29 @@
+import io
 import logging
 from datetime import datetime
-from io import IOBase
-from typing import Generator, Iterable, Any
+from typing import Generator, Iterable
 
-from minio import Minio
+from minio import Minio, S3Error
 from minio.datatypes import Object
-from minio.deleteobjects import DeleteObject
+from minio.deleteobjects import DeleteObject, DeleteError
 
-from python3_commons import minio
-from python3_commons.conf import s3_settings
+from python3_commons.conf import s3_settings, S3Settings
 
 logger = logging.getLogger(__name__)
 __CLIENT = None
 
 
-def get_s3_client() -> Minio:
+def get_s3_client(settings: S3Settings) -> Minio:
     global __CLIENT
 
     if not __CLIENT and s3_settings.s3_endpoint_url:
-        __CLIENT = minio.get_client(
-            s3_settings.s3_endpoint_url,
-            s3_settings.s3_region_name,
-            s3_settings.s3_access_key_id,
-            s3_settings.s3_secret_access_key,
-            s3_settings.s3_secure
+        __CLIENT = Minio(
+            settings.s3_endpoint_url,
+            region=settings.s3_region_name,
+            access_key=settings.s3_access_key_id.get_secret_value(),
+            secret_key=settings.s3_secret_access_key.get_secret_value(),
+            secure=settings.s3_secure,
+            cert_check=settings.s3_cert_verify
         )
 
     return __CLIENT
@@ -34,13 +34,13 @@ def get_absolute_path(path: str) -> str:
         path = path[1:]
 
     if bucket_root := s3_settings.s3_bucket_root:
-        path = f'{bucket_root[:1] if bucket_root.startswith("/") else bucket_root}/{path}'
+        path = f'{bucket_root[:1] if bucket_root.startswith('/') else bucket_root}/{path}'
 
     return path
 
 
-def put_object(bucket_name: str, path: str, data: IOBase, length: int) -> str:
-    s3_client = get_s3_client()
+def put_object(bucket_name: str, path: str, data: io.BytesIO, length: int) -> str:
+    s3_client = get_s3_client(s3_settings)
 
     if s3_client:
         result = s3_client.put_object(bucket_name, path, data, length)
@@ -53,7 +53,7 @@ def put_object(bucket_name: str, path: str, data: IOBase, length: int) -> str:
 
 
 def get_object_stream(bucket_name: str, path: str):
-    s3_client = get_s3_client()
+    s3_client = get_s3_client(s3_settings)
 
     if s3_client:
         logger.debug(f'Getting object from object storage: {bucket_name}:{path}')
@@ -85,7 +85,7 @@ def get_object(bucket_name: str, path: str) -> bytes:
 
 
 def list_objects(bucket_name: str, prefix: str, recursive: bool = True) -> Generator[Object, None, None]:
-    s3_client = get_s3_client()
+    s3_client = get_s3_client(s3_settings)
 
     yield from s3_client.list_objects(bucket_name, prefix=prefix, recursive=recursive)
 
@@ -104,13 +104,13 @@ def get_objects(bucket_name: str, path: str,
 
 
 def remove_object(bucket_name: str, object_name: str):
-    s3_client = get_s3_client()
+    s3_client = get_s3_client(s3_settings)
     s3_client.remove_object(bucket_name, object_name)
 
 
 def remove_objects(bucket_name: str, prefix: str = None,
-                   object_names: Iterable[str] = None) -> Generator[Any, Any, None] | None:
-    s3_client = get_s3_client()
+                   object_names: Iterable[str] = None) -> Iterable[DeleteError] | None:
+    s3_client = get_s3_client(s3_settings)
 
     if prefix:
         delete_object_list = map(
@@ -125,3 +125,17 @@ def remove_objects(bucket_name: str, prefix: str = None,
     errors = s3_client.remove_objects(bucket_name, delete_object_list)
 
     return errors
+
+
+async def store_bytes_in_s3(settings: S3Settings, data: bytes, key: str):
+    if settings.s3_secret_access_key:
+        try:
+            client = get_s3_client(settings)
+
+            client.put_object(settings.s3_bucket, key, io.BytesIO(data), len(data))
+        except S3Error as e:
+            logger.error(f'Failed storing object in storage: {e}')
+        else:
+            logger.debug(f'Stored object in storage: {key}')
+    else:
+        logger.debug(f'S3 is not configured, not storing object in storage: {key}')

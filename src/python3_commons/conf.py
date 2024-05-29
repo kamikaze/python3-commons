@@ -15,6 +15,7 @@ class S3Settings(BaseSettings):
     s3_secure: bool = True
     s3_bucket: str | None = None
     s3_bucket_root: str | None = None
+    s3_cert_verify: bool = True
 
 
 settings = CommonSettings()
