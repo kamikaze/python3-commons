@@ -3,7 +3,7 @@ import logging
 from datetime import datetime
 from typing import Generator, Iterable
 
-from minio import Minio, S3Error
+from minio import Minio
 from minio.datatypes import Object
 from minio.deleteobjects import DeleteObject, DeleteError
 
