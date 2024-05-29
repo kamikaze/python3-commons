@@ -1,56 +1,21 @@
 import asyncio
+import io
 import logging
 import tarfile
-from datetime import date, datetime, timedelta, UTC
+from datetime import datetime, timedelta, UTC
 from io import BytesIO
 from uuid import uuid4
-from zoneinfo import ZoneInfo
 
 from lxml import etree
+from minio import S3Error
 from zeep.plugins import Plugin
 from zeep.wsdl.definitions import AbstractOperation
 
 from python3_commons import object_storage
 from python3_commons.conf import S3Settings, s3_settings
+from python3_commons.object_storage import get_s3_client
 
 logger = logging.getLogger(__name__)
-
-
-class ZeepAuditPlugin(Plugin):
-    def __init__(self, audit_name: str = 'zeep'):
-        super().__init__()
-        self.audit_name = audit_name
-
-    @staticmethod
-    def store_audit_in_s3(envelope, operation: AbstractOperation, direction: str):
-        xml = etree.tostring(envelope, encoding='UTF-8', pretty_print=True)
-        now = datetime.now(tz=UTC)
-        date_path = now.strftime('%Y/%m/%d')
-        timestamp = now.strftime('%H%M%S')
-        coro = object_storage.store_bytes_in_s3(
-            settings, xml,
-            f'audit/{date_path}/{self.audit_name}/{operation.name}/{timestamp}_{str(uuid4())[-12:]}_{direction}.xml'
-        )
-
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = None
-
-        if loop and loop.is_running():
-            loop.create_task(coro)
-        else:
-            asyncio.run(coro)
-
-    def ingress(self, envelope, http_headers, operation: AbstractOperation):
-        self.store_audit_in_s3(envelope, operation, 'ingress')
-
-        return envelope, http_headers
-
-    def egress(self, envelope, http_headers, operation: AbstractOperation, binding_options):
-        self.store_audit_in_s3(envelope, operation, 'egress')
-
-        return envelope, http_headers
 
 
 async def write_audit_data(settings: S3Settings, key: str, data: bytes):
@@ -58,7 +23,7 @@ async def write_audit_data(settings: S3Settings, key: str, data: bytes):
         try:
             client = get_s3_client(settings)
 
-            client.put_object(settings.s3_bucket, key, io.BytesIO(data), len(data))
+            client.put_object(settings.s3_bucket, f'audit/{key}', io.BytesIO(data), len(data))
         except S3Error as e:
             logger.error(f'Failed storing object in storage: {e}')
         else:
@@ -92,7 +57,7 @@ async def archive_audit_data(root_path: str = 'audit'):
 
     if object_names:
         archive_path = object_storage.get_absolute_path(
-            f'.archive/{year}_{month:02}/{year}_{month:02}_{day:02}.tar.bz2')
+            f'.archive/{year}_{month:02}_{day:02}.tar.bz2')
         object_storage.put_object(bucket_name, archive_path, fo, fo.getbuffer().nbytes)
 
         if errors := object_storage.remove_objects(bucket_name, object_names=object_names):
@@ -100,3 +65,39 @@ async def archive_audit_data(root_path: str = 'audit'):
                 logger.error(f'Failed to delete object in {bucket_name=}: {error}')
     else:
         logger.info('No objects to archive found.')
+
+
+class ZeepAuditPlugin(Plugin):
+    def __init__(self, audit_name: str = 'zeep'):
+        super().__init__()
+        self.audit_name = audit_name
+
+    def store_audit_in_s3(self, envelope, operation: AbstractOperation, direction: str):
+        xml = etree.tostring(envelope, encoding='UTF-8', pretty_print=True)
+        now = datetime.now(tz=UTC)
+        date_path = now.strftime('%Y/%m/%d')
+        timestamp = now.strftime('%H%M%S')
+        coro = write_audit_data(
+            s3_settings,
+            f'{date_path}/{self.audit_name}/{operation.name}/{timestamp}_{str(uuid4())[-12:]}_{direction}.xml', xml
+        )
+
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+
+        if loop and loop.is_running():
+            loop.create_task(coro)
+        else:
+            asyncio.run(coro)
+
+    def ingress(self, envelope, http_headers, operation: AbstractOperation):
+        self.store_audit_in_s3(envelope, operation, 'ingress')
+
+        return envelope, http_headers
+
+    def egress(self, envelope, http_headers, operation: AbstractOperation, binding_options):
+        self.store_audit_in_s3(envelope, operation, 'egress')
+
+        return envelope, http_headers
