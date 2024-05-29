@@ -18,7 +18,7 @@ from python3_commons.object_storage import get_s3_client
 logger = logging.getLogger(__name__)
 
 
-async def write_audit_data(settings: S3Settings, key: str, data: bytes):
+def write_audit_data_sync(settings: S3Settings, key: str, data: bytes):
     if settings.s3_secret_access_key:
         try:
             client = get_s3_client(settings)
@@ -31,6 +31,10 @@ async def write_audit_data(settings: S3Settings, key: str, data: bytes):
             logger.debug(f'Stored object in storage: {key}')
     else:
         logger.debug(f'S3 is not configured, not storing object in storage: {key}')
+
+
+async def write_audit_data(settings: S3Settings, key: str, data: bytes):
+    write_audit_data_sync(settings, key, data)
 
 
 async def archive_audit_data(root_path: str = 'audit'):
