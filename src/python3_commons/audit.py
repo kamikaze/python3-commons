@@ -36,7 +36,7 @@ class BytesIOStream(io.BytesIO):
 
             self.write(chunk)
 
-        if chunk := self.read(size):
+        if chunk := super().read(size):
             pos = self.tell()
 
             buf = self.getbuffer()
