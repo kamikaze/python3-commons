@@ -39,11 +39,11 @@ def get_absolute_path(path: str) -> str:
     return path
 
 
-def put_object(bucket_name: str, path: str, data: io.BytesIO, length: int) -> str:
+def put_object(bucket_name: str, path: str, data: io.BytesIO, length: int, part_size: int = 0) -> str:
     s3_client = get_s3_client(s3_settings)
 
     if s3_client:
-        result = s3_client.put_object(bucket_name, path, data, length)
+        result = s3_client.put_object(bucket_name, path, data, length, part_size=part_size)
 
         logger.debug(f'Stored object into object storage: {bucket_name}:{path}')
 

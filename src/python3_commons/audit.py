@@ -4,6 +4,7 @@ import logging
 import tarfile
 from datetime import datetime, timedelta, UTC
 from io import BytesIO
+from typing import Generator
 from uuid import uuid4
 
 from lxml import etree
@@ -16,6 +17,69 @@ from python3_commons.conf import S3Settings, s3_settings
 from python3_commons.object_storage import get_s3_client
 
 logger = logging.getLogger(__name__)
+
+
+class BytesIOStream(io.BytesIO):
+    def __init__(self, generator: Generator[bytes, None, None], *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.generator = generator
+
+    def read(self, size: int = -1):
+        if size == -1:
+            size = 4096
+
+        while self.tell() < size:
+            try:
+                chunk = next(self.generator)
+            except StopIteration:
+                break
+
+            self.write(chunk)
+
+        if chunk := self.read(size):
+            pos = self.tell()
+
+            buf = self.getbuffer()
+            unread_data_size = len(buf) - pos
+
+            if unread_data_size > 0:
+                buf[:unread_data_size] = buf[pos:pos+unread_data_size]
+
+            self.truncate(unread_data_size)
+            self.seek(0)
+
+        return chunk
+
+    def readable(self):
+        return True
+
+
+def generate_archive(bucket_name: str, date_path: str, chunk_size: int = 4096) -> Generator[bytes, None, None]:
+    buffer = io.BytesIO()
+
+    with tarfile.open(fileobj=buffer, mode='w|bz2') as archive:
+        objects = object_storage.get_objects(bucket_name, date_path, recursive=True)
+
+        if objects:
+            logger.info(f'Compacting files in: {date_path}')
+
+            for name, last_modified, content in objects:
+                info = tarfile.TarInfo(name)
+                info.size = len(content)
+                info.mtime = last_modified.timestamp()
+                archive.addfile(info, io.BytesIO(content))
+                buffer.seek(0)
+
+                while True:
+                    chunk = buffer.read(chunk_size)
+
+                    if not chunk:
+                        break
+
+                    yield chunk
+
+                buffer.seek(0)
+                buffer.truncate(0)
 
 
 def write_audit_data_sync(settings: S3Settings, key: str, data: bytes):
@@ -47,22 +111,12 @@ async def archive_audit_data(root_path: str = 'audit'):
     object_names = []
     date_path = object_storage.get_absolute_path(f'{root_path}/{year}/{month:02}/{day:02}')
 
-    with tarfile.open(fileobj=fo, mode='w|bz2') as archive:
-        if objects := object_storage.get_objects(bucket_name, date_path, recursive=True):
-            logger.info(f'Compacting files in: {date_path}')
-
-            for name, last_modified, content in objects:
-                info = tarfile.TarInfo(name)
-                info.size = len(content)
-                info.mtime = last_modified.timestamp()
-                archive.addfile(info, BytesIO(content))
-                object_names.append(name)
-
-    fo.seek(0)
+    generator = generate_archive(bucket_name, date_path, chunk_size=4096)
+    archive_stream = BytesIOStream(generator)
 
     if object_names:
         archive_path = object_storage.get_absolute_path(f'audit/.archive/{year}_{month:02}_{day:02}.tar.bz2')
-        object_storage.put_object(bucket_name, archive_path, fo, fo.getbuffer().nbytes)
+        object_storage.put_object(bucket_name, archive_path, archive_stream, -1, part_size=4096)
 
         if errors := object_storage.remove_objects(bucket_name, object_names=object_names):
             for error in errors:
