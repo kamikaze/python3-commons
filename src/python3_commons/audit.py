@@ -108,21 +108,17 @@ async def archive_audit_data(root_path: str = 'audit'):
     month = now.month
     day = now.day
     bucket_name = s3_settings.s3_bucket
-    object_names = []
     date_path = object_storage.get_absolute_path(f'{root_path}/{year}/{month:02}/{day:02}')
 
     generator = generate_archive(bucket_name, date_path, chunk_size=4096)
     archive_stream = BytesIOStream(generator)
 
-    if object_names:
-        archive_path = object_storage.get_absolute_path(f'audit/.archive/{year}_{month:02}_{day:02}.tar.bz2')
-        object_storage.put_object(bucket_name, archive_path, archive_stream, -1, part_size=4096)
+    archive_path = object_storage.get_absolute_path(f'audit/.archive/{year}_{month:02}_{day:02}.tar.bz2')
+    object_storage.put_object(bucket_name, archive_path, archive_stream, -1, part_size=4096)
 
-        if errors := object_storage.remove_objects(bucket_name, object_names=object_names):
-            for error in errors:
-                logger.error(f'Failed to delete object in {bucket_name=}: {error}')
-    else:
-        logger.info('No objects to archive found.')
+    if errors := object_storage.remove_objects(bucket_name, date_path):
+        for error in errors:
+            logger.error(f'Failed to delete object in {bucket_name=}: {error}')
 
 
 class ZeepAuditPlugin(Plugin):
