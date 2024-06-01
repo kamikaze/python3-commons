@@ -45,8 +45,8 @@ class BytesIOStream(io.BytesIO):
             if unread_data_size > 0:
                 buf[:unread_data_size] = buf[pos:pos+unread_data_size]
 
-            self.truncate(unread_data_size)
             self.seek(0)
+            self.truncate(unread_data_size)
 
         return chunk
 
@@ -64,6 +64,7 @@ def generate_archive(bucket_name: str, date_path: str, chunk_size: int = 4096) -
             logger.info(f'Compacting files in: {date_path}')
 
             for name, last_modified, content in objects:
+                logger.info(f'Adding {name} to archive')
                 info = tarfile.TarInfo(name)
                 info.size = len(content)
                 info.mtime = last_modified.timestamp()
@@ -107,7 +108,6 @@ async def archive_audit_data(root_path: str = 'audit'):
     month = now.month
     day = now.day
     bucket_name = s3_settings.s3_bucket
-    fo = BytesIO()
     object_names = []
     date_path = object_storage.get_absolute_path(f'{root_path}/{year}/{month:02}/{day:02}')
 
