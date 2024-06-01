@@ -45,7 +45,7 @@ async def archive_audit_data(root_path: str = 'audit'):
     bucket_name = s3_settings.s3_bucket
     fo = BytesIO()
     object_names = []
-    date_path = f'{root_path}/{year}/{month:02}/{day:02}'
+    date_path = object_storage.get_absolute_path(f'{root_path}/{year}/{month:02}/{day:02}')
 
     with tarfile.open(fileobj=fo, mode='w|bz2') as archive:
         if objects := object_storage.get_objects(bucket_name, date_path, recursive=True):
