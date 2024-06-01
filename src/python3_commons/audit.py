@@ -61,8 +61,7 @@ async def archive_audit_data(root_path: str = 'audit'):
     fo.seek(0)
 
     if object_names:
-        archive_path = object_storage.get_absolute_path(
-            f'audit/.archive/{year}_{month:02}_{day:02}.tar.bz2')
+        archive_path = object_storage.get_absolute_path(f'audit/.archive/{year}_{month:02}_{day:02}.tar.bz2')
         object_storage.put_object(bucket_name, archive_path, fo, fo.getbuffer().nbytes)
 
         if errors := object_storage.remove_objects(bucket_name, object_names=object_names):
@@ -82,10 +81,8 @@ class ZeepAuditPlugin(Plugin):
         now = datetime.now(tz=UTC)
         date_path = now.strftime('%Y/%m/%d')
         timestamp = now.strftime('%H%M%S')
-        coro = write_audit_data(
-            s3_settings,
-            f'{date_path}/{self.audit_name}/{operation.name}/{timestamp}_{str(uuid4())[-12:]}_{direction}.xml', xml
-        )
+        path = f'{date_path}/{self.audit_name}/{operation.name}/{timestamp}_{str(uuid4())[-12:]}_{direction}.xml'
+        coro = write_audit_data(s3_settings, path, xml)
 
         try:
             loop = asyncio.get_running_loop()
