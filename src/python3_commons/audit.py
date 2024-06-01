@@ -110,11 +110,11 @@ async def archive_audit_data(root_path: str = 'audit'):
     bucket_name = s3_settings.s3_bucket
     date_path = object_storage.get_absolute_path(f'{root_path}/{year}/{month:02}/{day:02}')
 
-    generator = generate_archive(bucket_name, date_path, chunk_size=4096)
+    generator = generate_archive(bucket_name, date_path, chunk_size=5*1024*1024)
     archive_stream = BytesIOStream(generator)
 
     archive_path = object_storage.get_absolute_path(f'audit/.archive/{year}_{month:02}_{day:02}.tar.bz2')
-    object_storage.put_object(bucket_name, archive_path, archive_stream, -1, part_size=4096)
+    object_storage.put_object(bucket_name, archive_path, archive_stream, -1, part_size=5*1024*1024)
 
     if errors := object_storage.remove_objects(bucket_name, date_path):
         for error in errors:
