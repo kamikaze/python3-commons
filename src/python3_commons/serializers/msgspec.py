@@ -15,8 +15,6 @@ logger = logging.getLogger(__name__)
 
 
 def enc_hook(obj: Any) -> Any:
-    logger.debug('Encoding object', extra={'obj': obj})
-
     if isinstance(obj, Decimal):
         return Ext(1, struct.pack('b', str(obj).encode()))
     elif isinstance(obj, datetime):
@@ -30,8 +28,6 @@ def enc_hook(obj: Any) -> Any:
 
 
 def ext_hook(code: int, data: memoryview) -> Any:
-    logger.debug(f'Decoding object with {code=}', extra={'data': data})
-
     if code == 1:
         return Decimal(data.tobytes().decode())
     elif code == 2:
@@ -45,23 +41,15 @@ def ext_hook(code: int, data: memoryview) -> Any:
 
 
 def serialize_msgpack(data) -> bytes:
-    logger.debug('Serializing to msgpack', extra={'data': data})
-
     result = msgpack.encode(data, enc_hook=enc_hook)
-
-    logger.debug('Serialized to msgpack', extra={'result': result})
 
     return result
 
 
 def deserialize_msgpack(data: bytes, data_type=None):
-    logger.debug('De-serializing from msgpack', extra={'data': data})
-
     if data_type:
         result = msgpack.decode(data, type=data_type)
     else:
         result = msgpack.decode(data, ext_hook=ext_hook)
-
-    logger.debug('De-serialized from msgpack', extra={'result': result})
 
     return result
