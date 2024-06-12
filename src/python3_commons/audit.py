@@ -3,8 +3,7 @@ import io
 import logging
 import tarfile
 from datetime import datetime, timedelta, UTC
-from io import BytesIO
-from typing import Generator
+from typing import Generator, Iterable
 from uuid import uuid4
 
 from lxml import etree
@@ -19,7 +18,7 @@ from python3_commons.object_storage import get_s3_client
 logger = logging.getLogger(__name__)
 
 
-class BytesIOStream(io.BytesIO):
+class GeneratedStream(io.BytesIO):
     def __init__(self, generator: Generator[bytes, None, None], *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.generator = generator
@@ -54,33 +53,30 @@ class BytesIOStream(io.BytesIO):
         return True
 
 
-def generate_archive(bucket_name: str, date_path: str, chunk_size: int = 4096) -> Generator[bytes, None, None]:
+def generate_archive(objects: Iterable[tuple[str, datetime, bytes]],
+                     chunk_size: int = 4096) -> Generator[bytes, None, None]:
     buffer = io.BytesIO()
 
-    with tarfile.open(fileobj=buffer, mode='w|bz2') as archive:
-        objects = object_storage.get_objects(bucket_name, date_path, recursive=True)
+    with tarfile.open(fileobj=buffer, mode='w') as archive:
+        for name, last_modified, content in objects:
+            logger.info(f'Adding {name} to archive')
+            info = tarfile.TarInfo(name)
+            info.size = len(content)
+            info.mtime = last_modified.timestamp()
+            archive.addfile(info, io.BytesIO(content))
 
-        if objects:
-            logger.info(f'Compacting files in: {date_path}')
+            buffer.seek(0)
 
-            for name, last_modified, content in objects:
-                logger.info(f'Adding {name} to archive')
-                info = tarfile.TarInfo(name)
-                info.size = len(content)
-                info.mtime = last_modified.timestamp()
-                archive.addfile(info, io.BytesIO(content))
-                buffer.seek(0)
+            while True:
+                chunk = buffer.read(chunk_size)
 
-                while True:
-                    chunk = buffer.read(chunk_size)
+                if not chunk:
+                    break
 
-                    if not chunk:
-                        break
+                yield chunk
 
-                    yield chunk
-
-                buffer.seek(0)
-                buffer.truncate(0)
+            buffer.seek(0)
+            buffer.truncate(0)
 
 
 def write_audit_data_sync(settings: S3Settings, key: str, data: bytes):
@@ -110,15 +106,18 @@ async def archive_audit_data(root_path: str = 'audit'):
     bucket_name = s3_settings.s3_bucket
     date_path = object_storage.get_absolute_path(f'{root_path}/{year}/{month:02}/{day:02}')
 
-    generator = generate_archive(bucket_name, date_path, chunk_size=5*1024*1024)
-    archive_stream = BytesIOStream(generator)
+    if objects := object_storage.get_objects(bucket_name, date_path, recursive=True):
+        logger.info(f'Compacting files in: {date_path}')
 
-    archive_path = object_storage.get_absolute_path(f'audit/.archive/{year}_{month:02}_{day:02}.tar.bz2')
-    object_storage.put_object(bucket_name, archive_path, archive_stream, -1, part_size=5*1024*1024)
+        generator = generate_archive(objects, chunk_size=5*1024*1024)
+        archive_stream = GeneratedStream(generator)
 
-    if errors := object_storage.remove_objects(bucket_name, date_path):
-        for error in errors:
-            logger.error(f'Failed to delete object in {bucket_name=}: {error}')
+        archive_path = object_storage.get_absolute_path(f'audit/.archive/{year}_{month:02}_{day:02}.tar.bz2')
+        object_storage.put_object(bucket_name, archive_path, archive_stream, -1, part_size=5*1024*1024)
+
+        if errors := object_storage.remove_objects(bucket_name, date_path):
+            for error in errors:
+                logger.error(f'Failed to delete object in {bucket_name=}: {error}')
 
 
 class ZeepAuditPlugin(Plugin):

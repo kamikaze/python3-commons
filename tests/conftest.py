@@ -59,3 +59,13 @@ def data_struct():
         e=date(2023, 7, 24),
         f=Decimal('1.23')
     )
+
+
+@pytest.fixture
+def s3_file_objects() -> tuple:
+    return (
+        ('file_a.txt', datetime(2024, 1, 1), b'ABCDE', ),
+        ('file_b.txt', datetime(2024, 1, 2), b'FGHIJ', ),
+        ('file_c.txt', datetime(2024, 1, 3), b'KLMNO', ),
+        ('file_d.txt', datetime(2024, 1, 4), b'PQRST', ),
+    )
