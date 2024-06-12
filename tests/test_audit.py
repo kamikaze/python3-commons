@@ -1,5 +1,4 @@
 from python3_commons.audit import GeneratedStream, generate_archive
-from python3_commons.serializers import msgpack
 
 
 def test_generated_stream(s3_file_objects):
