@@ -1,8 +1,9 @@
 import datetime
 import logging
+import shlex
 
 from decimal import Decimal, ROUND_HALF_UP
-
+from typing import Mapping
 
 logger = logging.getLogger(__name__)
 
@@ -47,3 +48,18 @@ def round_decimal(value: Decimal, decimal_places=2, rounding_mode=ROUND_HALF_UP)
         return value.quantize(Decimal(10) ** -decimal_places, rounding=rounding_mode)
     except AttributeError:
         return value
+
+
+def request_to_curl(url: str, method: str, headers: Mapping, body: bytes | None = None) -> str:
+    curl_cmd = ['curl', '-i', '-X', method, shlex.quote(url)]
+
+    for key, value in headers.items():
+        header_line = f'{key}: {value}'
+        curl_cmd.append('-H')
+        curl_cmd.append(shlex.quote(header_line))
+
+    if body is not None:
+        curl_cmd.append('--data')
+        curl_cmd.append(shlex.quote(body.decode('utf-8')))
+
+    return ' '.join(curl_cmd)

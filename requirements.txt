@@ -3,6 +3,6 @@ lxml==5.2.2
 minio==7.2.7
 msgpack==1.0.8
 msgspec==0.18.6
-pydantic[email]==2.7.3
-pydantic-settings==2.3.2
+pydantic[email]==2.8.2
+pydantic-settings==2.3.4
 zeep==4.2.1
