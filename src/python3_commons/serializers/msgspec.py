@@ -40,8 +40,12 @@ def ext_hook(code: int, data: memoryview) -> Any:
     raise NotImplementedError(f'Extension type code {code} is not supported')
 
 
+MSGPACK_ENCODER = msgpack.Encoder(enc_hook=enc_hook)
+MSGPACK_DECODER = msgpack.Decoder(ext_hook=ext_hook)
+
+
 def serialize_msgpack(data) -> bytes:
-    result = msgpack.encode(data, enc_hook=enc_hook)
+    result = MSGPACK_ENCODER.encode(data)
 
     return result
 
@@ -50,6 +54,6 @@ def deserialize_msgpack(data: bytes, data_type=None):
     if data_type:
         result = msgpack.decode(data, type=data_type)
     else:
-        result = msgpack.decode(data, ext_hook=ext_hook)
+        result = MSGPACK_DECODER.decode(data)
 
     return result
