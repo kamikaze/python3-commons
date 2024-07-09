@@ -35,6 +35,8 @@ class GeneratedStream(io.BytesIO):
 
             self.write(chunk)
 
+        self.seek(0)
+
         if chunk := super().read(size):
             pos = self.tell()
 
@@ -64,6 +66,7 @@ def generate_archive(objects: Iterable[tuple[str, datetime, bytes]],
             info.size = len(content)
             info.mtime = last_modified.timestamp()
             archive.addfile(info, io.BytesIO(content))
+            archive.fileobj.flush()
 
             buffer.seek(0)
 
