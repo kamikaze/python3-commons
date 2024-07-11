@@ -13,7 +13,7 @@ from zeep.wsdl.definitions import AbstractOperation
 
 from python3_commons import object_storage
 from python3_commons.conf import S3Settings, s3_settings
-from python3_commons.object_storage import get_s3_client
+from python3_commons.object_storage import ObjectStorage
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +85,7 @@ def generate_archive(objects: Iterable[tuple[str, datetime, bytes]],
 def write_audit_data_sync(settings: S3Settings, key: str, data: bytes):
     if settings.s3_secret_access_key:
         try:
-            client = get_s3_client(settings)
+            client = ObjectStorage(settings).get_client()
             absolute_path = object_storage.get_absolute_path(f'audit/{key}')
 
             client.put_object(settings.s3_bucket, absolute_path, io.BytesIO(data), len(data))

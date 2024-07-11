@@ -1,11 +1,33 @@
 import datetime
 import logging
 import shlex
+import threading
 
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Mapping
 
 logger = logging.getLogger(__name__)
+
+
+class SingletonMeta(type):
+    """
+    A metaclass that creates a Singleton base class when called.
+    """
+    _instances = {}
+    _lock = threading.Lock()
+
+    def __call__(cls, *args, **kwargs):
+        try:
+            return cls._instances[cls]
+        except KeyError:
+            with cls._lock:
+                try:
+                    return cls._instances[cls]
+                except KeyError:
+                    instance = super(SingletonMeta, cls).__call__(*args, **kwargs)
+                    cls._instances[cls] = instance
+
+                    return instance
 
 
 def date_from_string(string: str, fmt: str = '%d.%m.%Y') -> datetime.date:

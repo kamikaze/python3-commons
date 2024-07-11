@@ -8,16 +8,17 @@ from minio.datatypes import Object
 from minio.deleteobjects import DeleteObject, DeleteError
 
 from python3_commons.conf import s3_settings, S3Settings
+from python3_commons.helpers import SingletonMeta
 
 logger = logging.getLogger(__name__)
-__CLIENT = None
 
 
-def get_s3_client(settings: S3Settings) -> Minio:
-    global __CLIENT
+class ObjectStorage(metaclass=SingletonMeta):
+    def __init__(self, settings: S3Settings):
+        if not s3_settings.s3_endpoint_url:
+            raise ValueError('s3_settings.s3_endpoint_url must be set')
 
-    if not __CLIENT and s3_settings.s3_endpoint_url:
-        __CLIENT = Minio(
+        self._client = Minio(
             settings.s3_endpoint_url,
             region=settings.s3_region_name,
             access_key=settings.s3_access_key_id.get_secret_value(),
@@ -26,7 +27,8 @@ def get_s3_client(settings: S3Settings) -> Minio:
             cert_check=settings.s3_cert_verify
         )
 
-    return __CLIENT
+    def get_client(self) -> Minio:
+        return self._client
 
 
 def get_absolute_path(path: str) -> str:
@@ -40,7 +42,7 @@ def get_absolute_path(path: str) -> str:
 
 
 def put_object(bucket_name: str, path: str, data: io.BytesIO, length: int, part_size: int = 0) -> str:
-    s3_client = get_s3_client(s3_settings)
+    s3_client = ObjectStorage(s3_settings).get_client()
 
     if s3_client:
         result = s3_client.put_object(bucket_name, path, data, length, part_size=part_size)
@@ -53,7 +55,7 @@ def put_object(bucket_name: str, path: str, data: io.BytesIO, length: int, part_
 
 
 def get_object_stream(bucket_name: str, path: str):
-    s3_client = get_s3_client(s3_settings)
+    s3_client = ObjectStorage(s3_settings).get_client()
 
     if s3_client:
         logger.debug(f'Getting object from object storage: {bucket_name}:{path}')
@@ -85,7 +87,7 @@ def get_object(bucket_name: str, path: str) -> bytes:
 
 
 def list_objects(bucket_name: str, prefix: str, recursive: bool = True) -> Generator[Object, None, None]:
-    s3_client = get_s3_client(s3_settings)
+    s3_client = ObjectStorage(s3_settings).get_client()
 
     yield from s3_client.list_objects(bucket_name, prefix=prefix, recursive=recursive)
 
@@ -104,13 +106,13 @@ def get_objects(bucket_name: str, path: str,
 
 
 def remove_object(bucket_name: str, object_name: str):
-    s3_client = get_s3_client(s3_settings)
+    s3_client = ObjectStorage(s3_settings).get_client()
     s3_client.remove_object(bucket_name, object_name)
 
 
 def remove_objects(bucket_name: str, prefix: str = None,
                    object_names: Iterable[str] = None) -> Iterable[DeleteError] | None:
-    s3_client = get_s3_client(s3_settings)
+    s3_client = ObjectStorage(s3_settings).get_client()
 
     if prefix:
         delete_object_list = map(
