@@ -1,5 +1,6 @@
 import io
 import logging
+from contextlib import contextmanager
 from datetime import datetime
 from typing import Generator, Iterable
 
@@ -42,9 +43,7 @@ def get_absolute_path(path: str) -> str:
 
 
 def put_object(bucket_name: str, path: str, data: io.BytesIO, length: int, part_size: int = 0) -> str:
-    s3_client = ObjectStorage(s3_settings).get_client()
-
-    if s3_client:
+    if s3_client := ObjectStorage(s3_settings).get_client():
         result = s3_client.put_object(bucket_name, path, data, length, part_size=part_size)
 
         logger.debug(f'Stored object into object storage: {bucket_name}:{path}')
@@ -54,10 +53,9 @@ def put_object(bucket_name: str, path: str, data: io.BytesIO, length: int, part_
         logger.warning(f'No S3 client available, skipping object put')
 
 
+@contextmanager
 def get_object_stream(bucket_name: str, path: str):
-    s3_client = ObjectStorage(s3_settings).get_client()
-
-    if s3_client:
+    if s3_client := ObjectStorage(s3_settings).get_client():
         logger.debug(f'Getting object from object storage: {bucket_name}:{path}')
 
         try:
@@ -67,19 +65,17 @@ def get_object_stream(bucket_name: str, path: str):
 
             raise
 
-        return response
+        yield response
+
+        response.close()
+        response.release_conn()
     else:
         logger.warning(f'No S3 client available, skipping object put')
 
 
 def get_object(bucket_name: str, path: str) -> bytes:
-    response = get_object_stream(bucket_name, path)
-
-    try:
-        body = response.read()
-    finally:
-        response.close()
-        response.release_conn()
+    with get_object_stream(bucket_name, path) as stream:
+        body = stream.read()
 
     logger.debug(f'Loaded object from object storage: {bucket_name}:{path}')
 
