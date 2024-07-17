@@ -1,7 +1,12 @@
+import logging
 import os
 import sys
 import tarfile
 from io import BytesIO
+
+
+logger = logging.getLogger(__name__)
+BLOCK_SIZE = 4096
 
 
 class FileStream(object):
@@ -28,7 +33,7 @@ class FileStream(object):
 
 
 def stream_build_tar(in_filename, streaming_fp):
-    tar = tarfile.TarFile.open(out_filename, 'w|gz', streaming_fp)
+    tar = tarfile.TarFile.open('test.tar.gz', 'w|gz', streaming_fp)
 
     stat = os.stat(in_filename)
 
@@ -78,25 +83,23 @@ def stream_build_tar(in_filename, streaming_fp):
     yield
 
 
-BLOCK_SIZE = 4096
+def main():
+    if len(sys.argv) != 3:
+        print('Usage: %s in_filename out_filename' % sys.argv[0])
+        sys.exit(1)
 
+    in_filename = sys.argv[1]
+    out_filename = sys.argv[2]
 
-if len(sys.argv) != 3:
-    print('Usage: %s in_filename out_filename' % sys.argv[0])
-    sys.exit(1)
+    streaming_fp = FileStream()
 
-in_filename = sys.argv[1]
-out_filename = sys.argv[2]
+    with open(out_filename, 'wb') as out_fp:
+        for i in stream_build_tar(in_filename, streaming_fp):
+            s = streaming_fp.pop()
 
-streaming_fp = FileStream()
+            if len(s) > 0:
+                print('Writing %d bytes...' % len(s))
+                out_fp.write(s)
+                out_fp.flush()
 
-with open(out_filename, 'wb') as out_fp:
-    for i in stream_build_tar(in_filename, streaming_fp):
-        s = streaming_fp.pop()
-
-        if len(s) > 0:
-            print('Writing %d bytes...' % len(s))
-            out_fp.write(s)
-            out_fp.flush()
-
-print('Wrote tar file to %s' % out_filename)
+    print('Wrote tar file to %s' % out_filename)

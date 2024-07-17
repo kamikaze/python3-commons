@@ -24,16 +24,25 @@ class GeneratedStream(io.BytesIO):
         self.generator = generator
 
     def read(self, size: int = -1):
-        if size == -1:
-            size = 4096
+        if size < 0:
+            while True:
+                try:
+                    chunk = next(self.generator)
+                except StopIteration:
+                    break
+                else:
+                    self.write(chunk)
+        else:
+            total_written_size = 0
 
-        while self.tell() < size:
-            try:
-                chunk = next(self.generator)
-            except StopIteration:
-                break
-
-            self.write(chunk)
+            while total_written_size < size:
+                try:
+                    chunk = next(self.generator)
+                except StopIteration:
+                    break
+                else:
+                    self.write(chunk)
+                    total_written_size += len(chunk)
 
         self.seek(0)
 
@@ -45,6 +54,8 @@ class GeneratedStream(io.BytesIO):
 
             if unread_data_size > 0:
                 buf[:unread_data_size] = buf[pos:pos+unread_data_size]
+
+            del buf
 
             self.seek(0)
             self.truncate(unread_data_size)
@@ -66,7 +77,6 @@ def generate_archive(objects: Iterable[tuple[str, datetime, bytes]],
             info.size = len(content)
             info.mtime = last_modified.timestamp()
             archive.addfile(info, io.BytesIO(content))
-            archive.fileobj.flush()
 
             buffer.seek(0)
 
