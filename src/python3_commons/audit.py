@@ -2,6 +2,7 @@ import asyncio
 import io
 import logging
 import tarfile
+from bz2 import BZ2Compressor
 from datetime import datetime, timedelta, UTC
 from typing import Generator, Iterable
 from uuid import uuid4
@@ -92,6 +93,17 @@ def generate_archive(objects: Iterable[tuple[str, datetime, bytes]],
             buffer.truncate(0)
 
 
+def generate_bzip2(chunks: Generator[bytes, None, None]) -> Generator[bytes, None, None]:
+    compressor = BZ2Compressor()
+
+    for chunk in chunks:
+        if compressed_chunk := compressor.compress(chunk):
+            yield compressed_chunk
+
+    if compressed_chunk := compressor.flush():
+        yield compressed_chunk
+
+
 def write_audit_data_sync(settings: S3Settings, key: str, data: bytes):
     if settings.s3_secret_access_key:
         try:
@@ -123,7 +135,8 @@ async def archive_audit_data(root_path: str = 'audit'):
         logger.info(f'Compacting files in: {date_path}')
 
         generator = generate_archive(objects, chunk_size=5*1024*1024)
-        archive_stream = GeneratedStream(generator)
+        bzip2_generator = generate_bzip2(generator)
+        archive_stream = GeneratedStream(bzip2_generator)
 
         archive_path = object_storage.get_absolute_path(f'audit/.archive/{year}_{month:02}_{day:02}.tar.bz2')
         object_storage.put_object(bucket_name, archive_path, archive_stream, -1, part_size=5*1024*1024)
