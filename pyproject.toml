@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "python3-commons"
-version = "0.5.38"
+version = "0.5.39"
 description = "Re-usable Python3 code"
 authors = [
     {name = "Oleg Korsak", email = "kamikaze.is.waiting.you@gmail.com"}
@@ -22,7 +22,7 @@ dependencies = [
     "minio==7.2.13",
     "msgpack==1.1.0",
     "msgspec==0.18.6",
-    "pydantic[email]==2.10.3",
+    "pydantic[email]==2.10.4",
     "pydantic-settings==2.7.0",
     "zeep==4.3.1"
     # Replace msgspec Git dependency for PyPI compatibility, consider releasing
