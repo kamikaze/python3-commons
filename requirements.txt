@@ -1,4 +1,4 @@
-aiohttp==3.11.11
+aiohttp[speedups]==3.11.11
 asyncpg==0.30.0
 lxml==5.3.0
 minio==7.2.15

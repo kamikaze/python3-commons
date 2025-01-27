@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "python3-commons"
-version = "0.6.3"
+version = "0.6.4"
 description = "Re-usable Python3 code"
 authors = [
     {name = "Oleg Korsak", email = "kamikaze.is.waiting.you@gmail.com"}
@@ -17,7 +17,7 @@ classifiers = [
 ]
 keywords = []
 dependencies = [
-    "aiohttp==3.11.11",
+    "aiohttp[speedups]==3.11.11",
     "asyncpg==0.30.0",
     "lxml==5.3.0",
     "minio==7.2.15",
