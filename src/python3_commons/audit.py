@@ -92,6 +92,17 @@ def generate_archive(objects: Iterable[tuple[str, datetime, bytes]],
             buffer.seek(0)
             buffer.truncate(0)
 
+    while True:
+        chunk = buffer.read(chunk_size)
+
+        if not chunk:
+            break
+
+        yield chunk
+
+    buffer.seek(0)
+    buffer.truncate(0)
+
 
 def generate_bzip2(chunks: Generator[bytes, None, None]) -> Generator[bytes, None, None]:
     compressor = BZ2Compressor()
