@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime, date
 from decimal import Decimal
+from uuid import UUID, uuid4
 
 import msgspec
 import pytest
@@ -40,6 +41,11 @@ def data_dataclass():
     )
 
 
+class SubStruc(msgspec.Struct):
+    uid: UUID
+    name: str
+
+
 class TestStruct(msgspec.Struct):
     a: int
     b: str
@@ -47,17 +53,19 @@ class TestStruct(msgspec.Struct):
     d: datetime
     e: date
     f: Decimal
+    sub: SubStruc
 
 
 @pytest.fixture
-def data_struct():
+def data_struct() -> TestStruct:
     return TestStruct(
         a=1,
         b='B',
         c=None,
         d=datetime(2023, 7, 25, 1, 2, 3),
         e=date(2023, 7, 24),
-        f=Decimal('1.23')
+        f=Decimal('1.23'),
+        sub=SubStruc(uid=uuid4(), name='sub-struct')
     )
 
 

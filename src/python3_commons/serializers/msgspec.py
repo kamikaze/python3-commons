@@ -7,7 +7,7 @@ from datetime import datetime, date
 from typing import Any
 
 from msgspec import msgpack
-from msgspec.msgpack import Ext
+from msgspec.msgpack import encode, Ext
 
 from python3_commons.serializers.json import CustomJSONEncoder
 
@@ -42,6 +42,20 @@ def ext_hook(code: int, data: memoryview) -> Any:
 
 MSGPACK_ENCODER = msgpack.Encoder(enc_hook=enc_hook)
 MSGPACK_DECODER = msgpack.Decoder(ext_hook=ext_hook)
+MSGPACK_DECODER_NATIVE = msgpack.Decoder()
+
+
+def serialize_msgpack_native(data) -> bytes:
+    return encode(data)
+
+
+def deserialize_msgpack_native(data: bytes, data_type=None):
+    if data_type:
+        result = msgpack.decode(data, type=data_type)
+    else:
+        result = MSGPACK_DECODER_NATIVE.decode(data)
+
+    return result
 
 
 def serialize_msgpack(data) -> bytes:

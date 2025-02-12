@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "python3-commons"
-version = "0.6.6"
+version = "0.6.7"
 description = "Re-usable Python3 code"
 authors = [
     {name = "Oleg Korsak", email = "kamikaze.is.waiting.you@gmail.com"}
@@ -48,7 +48,6 @@ exclude = ["tests"]
 
 [tool.pytest.ini_options]
 addopts = [
-    "--cov python3_commons --cov-report term-missing",
     "--verbose"
 ]
 norecursedirs = ["dist", "build", ".tox"]
