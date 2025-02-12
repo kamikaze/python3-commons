@@ -1,4 +1,10 @@
+from msgspec import Struct
+
 from python3_commons.serializers import msgspec
+
+
+class AStruct(Struct):
+    pass
 
 
 def test_encode_decode_dict_to_msgpack(data_dict):
@@ -17,6 +23,7 @@ def test_encode_decode_dict_to_msgpack(data_dict):
 
 def test_encode_decode_dataclass_to_msgpack(data_dataclass):
     binary_data = msgspec.serialize_msgpack(data_dataclass)
+
     assert msgspec.deserialize_msgpack(binary_data, data_type=data_dataclass.__class__) == data_dataclass
 
 
