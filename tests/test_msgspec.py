@@ -2,6 +2,9 @@ from python3_commons.serializers import msgspec
 
 
 def test_encode_decode_dict_to_msgpack(data_dict):
+    """
+    enc_hook is not being called on complex types like dict
+    """
     expected_result = {
         'A': 1,
         'B': 'B',
