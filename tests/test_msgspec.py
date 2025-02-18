@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from python3_commons.serializers import msgspec
 
 
@@ -15,7 +17,7 @@ def test_encode_decode_dict_to_msgpack(data_dict):
     }
     binary_data = msgspec.serialize_msgpack(data_dict)
 
-    assert msgspec.deserialize_msgpack(binary_data) == expected_result
+    assert msgspec.deserialize_msgpack(binary_data) == data_dict
 
 
 def test_encode_decode_dataclass_to_msgpack(data_dataclass):
@@ -36,3 +38,19 @@ def test_encode_decode_struct_to_msgpack_native(data_struct):
     decoded_struct = msgspec.deserialize_msgpack_native(binary_data, data_struct.__class__)
 
     assert decoded_struct == data_struct
+
+
+def test_encode_decode_decimal_to_msgpack():
+    value = Decimal('1.2345')
+    binary_data = msgspec.serialize_msgpack(value)
+    decoded_value = msgspec.deserialize_msgpack(binary_data)
+
+    assert decoded_value == value
+
+
+def test_encode_decode_str_to_msgpack():
+    value = '1.2345'
+    binary_data = msgspec.serialize_msgpack(value)
+    decoded_value = msgspec.deserialize_msgpack(binary_data)
+
+    assert decoded_value == value
