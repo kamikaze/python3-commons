@@ -3,6 +3,7 @@ import io
 import logging
 import tarfile
 from bz2 import BZ2Compressor
+from collections import deque
 from datetime import datetime, timedelta, UTC
 from typing import Generator, Iterable
 from uuid import uuid4
@@ -42,8 +43,7 @@ class GeneratedStream(io.BytesIO):
                 except StopIteration:
                     break
                 else:
-                    self.write(chunk)
-                    total_written_size += len(chunk)
+                    total_written_size += self.write(chunk)
 
         self.seek(0)
 
@@ -69,7 +69,7 @@ class GeneratedStream(io.BytesIO):
 
 def generate_archive(objects: Iterable[tuple[str, datetime, bytes]],
                      chunk_size: int = 4096) -> Generator[bytes, None, None]:
-    buffer = io.BytesIO()
+    buffer = deque()
 
     with tarfile.open(fileobj=buffer, mode='w') as archive:
         for name, last_modified, content in objects:
@@ -79,18 +79,22 @@ def generate_archive(objects: Iterable[tuple[str, datetime, bytes]],
             info.mtime = last_modified.timestamp()
             archive.addfile(info, io.BytesIO(content))
 
-            buffer.seek(0)
+            buffer_length = buffer.tell()
 
-            while True:
+            while buffer_length >= chunk_size:
+                buffer.seek(0)
                 chunk = buffer.read(chunk_size)
+                chunk_len = len(chunk)
 
                 if not chunk:
                     break
 
                 yield chunk
 
-            buffer.seek(0)
-            buffer.truncate(0)
+                buffer.seek(0)
+                buffer.truncate(chunk_len)
+                buffer.seek(0, io.SEEK_END)
+                buffer_length = buffer.tell()
 
     while True:
         chunk = buffer.read(chunk_size)
@@ -145,7 +149,7 @@ async def archive_audit_data(root_path: str = 'audit'):
     if objects := object_storage.get_objects(bucket_name, date_path, recursive=True):
         logger.info(f'Compacting files in: {date_path}')
 
-        generator = generate_archive(objects, chunk_size=5*1024*1024)
+        generator = generate_archive(objects, chunk_size=900_000)
         bzip2_generator = generate_bzip2(generator)
         archive_stream = GeneratedStream(bzip2_generator)
 

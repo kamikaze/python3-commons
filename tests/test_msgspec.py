@@ -43,7 +43,7 @@ def test_encode_decode_struct_to_msgpack_native(data_struct):
 def test_encode_decode_decimal_to_msgpack():
     value = Decimal('1.2345')
     binary_data = msgspec.serialize_msgpack(value)
-    decoded_value = msgspec.deserialize_msgpack(binary_data)
+    decoded_value = msgspec.deserialize_msgpack(binary_data, Decimal)
 
     assert decoded_value == value
 

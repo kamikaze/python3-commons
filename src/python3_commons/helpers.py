@@ -1,10 +1,13 @@
-import datetime
 import logging
 import shlex
 import threading
-
+from datetime import date, datetime, timedelta
 from decimal import Decimal, ROUND_HALF_UP
-from typing import Mapping
+from json import dumps
+from typing import Literal, Mapping, Sequence
+from urllib.parse import urlencode
+
+from python3_commons.serializers.json import CustomJSONEncoder
 
 logger = logging.getLogger(__name__)
 
@@ -30,23 +33,23 @@ class SingletonMeta(type):
                     return instance
 
 
-def date_from_string(string: str, fmt: str = '%d.%m.%Y') -> datetime.date:
+def date_from_string(string: str, fmt: str = '%d.%m.%Y') -> date:
     try:
-        return datetime.datetime.strptime(string, fmt).date()
+        return datetime.strptime(string, fmt).date()
     except ValueError:
-        return datetime.date.fromisoformat(string)
+        return date.fromisoformat(string)
 
 
-def datetime_from_string(string: str) -> datetime.datetime:
+def datetime_from_string(string: str) -> datetime:
     try:
-        return datetime.datetime.strptime(string, '%d.%m.%Y %H:%M:%S')
+        return datetime.strptime(string, '%d.%m.%Y %H:%M:%S')
     except ValueError:
-        return datetime.datetime.fromisoformat(string)
+        return datetime.fromisoformat(string)
 
 
 def date_range(start_date, end_date):
     for n in range(int((end_date - start_date).days + 1)):
-        yield start_date + datetime.timedelta(days=n)
+        yield start_date + timedelta(days=n)
 
 
 def tries(times):
@@ -72,16 +75,33 @@ def round_decimal(value: Decimal, decimal_places=2, rounding_mode=ROUND_HALF_UP)
         return value
 
 
-def request_to_curl(url: str, method: str, headers: Mapping, body: bytes | None = None) -> str:
-    curl_cmd = ['curl', '-i', '-X', method, shlex.quote(url)]
+def request_to_curl(
+        url: str,
+        query: Mapping | None = None,
+        method: Literal['get', 'post', 'put', 'patch', 'options', 'head', 'delete'] = 'get',
+        headers: Mapping | None = None,
+        json: Mapping | Sequence | str | None = None,
+        data: bytes | None = None
+) -> str:
+    if query:
+        url = f'{url}?{urlencode(query)}'
 
-    for key, value in headers.items():
-        header_line = f'{key}: {value}'
+    curl_cmd = ['curl', '-i', '-X', method.upper(), shlex.quote(url)]
+
+    if headers:
+        for key, value in headers.items():
+            header_line = f'{key}: {value}'
+            curl_cmd.append('-H')
+            curl_cmd.append(shlex.quote(header_line))
+
+    if json:
         curl_cmd.append('-H')
-        curl_cmd.append(shlex.quote(header_line))
+        curl_cmd.append(shlex.quote('Content-Type: application/json'))
 
-    if body is not None:
-        curl_cmd.append('--data')
-        curl_cmd.append(shlex.quote(body.decode('utf-8')))
+        curl_cmd.append('-d')
+        curl_cmd.append(shlex.quote(dumps(json, cls=CustomJSONEncoder)))
+    elif data:
+        curl_cmd.append('-d')
+        curl_cmd.append(shlex.quote(data.decode('utf-8')))
 
     return ' '.join(curl_cmd)
