@@ -3,7 +3,7 @@ from datetime import datetime, UTC
 from json import dumps
 from typing import AsyncGenerator, Literal, Mapping, Sequence
 
-from aiohttp import ClientSession
+from aiohttp import ClientSession, client_exceptions
 from aiohttp.web_response import Response
 from pydantic import HttpUrl
 
@@ -49,17 +49,27 @@ async def request(
             )
     client_method = getattr(client, method)
 
-    if method == 'get':
-        async with client_method(url, params=query) as response:
-            yield response
-    else:
-        if json:
-            data = dumps(json, cls=CustomJSONEncoder).encode('utf-8')
+    try:
+        if method == 'get':
+            async with client_method(url, params=query) as response:
+                yield response
+        else:
+            if json:
+                data = dumps(json, cls=CustomJSONEncoder).encode('utf-8')
 
-            if headers:
-                headers = {**headers, 'Content-Type': 'application/json'}
-            else:
-                headers = {'Content-Type': 'application/json'}
+                if headers:
+                    headers = {**headers, 'Content-Type': 'application/json'}
+                else:
+                    headers = {'Content-Type': 'application/json'}
 
-        async with client_method(url, params=query, data=data, headers=headers) as response:
-            yield response
+            async with client_method(url, params=query, data=data, headers=headers) as response:
+                yield response
+    except client_exceptions.ClientOSError as e:
+        if e.errno == 32:
+            raise ConnectionResetError('Broken pipe') from e
+        elif e.errno == 104:
+            raise ConnectionResetError('Connection reset by peer') from e
+
+        raise
+    except client_exceptions.ServerDisconnectedError as e:
+        raise ConnectionResetError('Server disconnected') from e

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "python3-commons"
-version = "0.6.10"
+version = "0.6.11"
 description = "Re-usable Python3 code"
 authors = [
     {name = "Oleg Korsak", email = "kamikaze.is.waiting.you@gmail.com"}
