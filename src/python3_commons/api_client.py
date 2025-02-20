@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from datetime import datetime, UTC
+from json import dumps
 from typing import AsyncGenerator, Literal, Mapping, Sequence
 
 from aiohttp import ClientSession
@@ -9,6 +10,7 @@ from pydantic import HttpUrl
 from python3_commons import audit
 from python3_commons.conf import s3_settings
 from python3_commons.helpers import request_to_curl
+from python3_commons.serializers.json import CustomJSONEncoder
 
 
 @asynccontextmanager
@@ -45,12 +47,19 @@ async def request(
                 f'{date_path}/{audit_name}/{uri_path}/{method}_{timestamp}_request.txt',
                 curl_request.encode('utf-8')
             )
-
     client_method = getattr(client, method)
 
     if method == 'get':
         async with client_method(url, params=query) as response:
             yield response
     else:
-        async with client_method(url, params=query, json=json, data=data) as response:
+        if json:
+            data = dumps(json, cls=CustomJSONEncoder).encode('utf-8')
+
+            if headers:
+                headers = {**headers, 'Content-Type': 'application/json'}
+            else:
+                headers = {'Content-Type': 'application/json'}
+
+        async with client_method(url, params=query, data=data, headers=headers) as response:
             yield response
