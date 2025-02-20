@@ -135,7 +135,7 @@ def write_audit_data_sync(settings: S3Settings, key: str, data: bytes):
 
 
 async def write_audit_data(settings: S3Settings, key: str, data: bytes):
-    write_audit_data_sync(settings, key, data)
+    await asyncio.to_thread(write_audit_data_sync, settings, key, data)
 
 
 async def archive_audit_data(root_path: str = 'audit'):
