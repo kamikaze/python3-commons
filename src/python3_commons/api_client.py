@@ -2,15 +2,35 @@ from contextlib import asynccontextmanager
 from datetime import datetime, UTC
 from json import dumps
 from typing import AsyncGenerator, Literal, Mapping, Sequence
+from uuid import uuid4
 
-from aiohttp import ClientSession, client_exceptions
-from aiohttp.web_response import Response
+from aiohttp import ClientResponse, ClientSession, client_exceptions
 from pydantic import HttpUrl
 
 from python3_commons import audit
 from python3_commons.conf import s3_settings
 from python3_commons.helpers import request_to_curl
 from python3_commons.serializers.json import CustomJSONEncoder
+
+
+async def _store_response_for_audit(
+        response: ClientResponse,
+        audit_name: str,
+        uri_path: str,
+        method: str,
+        request_id: str
+):
+    response_text = await response.text()
+
+    now = datetime.now(tz=UTC)
+    date_path = now.strftime('%Y/%m/%d')
+    timestamp = now.strftime('%H%M%S_%f')
+
+    await audit.write_audit_data(
+        s3_settings,
+        f'{date_path}/{audit_name}/{uri_path}/{method}_{timestamp}_{request_id}_response.txt',
+        response_text.encode('utf-8')
+    )
 
 
 @asynccontextmanager
@@ -24,10 +44,11 @@ async def request(
     json: Mapping | Sequence | str | None = None,
     data: bytes | None = None,
     audit_name: str | None = None
-) -> AsyncGenerator[Response]:
+) -> AsyncGenerator[ClientResponse]:
     now = datetime.now(tz=UTC)
     date_path = now.strftime('%Y/%m/%d')
     timestamp = now.strftime('%H%M%S_%f')
+    request_id = str(uuid4())[-12:]
     uri_path = uri[:-1] if uri.endswith('/') else uri
     uri_path = uri_path[1:] if uri_path.startswith('/') else uri_path
     url = f'{base_url}{uri}'
@@ -44,7 +65,7 @@ async def request(
         if curl_request:
             await audit.write_audit_data(
                 s3_settings,
-                f'{date_path}/{audit_name}/{uri_path}/{method}_{timestamp}_request.txt',
+                f'{date_path}/{audit_name}/{uri_path}/{method}_{timestamp}_{request_id}_request.txt',
                 curl_request.encode('utf-8')
             )
     client_method = getattr(client, method)
@@ -52,6 +73,9 @@ async def request(
     try:
         if method == 'get':
             async with client_method(url, params=query) as response:
+                if audit_name:
+                    await _store_response_for_audit(response, audit_name, uri_path, method, request_id)
+
                 yield response
         else:
             if json:
@@ -63,6 +87,9 @@ async def request(
                     headers = {'Content-Type': 'application/json'}
 
             async with client_method(url, params=query, data=data, headers=headers) as response:
+                if audit_name:
+                    await _store_response_for_audit(response, audit_name, uri_path, method, request_id)
+
                 yield response
     except client_exceptions.ClientOSError as e:
         if e.errno == 32:
