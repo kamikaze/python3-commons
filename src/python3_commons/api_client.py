@@ -51,7 +51,7 @@ async def request(
     request_id = str(uuid4())[-12:]
     uri_path = uri[:-1] if uri.endswith('/') else uri
     uri_path = uri_path[1:] if uri_path.startswith('/') else uri_path
-    url = f'{base_url}{uri}'
+    url = f'{u[:-1] if (u := str(base_url).endswith('/')) else u}{uri}'
 
     if audit_name:
         curl_request = None
