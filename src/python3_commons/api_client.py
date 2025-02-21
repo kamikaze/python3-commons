@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, UTC
 from json import dumps
@@ -11,6 +12,9 @@ from python3_commons import audit
 from python3_commons.conf import s3_settings
 from python3_commons.helpers import request_to_curl
 from python3_commons.serializers.json import CustomJSONEncoder
+
+
+logger = logging.getLogger(__name__)
 
 
 async def _store_response_for_audit(
@@ -71,9 +75,11 @@ async def request(
             )
     client_method = getattr(client, method)
 
+    logger.debug(f'Requesting {method} {url}')
+
     try:
         if method == 'get':
-            async with client_method(url, params=query) as response:
+            async with client_method(url, params=query, headers=headers) as response:
                 if audit_name:
                     await _store_response_for_audit(response, audit_name, uri_path, method, request_id)
 
