@@ -22,15 +22,16 @@ async def _store_response_for_audit(
 ):
     response_text = await response.text()
 
-    now = datetime.now(tz=UTC)
-    date_path = now.strftime('%Y/%m/%d')
-    timestamp = now.strftime('%H%M%S_%f')
+    if response_text:
+        now = datetime.now(tz=UTC)
+        date_path = now.strftime('%Y/%m/%d')
+        timestamp = now.strftime('%H%M%S_%f')
 
-    await audit.write_audit_data(
-        s3_settings,
-        f'{date_path}/{audit_name}/{uri_path}/{method}_{timestamp}_{request_id}_response.txt',
-        response_text.encode('utf-8')
-    )
+        await audit.write_audit_data(
+            s3_settings,
+            f'{date_path}/{audit_name}/{uri_path}/{method}_{timestamp}_{request_id}_response.txt',
+            response_text.encode('utf-8')
+        )
 
 
 @asynccontextmanager
