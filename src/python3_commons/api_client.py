@@ -63,7 +63,7 @@ async def request(
         curl_request = None
 
         if method == 'get':
-            if query:
+            if headers or query:
                 curl_request = request_to_curl(url, query, method, headers)
         else:
             curl_request = request_to_curl(url, query, method, headers, json, data)
