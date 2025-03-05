@@ -1,6 +1,7 @@
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, UTC
+from http import HTTPStatus
 from json import dumps
 from typing import AsyncGenerator, Literal, Mapping, Sequence
 from uuid import uuid4
@@ -83,7 +84,20 @@ async def request(
                 if audit_name:
                     await _store_response_for_audit(response, audit_name, uri_path, method, request_id)
 
-                yield response
+                if response.ok:
+                    yield response
+                else:
+                    match response.status:
+                        case HTTPStatus.UNAUTHORIZED:
+                            raise PermissionError('Unauthorized')
+                        case HTTPStatus.FORBIDDEN:
+                            raise PermissionError('Forbidden')
+                        case HTTPStatus.NOT_FOUND:
+                            raise LookupError('Not found')
+                        case HTTPStatus.BAD_REQUEST:
+                            raise ValueError('Bad request')
+                        case _:
+                            response.raise_for_status()
         else:
             if json:
                 data = dumps(json, cls=CustomJSONEncoder).encode('utf-8')
