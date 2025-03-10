@@ -1,4 +1,4 @@
-from pydantic import SecretStr
+from pydantic import SecretStr, PostgresDsn
 from pydantic_settings import BaseSettings
 
 
@@ -6,6 +6,10 @@ class CommonSettings(BaseSettings):
     logging_level: str = 'INFO'
     logging_format: str = '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
     logging_formatter: str = 'default'
+
+
+class DBSettings(BaseSettings):
+    db_dns: PostgresDsn | None = None
 
 
 class S3Settings(BaseSettings):
@@ -20,4 +24,5 @@ class S3Settings(BaseSettings):
 
 
 settings = CommonSettings()
+db_settings = DBSettings()
 s3_settings = S3Settings()
