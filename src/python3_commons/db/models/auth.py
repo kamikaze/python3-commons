@@ -22,12 +22,6 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
 
     username: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
     group_id: Mapped[int | None] = mapped_column(BIGINT, ForeignKey('user_groups.id'))
-    role_id: Mapped[uuid.UUID | None] = mapped_column(
-        GUID,
-        ForeignKey('permissions.id', name='fk_api_key_permission_api_key', ondelete='RESTRICT'),
-        nullable=False,
-        index=True,
-    )
 
 
 class ApiKey(BaseDBUUIDModel, Base):
