@@ -9,7 +9,7 @@ class CommonSettings(BaseSettings):
 
 
 class DBSettings(BaseSettings):
-    db_dns: PostgresDsn | None = None
+    db_dsn: PostgresDsn | None = None
 
 
 class S3Settings(BaseSettings):
