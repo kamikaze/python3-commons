@@ -34,4 +34,4 @@ class ApiKey(BaseDBUUIDModel, Base):
     )
     partner_name: Mapped[str] = mapped_column(String, unique=True)
     key: Mapped[str] = mapped_column(String, unique=True)
-    expires_at: Mapped[AwareDatetime] = mapped_column(DateTime(timezone=True))
+    expires_at: Mapped[AwareDatetime | None] = mapped_column(DateTime(timezone=True))
