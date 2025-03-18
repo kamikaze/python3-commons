@@ -20,16 +20,23 @@ def get_query(search: Mapping[str, str] | None = None,
             3: exact match if True, LIKE %value% if False
     """
 
-    if order_by:
-        if order_by.startswith('-'):
-            direction = desc
-            order_by = order_by[1:]
-        else:
-            direction = asc
+    order_by_cols = {}
 
-        order_by_clause = direction(columns[order_by][0])
+    if order_by:
+        for order_by_col in order_by.split(','):
+            if order_by_col.startswith('-'):
+                direction = desc
+                order_by_col = order_by_col[1:]
+            else:
+                direction = asc
+
+            order_by_cols[order_by_col] = direction
+
+        order_by_clauses = tuple(
+            direction(columns[order_by_col][0]) for order_by_col, direction in order_by_cols.items()
+        )
     else:
-        order_by_clause = None
+        order_by_clauses = None
 
     if search:
         where_parts = [
@@ -58,4 +65,4 @@ def get_query(search: Mapping[str, str] | None = None,
     else:
         where_clause = None
 
-    return where_clause, order_by_clause
+    return where_clause, order_by_clauses
