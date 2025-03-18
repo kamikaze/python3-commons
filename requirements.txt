@@ -1,4 +1,4 @@
-aiohttp[speedups]~=3.11.13
+aiohttp[speedups]~=3.11.14
 asyncpg~=0.30.0
 fastapi-users-db-sqlalchemy~=7.0.0
 fastapi-users[sqlalchemy]~=14.0.1
