@@ -1,12 +1,13 @@
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, UTC
+from enum import Enum
 from http import HTTPStatus
 from json import dumps
 from typing import AsyncGenerator, Literal, Mapping, Sequence
 from uuid import uuid4
 
-from aiohttp import ClientResponse, ClientSession, client_exceptions
+from aiohttp import ClientResponse, ClientSession, client_exceptions, ClientTimeout
 from pydantic import HttpUrl
 
 from python3_commons import audit
@@ -49,6 +50,7 @@ async def request(
     headers: Mapping | None = None,
     json: Mapping | Sequence | str | None = None,
     data: bytes | None = None,
+    timeout: ClientTimeout | Enum | None = None,
     audit_name: str | None = None
 ) -> AsyncGenerator[ClientResponse]:
     now = datetime.now(tz=UTC)
@@ -80,7 +82,7 @@ async def request(
 
     try:
         if method == 'get':
-            async with client_method(url, params=query, headers=headers) as response:
+            async with client_method(url, params=query, headers=headers, timeout=timeout) as response:
                 if audit_name:
                     await _store_response_for_audit(response, audit_name, uri_path, method, request_id)
 
@@ -107,7 +109,7 @@ async def request(
                 else:
                     headers = {'Content-Type': 'application/json'}
 
-            async with client_method(url, params=query, data=data, headers=headers) as response:
+            async with client_method(url, params=query, data=data, headers=headers, timeout=timeout) as response:
                 if audit_name:
                     await _store_response_for_audit(response, audit_name, uri_path, method, request_id)
 
