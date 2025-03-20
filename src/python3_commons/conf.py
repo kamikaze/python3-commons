@@ -1,5 +1,5 @@
-from pydantic import SecretStr, PostgresDsn
-from pydantic_settings import BaseSettings
+from pydantic import SecretStr, PostgresDsn, Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class CommonSettings(BaseSettings):
@@ -9,15 +9,14 @@ class CommonSettings(BaseSettings):
 
 
 class DBSettings(BaseSettings):
-    dsn: PostgresDsn | None = None
+    model_config = SettingsConfigDict(env_prefix='DB_')
+
+    dsn: PostgresDsn | None = Field(default=None, serialization_alias='url')
     echo: bool = False
     pool_size: int = 20
     max_overflow: int = 0
     pool_timeout: int = 30
     pool_recycle: int = 1800  # 30 minutes
-
-    class Config:
-        env_prefix = 'DB_'
 
 
 class S3Settings(BaseSettings):

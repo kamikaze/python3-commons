@@ -15,25 +15,31 @@ Base = declarative_base(metadata=metadata)
 
 
 class AsyncSessionManager:
-    def __init__(self, config: Mapping[str: DBSettings]):
-        self.config: Mapping[str: DBSettings] = config
+    def __init__(self, db_settings: Mapping[str, DBSettings]):
+        self.db_settings: Mapping[str, DBSettings] = db_settings
         self.engines: dict[str, AsyncEngine] = {}
         self.session_makers: dict = {}
 
-    def get_config(self, name: str) -> Mapping[str, str | int]:
+    def get_db_settings(self, name: str) -> DBSettings:
         try:
-            return self.config[name]
+            return self.db_settings[name]
         except KeyError:
-            logger.error(f'Missing database config: {name}')
+            logger.error(f'Missing database settings: {name}')
 
             raise
+
+    def async_engine_from_db_settings(self, name):
+        db_settings = self.get_db_settings(name)
+        engine = async_engine_from_config(db_settings.model_dump())
+
+        return engine
 
     def get_engine(self, name: str) -> AsyncEngine:
         try:
             engine = self.engines[name]
         except KeyError:
             logger.debug(f'Creating engine: {name}')
-            engine = async_engine_from_config(self.config[name])
+            engine = self.async_engine_from_db_settings(name)
             self.engines[name] = engine
 
         return engine
