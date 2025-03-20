@@ -9,7 +9,15 @@ class CommonSettings(BaseSettings):
 
 
 class DBSettings(BaseSettings):
-    db_dsn: PostgresDsn | None = None
+    dsn: PostgresDsn | None = None
+    echo: bool = False,
+    pool_size: int = 20,
+    max_overflow: int = 0,
+    pool_timeout: int = 30,
+    pool_recycle: int = 1800,  # 30 minutes
+
+    class Config:
+        env_prefix = 'DB_'
 
 
 class S3Settings(BaseSettings):

@@ -1,60 +1,72 @@
-import asyncio
 import contextlib
 import logging
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Callable, Mapping
 
-from asyncpg import CannotConnectNowError
-from pydantic import PostgresDsn
 from sqlalchemy import MetaData
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, AsyncEngine, async_engine_from_config
 from sqlalchemy.ext.asyncio.session import async_sessionmaker
 from sqlalchemy.orm import declarative_base
 
-from python3_commons.conf import db_settings
+from python3_commons.conf import DBSettings
 
 logger = logging.getLogger(__name__)
-
 metadata = MetaData()
 Base = declarative_base(metadata=metadata)
-engine = create_async_engine(
-    str(db_settings.db_dsn),
-    # echo=True,
-    pool_size=20,
-    max_overflow=0,
-    pool_timeout=30,
-    pool_recycle=1800,  # 30 minutes
-)
-async_session_maker = async_sessionmaker(engine, expire_on_commit=False)
 
 
-async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
-    async with async_session_maker() as session:
-        yield session
+class AsyncSessionManager:
+    def __init__(self, config: Mapping[str: DBSettings]):
+        self.config: Mapping[str: DBSettings] = config
+        self.engines: dict[str, AsyncEngine] = {}
+        self.session_makers: dict = {}
 
-
-get_async_session_context = contextlib.asynccontextmanager(get_async_session)
-
-
-async def is_healthy(pg) -> bool:
-    return await pg.fetchval('SELECT 1 FROM alembic_version;') == 1
-
-
-async def connect_to_db(database, dsn: PostgresDsn):
-    logger.info('Waiting for services')
-    logger.debug(f'DB_DSN: {dsn}')
-    timeout = 0.001
-    total_timeout = 0
-
-    for i in range(15):
+    def get_config(self, name: str) -> Mapping[str, str | int]:
         try:
-            await database.connect()
-        except (ConnectionRefusedError, CannotConnectNowError):
-            timeout *= 2
-            await asyncio.sleep(timeout)
-            total_timeout += timeout
-        else:
-            break
-    else:
-        msg = f'Unable to connect database for {int(total_timeout)}s'
-        logger.error(msg)
-        raise ConnectionRefusedError(msg)
+            return self.config[name]
+        except KeyError:
+            logger.error(f'Missing database config: {name}')
+
+            raise
+
+    def get_engine(self, name: str) -> AsyncEngine:
+        try:
+            engine = self.engines[name]
+        except KeyError:
+            logger.debug(f'Creating engine: {name}')
+            engine = async_engine_from_config(self.config[name])
+            self.engines[name] = engine
+
+        return engine
+
+    def get_session_maker(self, name: str):
+        try:
+            session_maker = self.session_makers[name]
+        except KeyError:
+            logger.debug(f'Creating session maker: {name}')
+            engine = self.get_engine(name)
+            session_maker = async_sessionmaker(engine)
+            self.session_makers[name] = session_maker
+
+        return session_maker
+
+    def get_async_session(self, name: str) -> Callable[[], AsyncGenerator[AsyncSession, None]]:
+        async def get_session() -> AsyncGenerator[AsyncSession, None]:
+            async with self.get_session_maker(name) as session:
+                yield session
+
+        return get_session
+
+    def get_session_context(self, name: str):
+        return contextlib.asynccontextmanager(lambda: self.get_async_session(name)())
+
+
+async def is_healthy(engine: AsyncEngine) -> bool:
+    try:
+        async with engine.begin() as conn:
+            result = await conn.execute('SELECT 1;')
+
+            return result.scalar() == 1
+    except Exception as e:
+        logger.error(f'Database connection is not healthy: {e}')
+
+        return False
