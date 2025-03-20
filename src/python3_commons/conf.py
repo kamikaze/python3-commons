@@ -10,11 +10,11 @@ class CommonSettings(BaseSettings):
 
 class DBSettings(BaseSettings):
     dsn: PostgresDsn | None = None
-    echo: bool | None = False,
-    pool_size: int | None = 20,
-    max_overflow: int | None = 0,
-    pool_timeout: int | None = 30,
-    pool_recycle: int | None = 1800,  # 30 minutes
+    echo: bool = False
+    pool_size: int = 20
+    max_overflow: int = 0
+    pool_timeout: int = 30
+    pool_recycle: int = 1800  # 30 minutes
 
     class Config:
         env_prefix = 'DB_'
