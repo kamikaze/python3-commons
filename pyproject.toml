@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "python3-commons"
-version = "0.8.5"
+version = "0.8.6"
 description = "Re-usable Python3 code"
 authors = [
     {name = "Oleg Korsak", email = "kamikaze.is.waiting.you@gmail.com"}
@@ -29,9 +29,6 @@ dependencies = [
     "pydantic-settings~=2.8.1",
     "SQLAlchemy[asyncio]~=2.0.39",
     "zeep~=4.3.1"
-    # Replace msgspec Git dependency for PyPI compatibility, consider releasing
-    # a vendorized or fixed version to your environment
-    # Example: "msgspec>=0.1.0"
 ]
 requires-python = ">=3.13"
 
