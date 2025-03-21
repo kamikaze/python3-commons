@@ -52,7 +52,7 @@ class AsyncSessionManager:
         except KeyError:
             logger.debug(f'Creating session maker: {name}')
             engine = self.get_engine(name)
-            session_maker = async_sessionmaker(engine)
+            session_maker = async_sessionmaker(engine, expire_on_commit=False)
             self.session_makers[name] = session_maker
 
         return session_maker
@@ -68,7 +68,7 @@ class AsyncSessionManager:
 
     def get_session_context(self, name: str):
         # TODO: cache
-        return contextlib.asynccontextmanager(lambda: self.get_async_session(name)())
+        return contextlib.asynccontextmanager(self.get_async_session(name))
 
 
 async def is_healthy(engine: AsyncEngine) -> bool:
