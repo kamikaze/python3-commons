@@ -67,6 +67,7 @@ class AsyncSessionManager:
         return get_session
 
     def get_session_context(self, name: str):
+        # TODO: cache
         return contextlib.asynccontextmanager(lambda: self.get_async_session(name)())
 
 
