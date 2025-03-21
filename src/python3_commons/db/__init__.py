@@ -30,7 +30,8 @@ class AsyncSessionManager:
 
     def async_engine_from_db_settings(self, name):
         db_settings = self.get_db_settings(name)
-        engine = async_engine_from_config(db_settings.model_dump(by_alias=True))
+        config = db_settings.model_dump(by_alias=True)
+        engine = async_engine_from_config(**config)
 
         return engine
 
