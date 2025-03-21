@@ -31,6 +31,7 @@ class AsyncSessionManager:
     def async_engine_from_db_settings(self, name):
         db_settings = self.get_db_settings(name)
         configuration = db_settings.model_dump(by_alias=True)
+        configuration['url'] = str(configuration['url'])
         engine = async_engine_from_config(configuration, prefix='')
 
         return engine
