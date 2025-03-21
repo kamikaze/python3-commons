@@ -59,7 +59,9 @@ class AsyncSessionManager:
 
     def get_async_session(self, name: str) -> Callable[[], AsyncGenerator[AsyncSession, None]]:
         async def get_session() -> AsyncGenerator[AsyncSession, None]:
-            async with self.get_session_maker(name) as session:
+            session_maker = self.get_session_maker(name)
+
+            async with session_maker() as session:
                 yield session
 
         return get_session
