@@ -1,13 +1,14 @@
 import logging
 import socket
 from platform import platform
-from typing import Any, Mapping, Sequence
+from typing import Any, Mapping, Sequence, Union
 
 import valkey
 from pydantic import RedisDsn
 from valkey.asyncio import Valkey, StrictValkey, ConnectionPool, Sentinel
 from valkey.asyncio.retry import Retry
 from valkey.backoff import FullJitterBackoff
+from valkey.typing import ResponseT, PatternT
 
 from python3_commons.conf import valkey_settings
 from python3_commons.helpers import SingletonMeta
@@ -74,8 +75,18 @@ def get_valkey_client() -> Valkey:
     return AsyncValkeyClient(valkey_settings.dsn, valkey_settings.sentinel_dsn).get_client()
 
 
-async def delete(name: str):
-    await get_valkey_client().delete(name)
+async def scan(
+    cursor: int = 0,
+    match: bytes | str | memoryview | None = None,
+    count: int | None = None,
+    _type: str | None = None,
+    **kwargs,
+) -> ResponseT:
+    return await get_valkey_client().scan(cursor, match, count, _type, **kwargs)
+
+
+async def delete(*names: str | bytes | memoryview):
+    await get_valkey_client().delete(*names)
 
 
 async def store_bytes(name: str, data: bytes, ttl: int = None, if_not_set: bool = False):
