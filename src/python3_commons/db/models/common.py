@@ -26,12 +26,22 @@ def use_identity(element, compiler, **kw):
 
 
 class BaseDBModel:
-    id: Mapped[int] = mapped_column(BIGINT, primary_key=True)
-    created_at: Mapped[AwareDatetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=UTCNow())
-    updated_at: Mapped[AwareDatetime] = mapped_column(DateTime(timezone=True), onupdate=UTCNow())
+    id: Mapped[int] = mapped_column(BIGINT, primary_key=True, sort_order=-3)
+    created_at: Mapped[AwareDatetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=UTCNow(),
+        sort_order=-2
+    )
+    updated_at: Mapped[AwareDatetime] = mapped_column(DateTime(timezone=True), onupdate=UTCNow(), sort_order=-1)
 
 
 class BaseDBUUIDModel:
-    uid: Mapped[UUID] = mapped_column(UUID, primary_key=True)
-    created_at: Mapped[AwareDatetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=UTCNow())
-    updated_at: Mapped[AwareDatetime | None] = mapped_column(DateTime(timezone=True), onupdate=UTCNow())
+    uid: Mapped[UUID] = mapped_column(UUID, primary_key=True, sort_order=-3)
+    created_at: Mapped[AwareDatetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=UTCNow(),
+        sort_order=-2
+    )
+    updated_at: Mapped[AwareDatetime | None] = mapped_column(DateTime(timezone=True), onupdate=UTCNow(), sort_order=-1)
