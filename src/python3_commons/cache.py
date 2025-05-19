@@ -1,14 +1,14 @@
 import logging
 import socket
 from platform import platform
-from typing import Any, Mapping, Sequence, Union
+from typing import Any, Mapping, Sequence
 
 import valkey
 from pydantic import RedisDsn
 from valkey.asyncio import Valkey, StrictValkey, ConnectionPool, Sentinel
 from valkey.asyncio.retry import Retry
 from valkey.backoff import FullJitterBackoff
-from valkey.typing import ResponseT, PatternT
+from valkey.typing import ResponseT
 
 from python3_commons.conf import valkey_settings
 from python3_commons.helpers import SingletonMeta
@@ -76,11 +76,11 @@ def get_valkey_client() -> Valkey:
 
 
 async def scan(
-    cursor: int = 0,
-    match: bytes | str | memoryview | None = None,
-    count: int | None = None,
-    _type: str | None = None,
-    **kwargs,
+        cursor: int = 0,
+        match: bytes | str | memoryview | None = None,
+        count: int | None = None,
+        _type: str | None = None,
+        **kwargs,
 ) -> ResponseT:
     return await get_valkey_client().scan(cursor, match, count, _type, **kwargs)
 
@@ -92,17 +92,17 @@ async def delete(*names: str | bytes | memoryview):
 async def store_bytes(name: str, data: bytes, ttl: int = None, if_not_set: bool = False):
     r = get_valkey_client()
 
-    return r.set(name, data, ex=ttl, nx=if_not_set)
+    return await r.set(name, data, ex=ttl, nx=if_not_set)
 
 
 async def get_bytes(name: str) -> bytes | None:
     r = get_valkey_client()
 
-    return r.get(name)
+    return await r.get(name)
 
 
 async def store(name: str, obj: Any, ttl: int = None, if_not_set: bool = False):
-    return store_bytes(name, serialize_msgpack_native(obj), ttl, if_not_set)
+    return await store_bytes(name, serialize_msgpack_native(obj), ttl, if_not_set)
 
 
 async def get(name: str, default=None, data_type: Any = None) -> Any:
@@ -137,8 +137,9 @@ async def store_sequence(name: str, data: Sequence, ttl: int = None):
 
 async def get_sequence(name: str, _type: type = list) -> Sequence:
     r = get_valkey_client()
+    lrange = await r.lrange(name, 0, -1)
 
-    return _type(map(deserialize_msgpack_native, r.lrange(name, 0, -1)))
+    return _type(map(deserialize_msgpack_native, lrange))
 
 
 async def store_dict(name: str, data: Mapping, ttl: int = None):
@@ -157,7 +158,7 @@ async def store_dict(name: str, data: Mapping, ttl: int = None):
 async def get_dict(name: str, value_data_type=None) -> dict | None:
     r = get_valkey_client()
 
-    if data := r.hgetall(name):
+    if data := await r.hgetall(name):
         data = {k.decode(): deserialize_msgpack(v, value_data_type) for k, v in data.items()}
 
         return data
@@ -223,7 +224,7 @@ async def has_set_item(name: str, value: str) -> bool:
     try:
         r = get_valkey_client()
 
-        return r.sismember(name, serialize_msgpack_native(value)) == 1
+        return await r.sismember(name, serialize_msgpack_native(value)) == 1
     except valkey.exceptions.ConnectionError as e:
         logger.error(f'Failed to check if set has item in cache: {e}')
 
@@ -246,8 +247,9 @@ async def delete_set_item(name: str, value: str):
 async def get_set_members(name: str) -> set[str] | None:
     try:
         r = get_valkey_client()
+        smembers = await r.smembers(name)
 
-        return set(map(deserialize_msgpack_native, r.smembers(name)))
+        return set(map(deserialize_msgpack_native, smembers))
     except valkey.exceptions.ConnectionError as e:
         logger.error(f'Failed to get set members from cache: {e}')
 
@@ -257,4 +259,4 @@ async def get_set_members(name: str) -> set[str] | None:
 async def exists(name: str) -> bool:
     r = get_valkey_client()
 
-    return r.exists(name) == 1
+    return await r.exists(name) == 1
