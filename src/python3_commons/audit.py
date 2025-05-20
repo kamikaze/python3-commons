@@ -4,7 +4,7 @@ import logging
 import tarfile
 from bz2 import BZ2Compressor
 from collections import deque
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 from typing import Generator, Iterable
 from uuid import uuid4
 
@@ -54,7 +54,7 @@ class GeneratedStream(io.BytesIO):
             unread_data_size = len(buf) - pos
 
             if unread_data_size > 0:
-                buf[:unread_data_size] = buf[pos:pos+unread_data_size]
+                buf[:unread_data_size] = buf[pos : pos + unread_data_size]
 
             del buf
 
@@ -67,8 +67,9 @@ class GeneratedStream(io.BytesIO):
         return True
 
 
-def generate_archive(objects: Iterable[tuple[str, datetime, bytes]],
-                     chunk_size: int = 4096) -> Generator[bytes, None, None]:
+def generate_archive(
+    objects: Iterable[tuple[str, datetime, bytes]], chunk_size: int = 4096
+) -> Generator[bytes, None, None]:
     buffer = deque()
 
     with tarfile.open(fileobj=buffer, mode='w') as archive:
@@ -154,7 +155,7 @@ async def archive_audit_data(root_path: str = 'audit'):
         archive_stream = GeneratedStream(bzip2_generator)
 
         archive_path = object_storage.get_absolute_path(f'audit/.archive/{year}_{month:02}_{day:02}.tar.bz2')
-        object_storage.put_object(bucket_name, archive_path, archive_stream, -1, part_size=5*1024*1024)
+        object_storage.put_object(bucket_name, archive_path, archive_stream, -1, part_size=5 * 1024 * 1024)
 
         if errors := object_storage.remove_objects(bucket_name, date_path):
             for error in errors:

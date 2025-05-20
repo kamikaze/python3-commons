@@ -3,7 +3,7 @@ import logging
 from typing import AsyncGenerator, Callable, Mapping
 
 from sqlalchemy import MetaData
-from sqlalchemy.ext.asyncio import AsyncSession, AsyncEngine, async_engine_from_config
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_engine_from_config
 from sqlalchemy.ext.asyncio.session import async_sessionmaker
 from sqlalchemy.orm import declarative_base
 

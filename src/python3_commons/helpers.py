@@ -2,7 +2,7 @@ import logging
 import shlex
 import threading
 from datetime import date, datetime, timedelta
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
 from json import dumps
 from typing import Literal, Mapping, Sequence
 from urllib.parse import urlencode
@@ -16,6 +16,7 @@ class SingletonMeta(type):
     """
     A metaclass that creates a Singleton base class when called.
     """
+
     _instances = {}
     _lock = threading.Lock()
 
@@ -76,12 +77,12 @@ def round_decimal(value: Decimal, decimal_places=2, rounding_mode=ROUND_HALF_UP)
 
 
 def request_to_curl(
-        url: str,
-        query: Mapping | None = None,
-        method: Literal['get', 'post', 'put', 'patch', 'options', 'head', 'delete'] = 'get',
-        headers: Mapping | None = None,
-        json: Mapping | Sequence | str | None = None,
-        data: bytes | None = None
+    url: str,
+    query: Mapping | None = None,
+    method: Literal['get', 'post', 'put', 'patch', 'options', 'head', 'delete'] = 'get',
+    headers: Mapping | None = None,
+    json: Mapping | Sequence | str | None = None,
+    data: bytes | None = None,
 ) -> str:
     if query:
         url = f'{url}?{urlencode(query)}'

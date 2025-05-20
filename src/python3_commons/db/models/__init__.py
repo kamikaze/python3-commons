@@ -1,4 +1,2 @@
 from python3_commons.db.models.auth import ApiKey, User, UserGroup
-from python3_commons.db.models.rbac import (
-    RBACRole, RBACPermission, RBACRolePermission, RBACUserRole, RBACApiKeyRole
-)
+from python3_commons.db.models.rbac import RBACApiKeyRole, RBACPermission, RBACRole, RBACRolePermission, RBACUserRole

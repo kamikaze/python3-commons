@@ -1,7 +1,5 @@
 from pydantic import AwareDatetime
-from sqlalchemy import (
-    DateTime, BIGINT
-)
+from sqlalchemy import BIGINT, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import Mapped, mapped_column
@@ -28,10 +26,7 @@ def use_identity(element, compiler, **kw):
 class BaseDBModel:
     id: Mapped[int] = mapped_column(BIGINT, primary_key=True, sort_order=-3)
     created_at: Mapped[AwareDatetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False,
-        server_default=UTCNow(),
-        sort_order=-2
+        DateTime(timezone=True), nullable=False, server_default=UTCNow(), sort_order=-2
     )
     updated_at: Mapped[AwareDatetime] = mapped_column(DateTime(timezone=True), onupdate=UTCNow(), sort_order=-1)
 
@@ -39,9 +34,6 @@ class BaseDBModel:
 class BaseDBUUIDModel:
     uid: Mapped[UUID] = mapped_column(UUID, primary_key=True, sort_order=-3)
     created_at: Mapped[AwareDatetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False,
-        server_default=UTCNow(),
-        sort_order=-2
+        DateTime(timezone=True), nullable=False, server_default=UTCNow(), sort_order=-2
     )
     updated_at: Mapped[AwareDatetime | None] = mapped_column(DateTime(timezone=True), onupdate=UTCNow(), sort_order=-1)

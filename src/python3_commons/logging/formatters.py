@@ -5,7 +5,6 @@ from contextvars import ContextVar
 
 from python3_commons.serializers.json import CustomJSONEncoder
 
-
 correlation_id: ContextVar[str | None] = ContextVar('correlation_id', default=None)
 
 

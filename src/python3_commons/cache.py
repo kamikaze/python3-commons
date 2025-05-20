@@ -5,7 +5,7 @@ from typing import Any, Mapping, Sequence
 
 import valkey
 from pydantic import RedisDsn
-from valkey.asyncio import Valkey, StrictValkey, ConnectionPool, Sentinel
+from valkey.asyncio import ConnectionPool, Sentinel, StrictValkey, Valkey
 from valkey.asyncio.retry import Retry
 from valkey.backoff import FullJitterBackoff
 from valkey.typing import ResponseT
@@ -13,7 +13,10 @@ from valkey.typing import ResponseT
 from python3_commons.conf import valkey_settings
 from python3_commons.helpers import SingletonMeta
 from python3_commons.serializers.msgspec import (
-    serialize_msgpack, deserialize_msgpack, deserialize_msgpack_native, serialize_msgpack_native
+    deserialize_msgpack,
+    deserialize_msgpack_native,
+    serialize_msgpack,
+    serialize_msgpack_native,
 )
 
 logger = logging.getLogger(__name__)
@@ -32,11 +35,7 @@ class AsyncValkeyClient(metaclass=SingletonMeta):
     @staticmethod
     def _get_keepalive_options():
         if platform == 'linux' or platform == 'darwin':
-            return {
-                socket.TCP_KEEPIDLE: 10,
-                socket.TCP_KEEPINTVL: 5,
-                socket.TCP_KEEPCNT: 5
-            }
+            return {socket.TCP_KEEPIDLE: 10, socket.TCP_KEEPINTVL: 5, socket.TCP_KEEPCNT: 5}
         else:
             return {}
 
@@ -46,7 +45,7 @@ class AsyncValkeyClient(metaclass=SingletonMeta):
             socket_connect_timeout=10,
             socket_timeout=60,
             password=dsn.password,
-            sentinel_kwargs={'password': dsn.password}
+            sentinel_kwargs={'password': dsn.password},
         )
 
         ka_options = self._get_keepalive_options()
@@ -60,7 +59,7 @@ class AsyncValkeyClient(metaclass=SingletonMeta):
             retry_on_timeout=True,
             retry=Retry(FullJitterBackoff(cap=5, base=1), 5),
             socket_keepalive=True,
-            socket_keepalive_options=ka_options
+            socket_keepalive_options=ka_options,
         )
 
     def _initialize_standard_pool(self, dsn: RedisDsn):
@@ -76,11 +75,11 @@ def get_valkey_client() -> Valkey:
 
 
 async def scan(
-        cursor: int = 0,
-        match: bytes | str | memoryview | None = None,
-        count: int | None = None,
-        _type: str | None = None,
-        **kwargs,
+    cursor: int = 0,
+    match: bytes | str | memoryview | None = None,
+    count: int | None = None,
+    _type: str | None = None,
+    **kwargs,
 ) -> ResponseT:
     return await get_valkey_client().scan(cursor, match, count, _type, **kwargs)
 

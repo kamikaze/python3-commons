@@ -2,10 +2,10 @@ import logging
 from uuid import UUID
 
 import sqlalchemy as sa
-from sqlalchemy import func, exists, and_
+from sqlalchemy import and_, exists, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from python3_commons.db.models import RBACPermission, RBACApiKeyRole, RBACRolePermission, RBACUserRole
+from python3_commons.db.models import RBACApiKeyRole, RBACPermission, RBACRolePermission, RBACUserRole
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ async def has_api_key_permission(session: AsyncSession, api_key_uid: UUID, permi
                 (RBACApiKeyRole.expires_at.is_(None) | (RBACApiKeyRole.expires_at > func.now())),
                 RBACApiKeyRole.role_uid == RBACRolePermission.role_uid,
                 RBACRolePermission.permission_uid == RBACPermission.uid,
-                RBACPermission.name == permission
+                RBACPermission.name == permission,
             )
         )
     )
@@ -37,7 +37,7 @@ async def has_user_permission(session: AsyncSession, user_id: UUID, permission: 
                 (RBACUserRole.expires_at.is_(None) | (RBACUserRole.expires_at > func.now())),
                 RBACUserRole.role_uid == RBACRolePermission.role_uid,
                 RBACRolePermission.permission_uid == RBACPermission.uid,
-                RBACPermission.name == permission
+                RBACPermission.name == permission,
             )
         )
     )

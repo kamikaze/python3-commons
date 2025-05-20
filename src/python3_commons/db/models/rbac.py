@@ -2,9 +2,7 @@ import uuid
 
 from fastapi_users_db_sqlalchemy import GUID
 from pydantic import AwareDatetime
-from sqlalchemy import (
-    String, DateTime, ForeignKey, PrimaryKeyConstraint, CheckConstraint
-)
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, PrimaryKeyConstraint, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -24,9 +22,7 @@ class RBACPermission(Base):
     uid: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True)
     name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
 
-    __table_args__ = (
-        CheckConstraint("name ~ '^[a-z0-9_.]+$'", name='check_rbac_permissions_name'),
-    )
+    __table_args__ = (CheckConstraint("name ~ '^[a-z0-9_.]+$'", name='check_rbac_permissions_name'),)
 
 
 class RBACRolePermission(Base):
@@ -43,9 +39,7 @@ class RBACRolePermission(Base):
         index=True,
     )
 
-    __table_args__ = (
-        PrimaryKeyConstraint('role_uid', 'permission_uid', name='pk_rbac_role_permissions'),
-    )
+    __table_args__ = (PrimaryKeyConstraint('role_uid', 'permission_uid', name='pk_rbac_role_permissions'),)
 
 
 class RBACUserRole(Base):
@@ -64,9 +58,7 @@ class RBACUserRole(Base):
     starts_at: Mapped[AwareDatetime] = mapped_column(DateTime(timezone=True), nullable=False)
     expires_at: Mapped[AwareDatetime | None] = mapped_column(DateTime(timezone=True))
 
-    __table_args__ = (
-        PrimaryKeyConstraint('user_id', 'role_uid', name='pk_rbac_user_roles'),
-    )
+    __table_args__ = (PrimaryKeyConstraint('user_id', 'role_uid', name='pk_rbac_user_roles'),)
 
 
 class RBACApiKeyRole(Base):
@@ -85,9 +77,7 @@ class RBACApiKeyRole(Base):
     starts_at: Mapped[AwareDatetime] = mapped_column(DateTime(timezone=True), nullable=False)
     expires_at: Mapped[AwareDatetime | None] = mapped_column(DateTime(timezone=True))
 
-    __table_args__ = (
-        PrimaryKeyConstraint('api_key_uid', 'role_uid', name='pk_rbac_api_key_roles'),
-    )
+    __table_args__ = (PrimaryKeyConstraint('api_key_uid', 'role_uid', name='pk_rbac_api_key_roles'),)
 
 
 # class RBACRoleRelation(Base):

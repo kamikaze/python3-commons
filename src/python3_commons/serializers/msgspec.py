@@ -3,11 +3,11 @@ import json
 import logging
 import struct
 from _decimal import Decimal
-from datetime import datetime, date
+from datetime import date, datetime
 from typing import Any
 
 from msgspec import msgpack
-from msgspec.msgpack import encode, Ext
+from msgspec.msgpack import Ext, encode
 
 from python3_commons.serializers.json import CustomJSONEncoder
 

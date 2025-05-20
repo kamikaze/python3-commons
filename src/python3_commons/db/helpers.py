@@ -2,22 +2,22 @@ import logging
 from typing import Mapping
 
 import sqlalchemy as sa
-from sqlalchemy import desc, asc, func
+from sqlalchemy import asc, desc, func
 from sqlalchemy.sql.elements import BooleanClauseList, UnaryExpression
 
 logger = logging.getLogger(__name__)
 
 
-def get_query(search: Mapping[str, str] | None = None,
-              order_by: str | None = None,
-              columns: Mapping | None = None) -> tuple[BooleanClauseList, UnaryExpression]:
+def get_query(
+    search: Mapping[str, str] | None = None, order_by: str | None = None, columns: Mapping | None = None
+) -> tuple[BooleanClauseList, UnaryExpression]:
     """
-        :columns:
-            Param name ->
-            0: Model column
-            1: case-insensitive if True
-            2: cast value to type
-            3: exact match if True, LIKE %value% if False
+    :columns:
+        Param name ->
+        0: Model column
+        1: case-insensitive if True
+        2: cast value to type
+        3: exact match if True, LIKE %value% if False
     """
 
     order_by_cols = {}
@@ -41,21 +41,15 @@ def get_query(search: Mapping[str, str] | None = None,
     if search:
         where_parts = [
             *(
-                (func.upper(columns[k][0])
-                 if columns[k][1]
-                 else columns[k][0]
-                 ) == columns[k][2](v)
+                (func.upper(columns[k][0]) if columns[k][1] else columns[k][0]) == columns[k][2](v)
                 for k, v in search.items()
                 if columns[k][3]
             ),
             *(
-                (func.upper(columns[k][0])
-                 if columns[k][1]
-                 else columns[k][0]
-                 ).like(f'%{v.upper()}%')
+                (func.upper(columns[k][0]) if columns[k][1] else columns[k][0]).like(f'%{v.upper()}%')
                 for k, v in search.items()
                 if not columns[k][3]
-            )
+            ),
         ]
     else:
         where_parts = None

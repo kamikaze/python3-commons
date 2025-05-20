@@ -1,4 +1,4 @@
-from pydantic import SecretStr, PostgresDsn, Field, RedisDsn
+from pydantic import Field, HttpUrl, PostgresDsn, RedisDsn, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -6,6 +6,14 @@ class CommonSettings(BaseSettings):
     logging_level: str = 'INFO'
     logging_format: str = '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
     logging_formatter: str = 'default'
+
+
+class OIDCSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix='OIDC_')
+
+    enabled: bool = True
+    authority_url: HttpUrl | None = None
+    client_id: str | None = None
 
 
 class ValkeySettings(BaseSettings):
@@ -38,6 +46,7 @@ class S3Settings(BaseSettings):
 
 
 settings = CommonSettings()
+oidc_settings = OIDCSettings()
 valkey_settings = ValkeySettings()
 db_settings = DBSettings()
 s3_settings = S3Settings()

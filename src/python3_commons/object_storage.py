@@ -6,9 +6,9 @@ from typing import Generator, Iterable
 
 from minio import Minio
 from minio.datatypes import Object
-from minio.deleteobjects import DeleteObject, DeleteError
+from minio.deleteobjects import DeleteError, DeleteObject
 
-from python3_commons.conf import s3_settings, S3Settings
+from python3_commons.conf import S3Settings, s3_settings
 from python3_commons.helpers import SingletonMeta
 
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ class ObjectStorage(metaclass=SingletonMeta):
             access_key=settings.s3_access_key_id.get_secret_value(),
             secret_key=settings.s3_secret_access_key.get_secret_value(),
             secure=settings.s3_secure,
-            cert_check=settings.s3_cert_verify
+            cert_check=settings.s3_cert_verify,
         )
 
     def get_client(self) -> Minio:
@@ -37,7 +37,7 @@ def get_absolute_path(path: str) -> str:
         path = path[1:]
 
     if bucket_root := s3_settings.s3_bucket_root:
-        path = f'{bucket_root[:1] if bucket_root.startswith('/') else bucket_root}/{path}'
+        path = f'{bucket_root[:1] if bucket_root.startswith("/") else bucket_root}/{path}'
 
     return path
 
@@ -50,7 +50,7 @@ def put_object(bucket_name: str, path: str, data: io.BytesIO, length: int, part_
 
         return result.location
     else:
-        logger.warning(f'No S3 client available, skipping object put')
+        logger.warning('No S3 client available, skipping object put')
 
 
 @contextmanager
@@ -70,7 +70,7 @@ def get_object_stream(bucket_name: str, path: str):
         response.close()
         response.release_conn()
     else:
-        logger.warning(f'No S3 client available, skipping object put')
+        logger.warning('No S3 client available, skipping object put')
 
 
 def get_object(bucket_name: str, path: str) -> bytes:
@@ -88,8 +88,9 @@ def list_objects(bucket_name: str, prefix: str, recursive: bool = True) -> Gener
     yield from s3_client.list_objects(bucket_name, prefix=prefix, recursive=recursive)
 
 
-def get_objects(bucket_name: str, path: str,
-                recursive: bool = True) -> Generator[tuple[str, datetime, bytes], None, None]:
+def get_objects(
+    bucket_name: str, path: str, recursive: bool = True
+) -> Generator[tuple[str, datetime, bytes], None, None]:
     for obj in list_objects(bucket_name, path, recursive):
         object_name = obj.object_name
 
@@ -106,14 +107,15 @@ def remove_object(bucket_name: str, object_name: str):
     s3_client.remove_object(bucket_name, object_name)
 
 
-def remove_objects(bucket_name: str, prefix: str = None,
-                   object_names: Iterable[str] = None) -> Iterable[DeleteError] | None:
+def remove_objects(
+    bucket_name: str, prefix: str = None, object_names: Iterable[str] = None
+) -> Iterable[DeleteError] | None:
     s3_client = ObjectStorage(s3_settings).get_client()
 
     if prefix:
         delete_object_list = map(
-            lambda obj: DeleteObject(obj.object_name), s3_client.list_objects(bucket_name, prefix=prefix,
-                                                                              recursive=True)
+            lambda obj: DeleteObject(obj.object_name),
+            s3_client.list_objects(bucket_name, prefix=prefix, recursive=True),
         )
     elif object_names:
         delete_object_list = map(DeleteObject, object_names)

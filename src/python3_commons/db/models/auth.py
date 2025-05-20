@@ -2,9 +2,7 @@ import uuid
 
 from fastapi_users_db_sqlalchemy import GUID, SQLAlchemyBaseUserTableUUID
 from pydantic import AwareDatetime
-from sqlalchemy import (
-    String, BIGINT, ForeignKey, DateTime
-)
+from sqlalchemy import BIGINT, DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from python3_commons.db import Base

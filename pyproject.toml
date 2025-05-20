@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools", "wheel", "pyscaffold>=3.2a0,<3.3a0"]
+requires = ["setuptools", "wheel", "setuptools_scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "python3-commons"
-version = "0.8.18"
+dynamic = ["version"]
 description = "Re-usable Python3 code"
 authors = [
     {name = "Oleg Korsak", email = "kamikaze.is.waiting.you@gmail.com"}
@@ -16,6 +16,8 @@ classifiers = [
     "Programming Language :: Python"
 ]
 keywords = []
+requires-python = "==3.13.*"
+
 dependencies = [
     "aiohttp[speedups]~=3.11.16",
     "asyncpg~=0.30.0",
@@ -27,16 +29,27 @@ dependencies = [
     "msgspec~=0.19.0",
     "pydantic[email]~=2.11.3",
     "pydantic-settings~=2.9.1",
+    "python-jose==3.4.0",
     "SQLAlchemy[asyncio]~=2.0.40",
     "valkey[libvalkey]~=6.1.0",
     "zeep~=4.3.1"
 ]
-requires-python = ">=3.13"
 
-[project.optional-dependencies]
+[dependency-groups]
+dev = [
+    "build",
+    "pip==25.1.1",
+    "pre-commit==4.2.0",
+    "pyright==1.1.400",
+    "ruff==0.11.10",
+    "setuptools==80.8.0",
+    "setuptools_scm==8.3.1",
+    "wheel==0.45.1",
+]
 testing = [
     "pytest",
-    "pytest-cov"
+    "pytest-cov",
+    "pytest-mock"
 ]
 
 [project.urls]
@@ -47,6 +60,11 @@ Documentation = "https://github.com/kamikaze/python3-commons/wiki"
 where = ["src"]
 exclude = ["tests"]
 
+[tool.setuptools_scm]
+
+[tool.bdist_wheel]
+universal = true
+
 [tool.pytest.ini_options]
 addopts = [
     "--verbose"
@@ -54,18 +72,24 @@ addopts = [
 norecursedirs = ["dist", "build", ".tox"]
 testpaths = ["tests"]
 
-[tool.flake8]
-exclude = [
-    ".tox",
-    "build",
-    "dist",
-    ".eggs",
-    "docs/conf.py"
-]
+[tool.ruff]
+line-length = 120
+indent-width = 4
+target-version = "py313"
 
-[tool.pyscaffold]
-version = "3.2.3"
-package = "python3_commons"
+[tool.ruff.analyze]
+detect-string-imports = true
 
-[tool.bdist_wheel]
-universal = true
+[tool.ruff.lint.flake8-quotes]
+docstring-quotes = "double"
+
+[tool.ruff.format]
+exclude = ["*.pyi"]
+indent-style = "space"
+quote-style = "single"
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+reportMatchNotExhaustive = "error"
+reportUnnecessaryComparison = "error"
