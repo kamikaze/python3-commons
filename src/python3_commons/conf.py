@@ -32,7 +32,7 @@ class DBSettings(BaseSettings):
     port: int = 5432
     name: str | None = None
     user: str | None = None
-    password: SecretStr | None = Field(default=None, serialization_alias='pass')
+    password: SecretStr | None = Field(default=None, alias='pass')
 
     echo: bool = False
     pool_size: int = 20
