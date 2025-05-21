@@ -30,8 +30,14 @@ class AsyncSessionManager:
 
     def async_engine_from_db_settings(self, name):
         db_settings = self.get_db_settings(name)
-        configuration = db_settings.model_dump(by_alias=True)
-        configuration['url'] = str(configuration['url'])
+        configuration = {
+            'url': str(db_settings.dsn),
+            'echo': db_settings.echo,
+            'pool_size': db_settings.pool_size,
+            'max_overflow': db_settings.max_overflow,
+            'pool_timeout': db_settings.pool_timeout,
+            'pool_recycle': db_settings.pool_recycle,
+        }
         engine = async_engine_from_config(configuration, prefix='')
 
         return engine
