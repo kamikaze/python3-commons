@@ -24,7 +24,7 @@ class ValkeySettings(BaseSettings):
 
 
 class DBSettings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix='DB_', populate_by_name=True)
+    model_config = SettingsConfigDict(env_prefix='DB_', validate_by_name=True, validate_by_alias=True)
 
     dsn: PostgresDsn | None = Field(default=None, serialization_alias='url')
     scheme: str = 'postgresql+asyncpg'
@@ -32,7 +32,7 @@ class DBSettings(BaseSettings):
     port: int = 5432
     name: str | None = None
     user: str | None = None
-    password: SecretStr | None = Field(default=None, alias='pass')
+    password: SecretStr | None = Field(default=None, alias='DB_PASS')
 
     echo: bool = False
     pool_size: int = 20
