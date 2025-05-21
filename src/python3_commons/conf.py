@@ -1,4 +1,4 @@
-from pydantic import Field, HttpUrl, PostgresDsn, RedisDsn, SecretStr
+from pydantic import Field, HttpUrl, PostgresDsn, RedisDsn, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -27,11 +27,38 @@ class DBSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix='DB_')
 
     dsn: PostgresDsn | None = Field(default=None, serialization_alias='url')
+    scheme: str = 'postgresql+asyncpg'
+    host: str = 'localhost'
+    port: int = 5432
+    name: str | None = None
+    user: str | None = None
+    password: SecretStr | None = Field(default=None, serialization_alias='pass')
+
     echo: bool = False
     pool_size: int = 20
     max_overflow: int = 0
     pool_timeout: int = 30
     pool_recycle: int = 1800  # 30 minutes
+
+    @model_validator(mode='after')
+    def build_dsn_if_missing(self) -> 'DBSettings':
+        if self.dsn is None and all(
+            (
+                self.user,
+                self.password,
+                self.name,
+            )
+        ):
+            self.dsn = PostgresDsn.build(
+                scheme=self.scheme,
+                username=self.user,
+                password=self.password.get_secret_value() if self.password else None,
+                host=self.host,
+                port=self.port,
+                path=f'/{self.name}',
+            )
+
+        return self
 
 
 class S3Settings(BaseSettings):
