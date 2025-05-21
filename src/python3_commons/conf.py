@@ -24,7 +24,7 @@ class ValkeySettings(BaseSettings):
 
 
 class DBSettings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix='DB_')
+    model_config = SettingsConfigDict(env_prefix='DB_', populate_by_name=True)
 
     dsn: PostgresDsn | None = Field(default=None, serialization_alias='url')
     scheme: str = 'postgresql+asyncpg'
