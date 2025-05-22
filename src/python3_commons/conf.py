@@ -55,7 +55,7 @@ class DBSettings(BaseSettings):
                 password=self.password.get_secret_value() if self.password else None,
                 host=self.host,
                 port=self.port,
-                path=f'/{self.name}',
+                path=self.name,
             )
 
         return self
