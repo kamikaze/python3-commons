@@ -28,7 +28,7 @@ class BaseDBModel:
     created_at: Mapped[AwareDatetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=UTCNow(), sort_order=-2
     )
-    updated_at: Mapped[AwareDatetime] = mapped_column(DateTime(timezone=True), onupdate=UTCNow(), sort_order=-1)
+    updated_at: Mapped[AwareDatetime | None] = mapped_column(DateTime(timezone=True), onupdate=UTCNow(), sort_order=-1)
 
 
 class BaseDBUUIDModel:
