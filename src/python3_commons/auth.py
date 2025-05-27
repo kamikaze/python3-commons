@@ -1,6 +1,6 @@
 import logging
 from http import HTTPStatus
-from typing import Annotated
+from typing import Annotated, Sequence
 
 import aiohttp
 from fastapi import Depends, HTTPException
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 class TokenData(BaseModel):
     sub: str
-    aud: str
+    aud: str | Sequence[str]
     exp: int
     iss: str
 
