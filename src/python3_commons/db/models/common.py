@@ -1,3 +1,5 @@
+import uuid
+
 from pydantic import AwareDatetime
 from sqlalchemy import BIGINT, DateTime
 from sqlalchemy.dialects.postgresql import UUID
@@ -32,7 +34,7 @@ class BaseDBModel:
 
 
 class BaseDBUUIDModel:
-    uid: Mapped[UUID] = mapped_column(UUID, primary_key=True, sort_order=-3)
+    uid: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, sort_order=-3)
     created_at: Mapped[AwareDatetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=UTCNow(), sort_order=-2
     )
