@@ -1,6 +1,6 @@
 import logging
 from http import HTTPStatus
-from typing import Annotated, Sequence
+from typing import Annotated, Any, Callable, Coroutine, Sequence, Type, TypeVar
 
 import aiohttp
 from fastapi import Depends, HTTPException
@@ -18,6 +18,9 @@ class TokenData(BaseModel):
     aud: str | Sequence[str]
     exp: int
     iss: str
+
+
+T = TypeVar('T', bound=TokenData)
 
 
 OIDC_CONFIG_URL = f'{oidc_settings.authority_url}/.well-known/openid-configuration'
@@ -52,31 +55,36 @@ async def fetch_jwks(jwks_uri: str) -> dict:
             return await response.json()
 
 
-async def get_verified_token(
-    authorization: Annotated[HTTPAuthorizationCredentials, Depends(bearer_security)],
-) -> TokenData | None:
-    """
-    Verify the JWT access token using OIDC authority JWKS.
-    """
-    global _JWKS
+def get_token_verifier(token_cls: Type[T]) -> Callable[[HTTPAuthorizationCredentials], Coroutine[Any, Any, T | None]]:
+    async def get_verified_token(
+        authorization: Annotated[HTTPAuthorizationCredentials, Depends(bearer_security)],
+    ) -> T | None:
+        """
+        Verify the JWT access token using OIDC authority JWKS.
+        """
+        global _JWKS
 
-    if not oidc_settings.enabled:
-        return None
+        if not oidc_settings.enabled:
+            return None
 
-    token = authorization.credentials
+        token = authorization.credentials
 
-    try:
-        if not _JWKS:
-            openid_config = await fetch_openid_config()
-            _JWKS = await fetch_jwks(openid_config['jwks_uri'])
+        try:
+            if not _JWKS:
+                openid_config = await fetch_openid_config()
+                _JWKS = await fetch_jwks(openid_config['jwks_uri'])
 
-        if oidc_settings.client_id:
-            payload = jwt.decode(token, _JWKS, algorithms=['RS256'], audience=oidc_settings.client_id)
-        else:
-            payload = jwt.decode(token, _JWKS, algorithms=['RS256'])
+            if oidc_settings.client_id:
+                payload = jwt.decode(token, _JWKS, algorithms=['RS256'], audience=oidc_settings.client_id)
+            else:
+                payload = jwt.decode(token, _JWKS, algorithms=['RS256'])
 
-        token_data = TokenData(**payload)
+            token_data = token_cls(**payload)
 
-        return token_data
-    except JWTError as e:
-        raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail=f'Token is invalid: {str(e)}')
+            return token_data
+        except jwt.ExpiredSignatureError:
+            raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail='Token has expired')
+        except JWTError as e:
+            raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail=f'Token is invalid: {str(e)}')
+
+    return get_verified_token
