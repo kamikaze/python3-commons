@@ -1,10 +1,11 @@
 from dataclasses import dataclass
-from datetime import datetime, date
+from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID, uuid4
 
 import msgspec
 import pytest
+from pydantic import BaseModel
 
 
 @pytest.fixture
@@ -31,14 +32,7 @@ class TestData:
 
 @pytest.fixture
 def data_dataclass():
-    return TestData(
-        a=1,
-        b='B',
-        c=None,
-        d=datetime(2023, 7, 25, 1, 2, 3),
-        e=date(2023, 7, 24),
-        f=Decimal('1.23')
-    )
+    return TestData(a=1, b='B', c=None, d=datetime(2023, 7, 25, 1, 2, 3), e=date(2023, 7, 24), f=Decimal('1.23'))
 
 
 class SubStruc(msgspec.Struct):
@@ -56,8 +50,23 @@ class TestStruct(msgspec.Struct):
     sub: SubStruc
 
 
+class PydanticSubStruc(BaseModel):
+    uid: UUID
+    name: str
+
+
+class PydanticTestStruct(BaseModel):
+    a: int
+    b: str
+    c: str | None
+    d: datetime
+    e: date
+    f: Decimal
+    sub: PydanticSubStruc
+
+
 @pytest.fixture
-def data_struct() -> TestStruct:
+def msgspec_struct() -> TestStruct:
     return TestStruct(
         a=1,
         b='B',
@@ -65,15 +74,44 @@ def data_struct() -> TestStruct:
         d=datetime(2023, 7, 25, 1, 2, 3),
         e=date(2023, 7, 24),
         f=Decimal('1.23'),
-        sub=SubStruc(uid=uuid4(), name='sub-struct')
+        sub=SubStruc(uid=uuid4(), name='sub-struct'),
+    )
+
+
+@pytest.fixture
+def pydantic_struct() -> PydanticTestStruct:
+    return PydanticTestStruct(
+        a=1,
+        b='B',
+        c=None,
+        d=datetime(2023, 7, 25, 1, 2, 3),
+        e=date(2023, 7, 24),
+        f=Decimal('1.23'),
+        sub=PydanticSubStruc(uid=uuid4(), name='sub-struct'),
     )
 
 
 @pytest.fixture
 def s3_file_objects() -> tuple:
     return (
-        ('file_a.txt', datetime(2024, 1, 1), b'ABCDE', ),
-        ('file_b.txt', datetime(2024, 1, 2), b'FGHIJ', ),
-        ('file_c.txt', datetime(2024, 1, 3), b'KLMNO', ),
-        ('file_d.txt', datetime(2024, 1, 4), b'PQRST', ),
+        (
+            'file_a.txt',
+            datetime(2024, 1, 1),
+            b'ABCDE',
+        ),
+        (
+            'file_b.txt',
+            datetime(2024, 1, 2),
+            b'FGHIJ',
+        ),
+        (
+            'file_c.txt',
+            datetime(2024, 1, 3),
+            b'KLMNO',
+        ),
+        (
+            'file_d.txt',
+            datetime(2024, 1, 4),
+            b'PQRST',
+        ),
     )

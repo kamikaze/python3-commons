@@ -16,8 +16,9 @@ def test_encode_decode_dict_to_msgpack(data_dict):
         'F': '1.23',
     }
     binary_data = msgspec.serialize_msgpack(data_dict)
+    deserialized_data = msgspec.deserialize_msgpack(binary_data)
 
-    assert msgspec.deserialize_msgpack(binary_data) == data_dict
+    assert deserialized_data == expected_result
 
 
 def test_encode_decode_dataclass_to_msgpack(data_dataclass):
@@ -26,18 +27,18 @@ def test_encode_decode_dataclass_to_msgpack(data_dataclass):
     assert msgspec.deserialize_msgpack(binary_data, data_type=data_dataclass.__class__) == data_dataclass
 
 
-def test_encode_decode_struct_to_msgpack(data_struct):
-    binary_data = msgspec.serialize_msgpack(data_struct)
-    decoded_struct = msgspec.deserialize_msgpack(binary_data, data_struct.__class__)
+def test_encode_decode_struct_to_msgpack(msgspec_struct):
+    binary_data = msgspec.serialize_msgpack(msgspec_struct)
+    decoded_struct = msgspec.deserialize_msgpack(binary_data, msgspec_struct.__class__)
 
-    assert decoded_struct == data_struct
+    assert decoded_struct == msgspec_struct
 
 
-def test_encode_decode_struct_to_msgpack_native(data_struct):
-    binary_data = msgspec.serialize_msgpack_native(data_struct)
-    decoded_struct = msgspec.deserialize_msgpack_native(binary_data, data_struct.__class__)
+def test_encode_decode_struct_to_msgpack_native(msgspec_struct):
+    binary_data = msgspec.serialize_msgpack_native(msgspec_struct)
+    decoded_struct = msgspec.deserialize_msgpack_native(binary_data, msgspec_struct.__class__)
 
-    assert decoded_struct == data_struct
+    assert decoded_struct == msgspec_struct
 
 
 def test_encode_decode_decimal_to_msgpack():
@@ -54,3 +55,17 @@ def test_encode_decode_str_to_msgpack():
     decoded_value = msgspec.deserialize_msgpack(binary_data)
 
     assert decoded_value == value
+
+
+def test_encode_decode_pydantic_struct_to_msgpack(pydantic_struct):
+    binary_data = msgspec.serialize_msgpack(pydantic_struct)
+    decoded_struct = msgspec.deserialize_msgpack(binary_data, pydantic_struct.__class__)
+
+    assert decoded_struct == pydantic_struct
+
+
+def test_encode_decode_pydantic_struct_to_msgpack_native(pydantic_struct):
+    binary_data = msgspec.serialize_msgpack_native(pydantic_struct)
+    decoded_struct = msgspec.deserialize_msgpack_native(binary_data, pydantic_struct.__class__)
+
+    assert decoded_struct == pydantic_struct
