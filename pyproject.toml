@@ -19,7 +19,7 @@ keywords = []
 requires-python = "==3.13.*"
 
 dependencies = [
-    "aiohttp[speedups]~=3.12.6",
+    "aiohttp[speedups]~=3.12.11",
     "asyncpg~=0.30.0",
     "fastapi-users-db-sqlalchemy~=7.0.0",
     "fastapi-users[sqlalchemy]~=14.0.1",
@@ -41,7 +41,7 @@ dev = [
     "pip==25.1.1",
     "pre-commit==4.2.0",
     "pyright==1.1.401",
-    "ruff==0.11.12",
+    "ruff==0.11.13",
     "setuptools==80.9.0",
     "setuptools_scm==8.3.1",
     "wheel==0.45.1",
