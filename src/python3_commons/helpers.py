@@ -1,6 +1,8 @@
 import logging
 import shlex
 import threading
+from abc import ABCMeta
+from collections import defaultdict
 from datetime import date, datetime, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 from json import dumps
@@ -12,24 +14,24 @@ from python3_commons.serializers.json import CustomJSONEncoder
 logger = logging.getLogger(__name__)
 
 
-class SingletonMeta(type):
+class SingletonMeta(ABCMeta):
     """
     A metaclass that creates a Singleton base class when called.
     """
 
-    _instances = {}
-    _lock = threading.Lock()
+    __instances = {}
+    __locks = defaultdict(threading.Lock)
 
     def __call__(cls, *args, **kwargs):
         try:
-            return cls._instances[cls]
+            return cls.__instances[cls]
         except KeyError:
-            with cls._lock:
+            with cls.__locks[cls]:
                 try:
-                    return cls._instances[cls]
+                    return cls.__instances[cls]
                 except KeyError:
                     instance = super(SingletonMeta, cls).__call__(*args, **kwargs)
-                    cls._instances[cls] = instance
+                    cls.__instances[cls] = instance
 
                     return instance
 
@@ -77,12 +79,12 @@ def round_decimal(value: Decimal, decimal_places=2, rounding_mode=ROUND_HALF_UP)
 
 
 def request_to_curl(
-    url: str,
-    query: Mapping | None = None,
-    method: Literal['get', 'post', 'put', 'patch', 'options', 'head', 'delete'] = 'get',
-    headers: Mapping | None = None,
-    json: Mapping | Sequence | str | None = None,
-    data: bytes | None = None,
+        url: str,
+        query: Mapping | None = None,
+        method: Literal['get', 'post', 'put', 'patch', 'options', 'head', 'delete'] = 'get',
+        headers: Mapping | None = None,
+        json: Mapping | Sequence | str | None = None,
+        data: bytes | None = None,
 ) -> str:
     if query:
         url = f'{url}?{urlencode(query)}'
