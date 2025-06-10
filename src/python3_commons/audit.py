@@ -5,23 +5,21 @@ import tarfile
 from bz2 import BZ2Compressor
 from collections import deque
 from datetime import UTC, datetime, timedelta
-from typing import Generator, Iterable
+from typing import AsyncGenerator
 from uuid import uuid4
 
 from lxml import etree
-from minio import S3Error
 from zeep.plugins import Plugin
 from zeep.wsdl.definitions import AbstractOperation
 
 from python3_commons import object_storage
 from python3_commons.conf import S3Settings, s3_settings
-from python3_commons.object_storage import ObjectStorage
 
 logger = logging.getLogger(__name__)
 
 
 class GeneratedStream(io.BytesIO):
-    def __init__(self, generator: Generator[bytes, None, None], *args, **kwargs):
+    def __init__(self, generator: AsyncGenerator[bytes], *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.generator = generator
 
@@ -29,7 +27,7 @@ class GeneratedStream(io.BytesIO):
         if size < 0:
             while True:
                 try:
-                    chunk = next(self.generator)
+                    chunk = anext(self.generator)
                 except StopIteration:
                     break
                 else:
@@ -39,7 +37,7 @@ class GeneratedStream(io.BytesIO):
 
             while total_written_size < size:
                 try:
-                    chunk = next(self.generator)
+                    chunk = anext(self.generator)
                 except StopIteration:
                     break
                 else:
@@ -67,17 +65,17 @@ class GeneratedStream(io.BytesIO):
         return True
 
 
-def generate_archive(
-    objects: Iterable[tuple[str, datetime, bytes]], chunk_size: int = 4096
-) -> Generator[bytes, None, None]:
+async def generate_archive(
+    objects: AsyncGenerator[tuple[str, datetime, bytes]], chunk_size: int = 4096
+) -> AsyncGenerator[bytes]:
     buffer = deque()
 
     with tarfile.open(fileobj=buffer, mode='w') as archive:
-        for name, last_modified, content in objects:
+        async for name, last_modified, content in objects:
             logger.info(f'Adding {name} to archive')
             info = tarfile.TarInfo(name)
             info.size = len(content)
-            info.mtime = last_modified.timestamp()
+            info.mtime = int(last_modified.timestamp())
             archive.addfile(info, io.BytesIO(content))
 
             buffer_length = buffer.tell()
@@ -109,10 +107,10 @@ def generate_archive(
     buffer.truncate(0)
 
 
-def generate_bzip2(chunks: Generator[bytes, None, None]) -> Generator[bytes, None, None]:
+async def generate_bzip2(chunks: AsyncGenerator[bytes]) -> AsyncGenerator[bytes]:
     compressor = BZ2Compressor()
 
-    for chunk in chunks:
+    async for chunk in chunks:
         if compressed_chunk := compressor.compress(chunk):
             yield compressed_chunk
 
@@ -120,23 +118,18 @@ def generate_bzip2(chunks: Generator[bytes, None, None]) -> Generator[bytes, Non
         yield compressed_chunk
 
 
-def write_audit_data_sync(settings: S3Settings, key: str, data: bytes):
+async def write_audit_data(settings: S3Settings, key: str, data: bytes):
     if settings.s3_secret_access_key:
         try:
-            client = ObjectStorage(settings).get_client()
             absolute_path = object_storage.get_absolute_path(f'audit/{key}')
 
-            client.put_object(settings.s3_bucket, absolute_path, io.BytesIO(data), len(data))
-        except S3Error as e:
+            await object_storage.put_object(settings.s3_bucket, absolute_path, io.BytesIO(data), len(data))
+        except Exception as e:
             logger.error(f'Failed storing object in storage: {e}')
         else:
             logger.debug(f'Stored object in storage: {key}')
     else:
         logger.debug(f'S3 is not configured, not storing object in storage: {key}')
-
-
-async def write_audit_data(settings: S3Settings, key: str, data: bytes):
-    await asyncio.to_thread(write_audit_data_sync, settings, key, data)
 
 
 async def archive_audit_data(root_path: str = 'audit'):
@@ -155,9 +148,9 @@ async def archive_audit_data(root_path: str = 'audit'):
         archive_stream = GeneratedStream(bzip2_generator)
 
         archive_path = object_storage.get_absolute_path(f'audit/.archive/{year}_{month:02}_{day:02}.tar.bz2')
-        object_storage.put_object(bucket_name, archive_path, archive_stream, -1, part_size=5 * 1024 * 1024)
+        await object_storage.put_object(bucket_name, archive_path, archive_stream, -1, part_size=5 * 1024 * 1024)
 
-        if errors := object_storage.remove_objects(bucket_name, date_path):
+        if errors := await object_storage.remove_objects(bucket_name, date_path):
             for error in errors:
                 logger.error(f'Failed to delete object in {bucket_name=}: {error}')
 

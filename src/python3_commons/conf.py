@@ -64,8 +64,8 @@ class DBSettings(BaseSettings):
 class S3Settings(BaseSettings):
     s3_endpoint_url: str | None = None
     s3_region_name: str | None = None
-    s3_access_key_id: SecretStr = ''
-    s3_secret_access_key: SecretStr = ''
+    s3_access_key_id: SecretStr = SecretStr('')
+    s3_secret_access_key: SecretStr = SecretStr('')
     s3_secure: bool = True
     s3_bucket: str | None = None
     s3_bucket_root: str | None = None
