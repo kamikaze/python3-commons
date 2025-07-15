@@ -65,7 +65,7 @@ async def put_object(bucket_name: str, path: str, data: io.BytesIO, length: int,
         except Exception as e:
             logger.error(f'Failed to put object to object storage: {bucket_name}:{path}', exc_info=e)
 
-            return None
+            raise
 
 
 @asynccontextmanager
