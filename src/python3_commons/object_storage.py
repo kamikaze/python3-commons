@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, AsyncGenerator, Iterable, Mapping, Sequence
 
 import aiobotocore.session
 from aiobotocore.response import StreamingBody
+from botocore.config import Config
 
 if TYPE_CHECKING:
     from types_aiobotocore_s3.client import S3Client
@@ -31,6 +32,7 @@ class ObjectStorage(metaclass=SingletonMeta):
             'aws_secret_access_key': settings.s3_secret_access_key.get_secret_value(),
             'use_ssl': settings.s3_secure,
             'verify': settings.s3_cert_verify,
+            'config': Config(signature_version='s3v4'),
         }
 
     @asynccontextmanager
