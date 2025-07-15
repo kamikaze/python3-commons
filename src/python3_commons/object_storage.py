@@ -32,7 +32,7 @@ class ObjectStorage(metaclass=SingletonMeta):
             'aws_secret_access_key': settings.s3_secret_access_key.get_secret_value(),
             'use_ssl': settings.s3_secure,
             'verify': settings.s3_cert_verify,
-            'config': Config(s3={'addressing_style': 'path'}, signature_version='s3v4'),
+            'config': Config(s3={'addressing_style': settings.s3_addressing_style}, signature_version='s3v4'),
         }
 
     @asynccontextmanager

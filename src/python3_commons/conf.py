@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import Field, HttpUrl, PostgresDsn, RedisDsn, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -66,6 +68,7 @@ class S3Settings(BaseSettings):
     s3_region_name: str | None = None
     s3_access_key_id: SecretStr = SecretStr('')
     s3_secret_access_key: SecretStr = SecretStr('')
+    s3_addressing_style: Literal['path', 'virtual'] = 'virtual'
     s3_secure: bool = True
     s3_bucket: str | None = None
     s3_bucket_root: str | None = None
