@@ -1,7 +1,7 @@
 import uuid
+from datetime import datetime
 
 from fastapi_users_db_sqlalchemy import GUID
-from pydantic import AwareDatetime
 from sqlalchemy import CheckConstraint, DateTime, ForeignKey, PrimaryKeyConstraint, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -55,8 +55,8 @@ class RBACUserRole(Base):
         ForeignKey('rbac_roles.uid', name='fk_rbac_user_roles_role', ondelete='CASCADE'),
         index=True,
     )
-    starts_at: Mapped[AwareDatetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    expires_at: Mapped[AwareDatetime | None] = mapped_column(DateTime(timezone=True))
+    starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     __table_args__ = (PrimaryKeyConstraint('user_id', 'role_uid', name='pk_rbac_user_roles'),)
 
@@ -74,8 +74,8 @@ class RBACApiKeyRole(Base):
         ForeignKey('rbac_roles.uid', name='fk_rbac_api_key_roles_role', ondelete='CASCADE'),
         index=True,
     )
-    starts_at: Mapped[AwareDatetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    expires_at: Mapped[AwareDatetime | None] = mapped_column(DateTime(timezone=True))
+    starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     __table_args__ = (PrimaryKeyConstraint('api_key_uid', 'role_uid', name='pk_rbac_api_key_roles'),)
 

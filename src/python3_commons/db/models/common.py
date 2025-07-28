@@ -1,6 +1,6 @@
 import uuid
+from datetime import datetime
 
-from pydantic import AwareDatetime
 from sqlalchemy import BIGINT, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.compiler import compiles
@@ -27,15 +27,15 @@ def use_identity(element, compiler, **kw):
 
 class BaseDBModel:
     id: Mapped[int] = mapped_column(BIGINT, primary_key=True, sort_order=-3)
-    created_at: Mapped[AwareDatetime] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=UTCNow(), sort_order=-2
     )
-    updated_at: Mapped[AwareDatetime | None] = mapped_column(DateTime(timezone=True), onupdate=UTCNow(), sort_order=-1)
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), onupdate=UTCNow(), sort_order=-1)
 
 
 class BaseDBUUIDModel:
     uid: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, sort_order=-3)
-    created_at: Mapped[AwareDatetime] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=UTCNow(), sort_order=-2
     )
-    updated_at: Mapped[AwareDatetime | None] = mapped_column(DateTime(timezone=True), onupdate=UTCNow(), sort_order=-1)
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), onupdate=UTCNow(), sort_order=-1)

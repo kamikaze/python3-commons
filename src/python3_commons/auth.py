@@ -3,17 +3,17 @@ from http import HTTPStatus
 from typing import Annotated, Any, Callable, Coroutine, Sequence, Type, TypeVar
 
 import aiohttp
+import msgspec
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
-from pydantic import BaseModel
 
 from python3_commons.conf import oidc_settings
 
 logger = logging.getLogger(__name__)
 
 
-class TokenData(BaseModel):
+class TokenData(msgspec.Struct):
     sub: str
     aud: str | Sequence[str]
     exp: int
@@ -21,7 +21,6 @@ class TokenData(BaseModel):
 
 
 T = TypeVar('T', bound=TokenData)
-
 
 OIDC_CONFIG_URL = f'{oidc_settings.authority_url}/.well-known/openid-configuration'
 _JWKS: dict | None = None

@@ -8,7 +8,6 @@ from typing import AsyncGenerator, Literal, Mapping, Sequence
 from uuid import uuid4
 
 from aiohttp import ClientResponse, ClientSession, ClientTimeout, client_exceptions
-from pydantic import HttpUrl
 
 from python3_commons import audit
 from python3_commons.conf import s3_settings
@@ -38,7 +37,7 @@ async def _store_response_for_audit(
 @asynccontextmanager
 async def request(
     client: ClientSession,
-    base_url: HttpUrl,
+    base_url: str,
     uri: str,
     query: Mapping | None = None,
     method: Literal['get', 'post', 'put', 'patch', 'options', 'head', 'delete'] = 'get',

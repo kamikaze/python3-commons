@@ -1,7 +1,7 @@
 import uuid
+from datetime import datetime
 
 from fastapi_users_db_sqlalchemy import GUID, SQLAlchemyBaseUserTableUUID
-from pydantic import AwareDatetime
 from sqlalchemy import BIGINT, DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -32,4 +32,4 @@ class ApiKey(BaseDBUUIDModel, Base):
     )
     partner_name: Mapped[str] = mapped_column(String, unique=True)
     key: Mapped[str] = mapped_column(String, unique=True)
-    expires_at: Mapped[AwareDatetime | None] = mapped_column(DateTime(timezone=True))
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
