@@ -92,6 +92,8 @@ async def request(
                             raise LookupError('Not found')
                         case HTTPStatus.BAD_REQUEST:
                             raise ValueError('Bad request')
+                        case HTTPStatus.TOO_MANY_REQUESTS:
+                            raise InterruptedError('Too many requests')
                         case _:
                             response.raise_for_status()
         else:

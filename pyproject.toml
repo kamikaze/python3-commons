@@ -41,7 +41,7 @@ dev = [
     "pip==25.1.1",
     "pre-commit==4.2.0",
     "pyright==1.1.403",
-    "ruff==0.12.5",
+    "ruff==0.12.7",
     "setuptools==80.9.0",
     "setuptools_scm==8.3.1",
     "types-aiobotocore-s3",
