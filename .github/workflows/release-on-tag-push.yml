@@ -1,4 +1,6 @@
 name: Create Release on Tag
+permissions:
+  contents: write
 
 on:
   push:
@@ -8,13 +10,14 @@ on:
 jobs:
   create-release:
     runs-on: ubuntu-latest
-
+    if: ${{ startsWith(github.ref, 'refs/tags') }}
     steps:
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
-          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref_name }}
+        run: |
+          gh release create "$tag" \
+            --repo="$GITHUB_REPOSITORY" \
+            --title="v${tag#v}" \
+            --generate-notes
