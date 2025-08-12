@@ -19,7 +19,7 @@ keywords = []
 requires-python = "==3.13.*"
 
 dependencies = [
-    "aiobotocore~=2.23.2",
+    "aiobotocore~=2.24.0",
     "aiohttp[speedups]~=3.12.15",
     "asyncpg~=0.30.0",
     "fastapi-users-db-sqlalchemy~=7.0.0",
@@ -30,22 +30,22 @@ dependencies = [
     "pydantic[email]~=2.11.7",
     "pydantic-settings~=2.10.1",
     "python-jose==3.5.0",
-    "SQLAlchemy[asyncio]~=2.0.42",
-    "valkey[libvalkey]~=6.1.0",
+    "SQLAlchemy[asyncio]~=2.0.43",
+    "valkey[libvalkey]~=6.1.1",
     "zeep~=4.3.1"
 ]
 
 [dependency-groups]
 dev = [
     "build",
-    "pip==25.2",
-    "pre-commit==4.2.0",
-    "pyright==1.1.403",
-    "ruff==0.12.7",
-    "setuptools==80.9.0",
-    "setuptools_scm==8.3.1",
+    "pip",
+    "pre-commit",
+    "pyright",
+    "ruff",
+    "setuptools",
+    "setuptools_scm",
     "types-aiobotocore-s3",
-    "wheel==0.45.1",
+    "wheel",
 ]
 testing = [
     "pytest",
