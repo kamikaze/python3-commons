@@ -1,6 +1,9 @@
+import functools
+import inspect
 import logging
 import shlex
 import threading
+import time
 from abc import ABCMeta
 from collections import defaultdict
 from datetime import date, datetime, timedelta
@@ -58,12 +61,12 @@ def date_range(start_date, end_date):
 def tries(times):
     def func_wrapper(f):
         async def wrapper(*args, **kwargs):
-            for time in range(times if times > 0 else 1):
+            for _time in range(times if times > 0 else 1):
                 # noinspection PyBroadException
                 try:
                     return await f(*args, **kwargs)
                 except Exception as exc:
-                    if time >= times:
+                    if _time >= times:
                         raise exc
 
         return wrapper
@@ -108,3 +111,21 @@ def request_to_curl(
         curl_cmd.append(shlex.quote(data.decode('utf-8')))
 
     return ' '.join(curl_cmd)
+
+
+def log_execution_time(func):
+    _logger = logging.getLogger(func.__module__)
+
+    @functools.wraps(func)
+    async def wrapper(*args, **kwargs):
+        start_time = time.monotonic()
+
+        try:
+            return await func(*args, **kwargs)
+        finally:
+            elapsed = time.monotonic() - start_time
+            _logger.info(f'{func.__module__}.{func.__name__} executed in {elapsed:.4f} seconds')
+
+    wrapper.__signature__ = inspect.signature(func)
+
+    return wrapper
