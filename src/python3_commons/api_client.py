@@ -110,6 +110,8 @@ async def request(
                     await _store_response_for_audit(response, audit_name, uri_path, method, request_id)
 
                 yield response
+    except client_exceptions.ClientConnectorError as e:
+        raise ConnectionRefusedError('Cient connection error') from e
     except client_exceptions.ClientOSError as e:
         if e.errno == 32:
             raise ConnectionResetError('Broken pipe') from e
