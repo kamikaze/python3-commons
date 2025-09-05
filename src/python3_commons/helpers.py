@@ -8,6 +8,7 @@ from abc import ABCMeta
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 from decimal import ROUND_HALF_UP, Decimal
+from http.cookies import BaseCookie, SimpleCookie
 from json import dumps
 from typing import Literal, Mapping, Sequence
 from urllib.parse import urlencode
@@ -86,6 +87,7 @@ def request_to_curl(
     query: Mapping | None = None,
     method: Literal['get', 'post', 'put', 'patch', 'options', 'head', 'delete'] = 'get',
     headers: Mapping | None = None,
+    cookies: BaseCookie[str] | None = None,
     json: Mapping | Sequence | str | None = None,
     data: bytes | None = None,
 ) -> str:
@@ -99,6 +101,14 @@ def request_to_curl(
             header_line = f'{key}: {value}'
             curl_cmd.append('-H')
             curl_cmd.append(shlex.quote(header_line))
+
+    if cookies:
+        if isinstance(cookies, SimpleCookie):
+            cookie_str = '; '.join(f'{morsel.key}={morsel.value}' for morsel in cookies.values())
+        else:
+            cookie_str = '; '.join(f'{k}={v}' for k, v in cookies.items())
+
+        curl_cmd.extend(['-b', shlex.quote(cookie_str)])
 
     if json:
         curl_cmd.append('-H')

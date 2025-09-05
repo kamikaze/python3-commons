@@ -8,6 +8,7 @@ from typing import AsyncGenerator, Literal, Mapping, Sequence
 from uuid import uuid4
 
 from aiohttp import ClientResponse, ClientSession, ClientTimeout, client_exceptions
+from aiohttp.abc import URL
 
 from python3_commons import audit
 from python3_commons.conf import s3_settings
@@ -57,12 +58,15 @@ async def request(
 
     if audit_name:
         curl_request = None
+        cookies = client.cookie_jar.filter_cookies(URL(base_url))
 
         if method == 'get':
             if headers or query:
-                curl_request = request_to_curl(url, query, method, headers)
+                curl_request = request_to_curl(url=url, query=query, method=method, headers=headers, cookies=cookies)
         else:
-            curl_request = request_to_curl(url, query, method, headers, json, data)
+            curl_request = request_to_curl(
+                url=url, query=query, method=method, headers=headers, cookies=cookies, json=json, data=data
+            )
 
         if curl_request:
             await audit.write_audit_data(
@@ -70,6 +74,7 @@ async def request(
                 f'{date_path}/{audit_name}/{uri_path}/{method}_{timestamp}_{request_id}_request.txt',
                 curl_request.encode('utf-8'),
             )
+
     client_method = getattr(client, method)
 
     logger.debug(f'Requesting {method} {url}')
