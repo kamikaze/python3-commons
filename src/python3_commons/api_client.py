@@ -58,7 +58,7 @@ async def request(
 
     if audit_name:
         curl_request = None
-        cookies = client.cookie_jar.filter_cookies(URL(base_url))
+        cookies = client.cookie_jar.filter_cookies(URL(base_url)) if base_url else None
 
         if method == 'get':
             if headers or query:
