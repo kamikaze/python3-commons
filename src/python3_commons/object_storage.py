@@ -25,15 +25,21 @@ class ObjectStorage(metaclass=SingletonMeta):
             raise ValueError('s3_endpoint_url must be set')
 
         self._session = aiobotocore.session.get_session()
-        self._config = {
+        config = {
             'endpoint_url': settings.s3_endpoint_url,
             'region_name': settings.s3_region_name,
-            'aws_access_key_id': settings.s3_access_key_id.get_secret_value(),
-            'aws_secret_access_key': settings.s3_secret_access_key.get_secret_value(),
             'use_ssl': settings.s3_secure,
             'verify': settings.s3_cert_verify,
             'config': Config(s3={'addressing_style': settings.s3_addressing_style}, signature_version='s3v4'),
         }
+
+        if s3_access_key_id := settings.s3_access_key_id:
+            config['aws_access_key_id'] = s3_access_key_id.get_secret_value()
+
+        if s3_secret_access_key := settings.s3_secret_access_key:
+            config['aws_secret_access_key'] = s3_secret_access_key.get_secret_value()
+
+        self._config = config
 
     @asynccontextmanager
     async def get_client(self) -> AsyncGenerator[S3Client, None]:
