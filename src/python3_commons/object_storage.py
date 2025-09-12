@@ -21,17 +21,16 @@ logger = logging.getLogger(__name__)
 
 class ObjectStorage(metaclass=SingletonMeta):
     def __init__(self, settings: S3Settings):
-        if not settings.s3_endpoint_url:
-            raise ValueError('s3_endpoint_url must be set')
-
         self._session = aiobotocore.session.get_session()
         config = {
-            'endpoint_url': settings.s3_endpoint_url,
             'region_name': settings.s3_region_name,
             'use_ssl': settings.s3_secure,
             'verify': settings.s3_cert_verify,
             'config': Config(s3={'addressing_style': settings.s3_addressing_style}, signature_version='s3v4'),
         }
+
+        if s3_endpoint_url := settings.s3_endpoint_url:
+            config['endpoint_url'] = s3_endpoint_url
 
         if s3_access_key_id := settings.s3_access_key_id:
             config['aws_access_key_id'] = s3_access_key_id.get_secret_value()
