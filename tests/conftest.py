@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from uuid import UUID, uuid4
 
@@ -71,7 +71,7 @@ def msgspec_struct() -> TestStruct:
         a=1,
         b='B',
         c=None,
-        d=datetime(2023, 7, 25, 1, 2, 3),
+        d=datetime(2023, 7, 25, 1, 2, 3, tzinfo=UTC),
         e=date(2023, 7, 24),
         f=Decimal('1.23'),
         sub=SubStruc(uid=uuid4(), name='sub-struct'),
@@ -84,7 +84,7 @@ def pydantic_struct() -> PydanticTestStruct:
         a=1,
         b='B',
         c=None,
-        d=datetime(2023, 7, 25, 1, 2, 3),
+        d=datetime(2023, 7, 25, 1, 2, 3, tzinfo=UTC),
         e=date(2023, 7, 24),
         f=Decimal('1.23'),
         sub=PydanticSubStruc(uid=uuid4(), name='sub-struct'),
@@ -96,22 +96,22 @@ def s3_file_objects() -> tuple:
     return (
         (
             'file_a.txt',
-            datetime(2024, 1, 1),
+            datetime(2024, 1, 1, tzinfo=UTC),
             b'ABCDE',
         ),
         (
             'file_b.txt',
-            datetime(2024, 1, 2),
+            datetime(2024, 1, 2, tzinfo=UTC),
             b'FGHIJ',
         ),
         (
             'file_c.txt',
-            datetime(2024, 1, 3),
+            datetime(2024, 1, 3, tzinfo=UTC),
             b'KLMNO',
         ),
         (
             'file_d.txt',
-            datetime(2024, 1, 4),
+            datetime(2024, 1, 4, tzinfo=UTC),
             b'PQRST',
         ),
     )

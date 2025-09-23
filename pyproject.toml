@@ -17,22 +17,21 @@ classifiers = [
 ]
 keywords = []
 requires-python = "==3.13.*"
-
 dependencies = [
     "aiobotocore~=2.24.2",
     "aiohttp[speedups]~=3.12.15",
     "asyncpg~=0.30.0",
     "fastapi-users-db-sqlalchemy~=7.0.0",
     "fastapi-users[sqlalchemy]~=14.0.1",
-    "lxml~=6.0.1",
+    "lxml~=6.0.2",
     "msgpack~=1.1.1",
     "msgspec~=0.19.0",
-    "pydantic[email]~=2.11.7",
-    "pydantic-settings~=2.10.1",
+    "pydantic[email]~=2.11.9",
+    "pydantic-settings~=2.11.0",
     "python-jose==3.5.0",
     "SQLAlchemy[asyncio]~=2.0.43",
     "valkey[libvalkey]~=6.1.1",
-    "zeep~=4.3.1"
+    "zeep~=4.3.2"
 ]
 
 [dependency-groups]
@@ -51,7 +50,7 @@ testing = [
     "pytest",
     "pytest-asyncio",
     "pytest-cov",
-    "pytest-mock"
+    "pytest-mock",
 ]
 
 [project.urls]
@@ -67,13 +66,6 @@ exclude = ["tests"]
 [tool.bdist_wheel]
 universal = true
 
-[tool.pytest.ini_options]
-addopts = [
-    "--verbose"
-]
-norecursedirs = ["dist", "build", ".tox"]
-testpaths = ["tests"]
-
 [tool.ruff]
 line-length = 120
 indent-width = 4
@@ -82,8 +74,69 @@ target-version = "py313"
 [tool.ruff.analyze]
 detect-string-imports = true
 
+[tool.ruff.lint]
+select = [
+    "FAST",
+    "YTT",
+#    "ANN",
+    "I",
+    "E",
+    "W",
+    "PYI",
+
+    "A",
+#    "ARG",
+    "ASYNC",
+    "B",
+    "C4",
+#    "DTZ",
+    "EM",
+    "EXE",
+    "F",
+    "FA",
+    "FBT",
+    "FLY",
+    "FURB",
+#    "G",
+    "ICN",
+    "INP",
+    "ISC",
+    "LOG",
+    "N",
+    "NPY",
+    "PD",
+    "PERF",
+    "PIE",
+    "PLC",
+    "PLE",
+#    "PLR",
+    "PLW",
+    "PT",
+    "PTH",
+    "Q",
+#    "RET",
+    "RSE",
+#    "RUF",
+    "S",
+    "SIM",
+    "SLF",
+    "SLOT",
+    "T20",
+    "TC",
+    "TID",
+    "TRY",
+    "UP",
+]
+ignore = [
+    "ASYNC109",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*.py" = ["S101"]
+
 [tool.ruff.lint.flake8-quotes]
 docstring-quotes = "double"
+inline-quotes = "single"
 
 [tool.ruff.format]
 exclude = ["*.pyi"]
@@ -95,3 +148,11 @@ venvPath = "."
 venv = ".venv"
 reportMatchNotExhaustive = "error"
 reportUnnecessaryComparison = "error"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+asyncio_mode = "strict"
+asyncio_default_fixture_loop_scope = "function"
+addopts = "--cov python3_commons --cov-fail-under=20 --cov-report term-missing --verbose"
+norecursedirs = ["dist", "build", ".tox"]
+testpaths = ["tests"]

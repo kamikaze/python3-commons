@@ -6,11 +6,12 @@ import threading
 import time
 from abc import ABCMeta
 from collections import defaultdict
+from collections.abc import Mapping, Sequence
 from datetime import date, datetime, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 from http.cookies import BaseCookie
 from json import dumps
-from typing import Literal, Mapping, Sequence
+from typing import Literal
 from urllib.parse import urlencode
 
 from python3_commons.serializers.json import CustomJSONEncoder
@@ -34,7 +35,7 @@ class SingletonMeta(ABCMeta):
                 try:
                     return cls.__instances[cls]
                 except KeyError:
-                    instance = super(SingletonMeta, cls).__call__(*args, **kwargs)
+                    instance = super().__call__(*args, **kwargs)
                     cls.__instances[cls] = instance
 
                     return instance
@@ -66,9 +67,9 @@ def tries(times):
                 # noinspection PyBroadException
                 try:
                     return await f(*args, **kwargs)
-                except Exception as exc:
+                except Exception:
                     if _time >= times:
-                        raise exc
+                        raise
 
         return wrapper
 

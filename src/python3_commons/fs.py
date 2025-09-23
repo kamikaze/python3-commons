@@ -1,8 +1,8 @@
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator
 
 
-def iter_files(root: Path, recursive: bool = True) -> Generator[Path, None, None]:
+def iter_files(root: Path, *, recursive: bool = True) -> Generator[Path]:
     for item in root.iterdir():
         if item.is_file():
             yield item

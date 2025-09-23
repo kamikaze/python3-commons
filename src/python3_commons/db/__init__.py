@@ -1,6 +1,6 @@
 import contextlib
 import logging
-from typing import AsyncGenerator, Callable, Mapping
+from collections.abc import AsyncGenerator, Callable, Mapping
 
 from sqlalchemy import MetaData
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_engine_from_config
@@ -24,7 +24,7 @@ class AsyncSessionManager:
         try:
             return self.db_settings[name]
         except KeyError:
-            logger.error(f'Missing database settings: {name}')
+            logger.exception(f'Missing database settings: {name}')
 
             raise
 
@@ -63,8 +63,8 @@ class AsyncSessionManager:
 
         return session_maker
 
-    def get_async_session(self, name: str) -> Callable[[], AsyncGenerator[AsyncSession, None]]:
-        async def get_session() -> AsyncGenerator[AsyncSession, None]:
+    def get_async_session(self, name: str) -> Callable[[], AsyncGenerator[AsyncSession]]:
+        async def get_session() -> AsyncGenerator[AsyncSession]:
             session_maker = self.get_session_maker(name)
 
             async with session_maker() as session:
@@ -83,7 +83,7 @@ async def is_healthy(engine: AsyncEngine) -> bool:
             result = await conn.execute('SELECT 1;')
 
             return result.scalar() == 1
-    except Exception as e:
-        logger.error(f'Database connection is not healthy: {e}')
+    except Exception:
+        logger.exception('Database connection is not healthy.')
 
         return False
