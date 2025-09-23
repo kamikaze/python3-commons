@@ -67,13 +67,12 @@ async def put_object(bucket_name: str, path: str, data: io.BytesIO, length: int,
             await s3_client.put_object(Bucket=bucket_name, Key=path, Body=data, ContentLength=length)
 
             logger.debug(f'Stored object into object storage: {bucket_name}:{path}')
-
-            return f's3://{bucket_name}/{path}'
-
         except Exception as e:
-            logger.error(f'Failed to put object to object storage: {bucket_name}:{path}', exc_info=e)
+            logger.exception(f'Failed to put object to object storage: {bucket_name}:{path}', exc_info=e)
 
             raise
+
+        return f's3://{bucket_name}/{path}'
 
 
 @asynccontextmanager
@@ -89,7 +88,7 @@ async def get_object_stream(bucket_name: str, path: str) -> AsyncGenerator[Strea
             async with response['Body'] as stream:
                 yield stream
         except Exception as e:
-            logger.debug(f'Failed getting object from object storage: {bucket_name}:{path}', exc_info=e)
+            logger.exception(f'Failed getting object from object storage: {bucket_name}:{path}', exc_info=e)
 
             raise
 
@@ -145,7 +144,7 @@ async def remove_object(bucket_name: str, object_name: str):
             await s3_client.delete_object(Bucket=bucket_name, Key=object_name)
             logger.debug(f'Removed object from object storage: {bucket_name}:{object_name}')
         except Exception as e:
-            logger.error(f'Failed to remove object from object storage: {bucket_name}:{object_name}', exc_info=e)
+            logger.exception(f'Failed to remove object from object storage: {bucket_name}:{object_name}', exc_info=e)
 
             raise
 
@@ -182,9 +181,9 @@ async def remove_objects(
                     errors.extend(response['Errors'])
 
             logger.debug(f'Removed {len(objects_to_delete)} objects from object storage: {bucket_name}')
-
-            return errors if errors else None
         except Exception as e:
-            logger.error(f'Failed to remove objects from object storage: {bucket_name}', exc_info=e)
+            logger.exception(f'Failed to remove objects from object storage: {bucket_name}', exc_info=e)
 
             raise
+
+        return errors if errors else None

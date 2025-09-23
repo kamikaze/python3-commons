@@ -67,9 +67,9 @@ def tries(times):
                 # noinspection PyBroadException
                 try:
                     return await f(*args, **kwargs)
-                except Exception as exc:
+                except Exception:
                     if _time >= times:
-                        raise exc
+                        raise
 
         return wrapper
 

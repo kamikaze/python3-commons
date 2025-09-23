@@ -143,8 +143,8 @@ async def write_audit_data(settings: S3Settings, key: str, data: bytes):
             absolute_path = object_storage.get_absolute_path(f'audit/{key}')
 
             await object_storage.put_object(settings.s3_bucket, absolute_path, io.BytesIO(data), len(data))
-        except Exception as e:
-            logger.error(f'Failed storing object in storage: {e}')
+        except Exception:
+            logger.exception('Failed storing object in storage.')
         else:
             logger.debug(f'Stored object in storage: {key}')
     else:

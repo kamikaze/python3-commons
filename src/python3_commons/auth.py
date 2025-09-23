@@ -78,11 +78,11 @@ def get_token_verifier[T](
                 payload = jwt.decode(token, jwks, algorithms=['RS256'])
 
             token_data = token_cls(**payload)
-
-            return token_data
         except jwt.ExpiredSignatureError as e:
             raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail='Token has expired') from e
         except JWTError as e:
             raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail=f'Token is invalid: {str(e)}') from e
+
+        return token_data
 
     return get_verified_token

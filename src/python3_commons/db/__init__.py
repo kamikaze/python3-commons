@@ -24,7 +24,7 @@ class AsyncSessionManager:
         try:
             return self.db_settings[name]
         except KeyError:
-            logger.error(f'Missing database settings: {name}')
+            logger.exception(f'Missing database settings: {name}')
 
             raise
 
@@ -83,7 +83,7 @@ async def is_healthy(engine: AsyncEngine) -> bool:
             result = await conn.execute('SELECT 1;')
 
             return result.scalar() == 1
-    except Exception as e:
-        logger.error(f'Database connection is not healthy: {e}')
+    except Exception:
+        logger.exception('Database connection is not healthy.')
 
         return False
