@@ -1,5 +1,5 @@
 import logging
-from typing import Mapping
+from collections.abc import Mapping
 
 import sqlalchemy as sa
 from sqlalchemy import asc, desc, func
@@ -26,11 +26,12 @@ def get_query(
         for order_by_col in order_by.split(','):
             if order_by_col.startswith('-'):
                 direction = desc
-                order_by_col = order_by_col[1:]
+                order_by_col_clean = order_by_col[1:]
             else:
                 direction = asc
+                order_by_col_clean = order_by_col
 
-            order_by_cols[order_by_col] = direction
+            order_by_cols[order_by_col_clean] = direction
 
         order_by_clauses = tuple(
             direction(columns[order_by_col][0]) for order_by_col, direction in order_by_cols.items()
@@ -54,9 +55,6 @@ def get_query(
     else:
         where_parts = None
 
-    if where_parts:
-        where_clause = sa.and_(*where_parts)
-    else:
-        where_clause = None
+    where_clause = sa.and_(*where_parts) if where_parts else None
 
     return where_clause, order_by_clauses

@@ -4,12 +4,13 @@ import logging
 import struct
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Type, TypeVar
+from typing import Any, TypeVar
 
 from msgspec import msgpack
 from msgspec.msgpack import Ext, encode
 from pydantic import BaseModel
 
+from python3_commons.serializers.common import ExtendedType
 from python3_commons.serializers.json import CustomJSONEncoder
 
 logger = logging.getLogger(__name__)
@@ -18,28 +19,36 @@ T = TypeVar('T')
 
 def enc_hook(obj: Any) -> Any:
     if isinstance(obj, Decimal):
-        return Ext(1, struct.pack('b', str(obj).encode()))
+        return Ext(ExtendedType.DECIMAL, struct.pack('b', str(obj).encode()))
     elif isinstance(obj, datetime):
-        return Ext(2, struct.pack('b', obj.isoformat().encode()))
+        return Ext(ExtendedType.DATETIME, struct.pack('b', obj.isoformat().encode()))
     elif isinstance(obj, date):
-        return Ext(3, struct.pack('b', obj.isoformat().encode()))
+        return Ext(ExtendedType.DATE, struct.pack('b', obj.isoformat().encode()))
     elif dataclasses.is_dataclass(obj):
-        return Ext(4, struct.pack('b', json.dumps(dataclasses.asdict(obj), cls=CustomJSONEncoder).encode()))
+        return Ext(
+            ExtendedType.DATACLASS,
+            struct.pack('b', json.dumps(dataclasses.asdict(obj), cls=CustomJSONEncoder).encode()),
+        )
 
-    raise NotImplementedError(f'Objects of type {type(obj)} are not supported')
+    msg = f'Objects of type {type(obj)} are not supported'
+
+    raise NotImplementedError(msg)
 
 
 def ext_hook(code: int, data: memoryview) -> Any:
-    if code == 1:
-        return Decimal(data.tobytes().decode())
-    elif code == 2:
-        return datetime.fromisoformat(data.tobytes().decode())
-    elif code == 3:
-        return date.fromisoformat(data.tobytes().decode())
-    elif code == 4:
-        return json.loads(data.tobytes())
+    match code:
+        case ExtendedType.DECIMAL:
+            return Decimal(data.tobytes().decode())
+        case ExtendedType.DATETIME:
+            return datetime.fromisoformat(data.tobytes().decode())
+        case ExtendedType.DATE:
+            return date.fromisoformat(data.tobytes().decode())
+        case ExtendedType.DATACLASS:
+            return json.loads(data.tobytes())
+        case _:
+            msg = f'Extension type code {code} is not supported'
 
-    raise NotImplementedError(f'Extension type code {code} is not supported')
+            raise NotImplementedError(msg)
 
 
 MSGPACK_ENCODER = msgpack.Encoder(enc_hook=enc_hook)
@@ -56,7 +65,7 @@ def serialize_msgpack_native(data: Any) -> bytes:
     return result
 
 
-def deserialize_msgpack_native(data: bytes, data_type: Type[T] | None = None) -> T | Any:
+def deserialize_msgpack_native[T](data: bytes, data_type: type[T] | None = None) -> T | Any:
     if data_type:
         if issubclass(data_type, BaseModel):
             decoded = MSGPACK_DECODER_NATIVE.decode(data)
@@ -78,7 +87,7 @@ def serialize_msgpack(data: Any) -> bytes:
     return result
 
 
-def deserialize_msgpack(data: bytes, data_type: Type[T] | None = None) -> T | Any:
+def deserialize_msgpack[T](data: bytes, data_type: type[T] | None = None) -> T | Any:
     if data_type:
         if issubclass(data_type, BaseModel):
             decoded = MSGPACK_DECODER.decode(data)

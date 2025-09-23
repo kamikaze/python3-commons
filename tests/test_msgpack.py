@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from decimal import Decimal
 
 from python3_commons.serializers import msgpack
@@ -9,7 +9,7 @@ def test_encode_decode_dict_to_msgpack(data_dict):
         'A': 1,
         'B': 'B',
         'C': None,
-        'D': datetime(2023, 7, 25, 1, 2, 3),
+        'D': datetime(2023, 7, 25, 1, 2, 3, tzinfo=UTC),
         'E': date(2023, 7, 24),
         'F': Decimal('1.23'),
     }

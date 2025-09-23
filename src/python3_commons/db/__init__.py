@@ -1,6 +1,6 @@
 import contextlib
 import logging
-from typing import AsyncGenerator, Callable, Mapping
+from collections.abc import AsyncGenerator, Callable, Mapping
 
 from sqlalchemy import MetaData
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_engine_from_config
@@ -63,8 +63,8 @@ class AsyncSessionManager:
 
         return session_maker
 
-    def get_async_session(self, name: str) -> Callable[[], AsyncGenerator[AsyncSession, None]]:
-        async def get_session() -> AsyncGenerator[AsyncSession, None]:
+    def get_async_session(self, name: str) -> Callable[[], AsyncGenerator[AsyncSession]]:
+        async def get_session() -> AsyncGenerator[AsyncSession]:
             session_maker = self.get_session_maker(name)
 
             async with session_maker() as session:

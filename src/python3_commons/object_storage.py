@@ -1,16 +1,18 @@
 from __future__ import annotations
 
-import io
 import logging
 from contextlib import asynccontextmanager
-from datetime import datetime
-from typing import TYPE_CHECKING, AsyncGenerator, Iterable, Mapping, Sequence
+from typing import TYPE_CHECKING
 
 import aiobotocore.session
-from aiobotocore.response import StreamingBody
 from botocore.config import Config
 
 if TYPE_CHECKING:
+    import io
+    from collections.abc import AsyncGenerator, Iterable, Mapping, Sequence
+    from datetime import datetime
+
+    from aiobotocore.response import StreamingBody
     from types_aiobotocore_s3.client import S3Client
 
 from python3_commons.conf import S3Settings, s3_settings
@@ -41,14 +43,13 @@ class ObjectStorage(metaclass=SingletonMeta):
         self._config = config
 
     @asynccontextmanager
-    async def get_client(self) -> AsyncGenerator[S3Client, None]:
+    async def get_client(self) -> AsyncGenerator[S3Client]:
         async with self._session.create_client('s3', **self._config) as client:
             yield client
 
 
 def get_absolute_path(path: str) -> str:
-    if path.startswith('/'):
-        path = path[1:]
+    path = path.removeprefix('/')
 
     if bucket_root := s3_settings.s3_bucket_root:
         path = f'{bucket_root[:1] if bucket_root.startswith("/") else bucket_root}/{path}'
@@ -102,7 +103,7 @@ async def get_object(bucket_name: str, path: str) -> bytes:
     return body
 
 
-async def list_objects(bucket_name: str, prefix: str, recursive: bool = True) -> AsyncGenerator[Mapping, None]:
+async def list_objects(bucket_name: str, prefix: str, *, recursive: bool = True) -> AsyncGenerator[Mapping]:
     storage = ObjectStorage(s3_settings)
 
     async with storage.get_client() as s3_client:
@@ -117,9 +118,9 @@ async def list_objects(bucket_name: str, prefix: str, recursive: bool = True) ->
 
 
 async def get_object_streams(
-    bucket_name: str, path: str, recursive: bool = True
-) -> AsyncGenerator[tuple[str, datetime, StreamingBody], None]:
-    async for obj in list_objects(bucket_name, path, recursive):
+    bucket_name: str, path: str, *, recursive: bool = True
+) -> AsyncGenerator[tuple[str, datetime, StreamingBody]]:
+    async for obj in list_objects(bucket_name, path, recursive=recursive):
         object_name = obj['Key']
         last_modified = obj['LastModified']
 
@@ -128,9 +129,9 @@ async def get_object_streams(
 
 
 async def get_objects(
-    bucket_name: str, path: str, recursive: bool = True
-) -> AsyncGenerator[tuple[str, datetime, bytes], None]:
-    async for object_name, last_modified, stream in get_object_streams(bucket_name, path, recursive):
+    bucket_name: str, path: str, *, recursive: bool = True
+) -> AsyncGenerator[tuple[str, datetime, bytes]]:
+    async for object_name, last_modified, stream in get_object_streams(bucket_name, path, recursive=recursive):
         data = await stream.read()
 
         yield object_name, last_modified, data
@@ -155,13 +156,12 @@ async def remove_objects(
     storage = ObjectStorage(s3_settings)
 
     async with storage.get_client() as s3_client:
-        objects_to_delete = []
-
         if prefix:
-            async for obj in list_objects(bucket_name, prefix, recursive=True):
-                objects_to_delete.append({'Key': obj['Key']})
+            objects_to_delete = tuple(
+                {'Key': obj['Key']} async for obj in list_objects(bucket_name, prefix, recursive=True)
+            )
         elif object_names:
-            objects_to_delete = [{'Key': name} for name in object_names]
+            objects_to_delete = tuple({'Key': name} for name in object_names)
         else:
             return None
 

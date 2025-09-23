@@ -1,10 +1,12 @@
+import errno
 import logging
+from collections.abc import AsyncGenerator, Mapping, Sequence
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from enum import Enum
 from http import HTTPStatus
 from json import dumps
-from typing import AsyncGenerator, Literal, Mapping, Sequence
+from typing import Literal
 from uuid import uuid4
 
 from aiohttp import ClientResponse, ClientSession, ClientTimeout, client_exceptions
@@ -52,8 +54,8 @@ async def request(
     date_path = now.strftime('%Y/%m/%d')
     timestamp = now.strftime('%H%M%S_%f')
     request_id = str(uuid4())[-12:]
-    uri_path = uri[:-1] if uri.endswith('/') else uri
-    uri_path = uri_path[1:] if uri_path.startswith('/') else uri_path
+    uri_path = uri.removesuffix('/')
+    uri_path = uri_path.removeprefix('/')
     url = f'{u[:-1] if (u := str(base_url)).endswith("/") else u}{uri}'
 
     if audit_name:
@@ -90,15 +92,25 @@ async def request(
                 else:
                     match response.status:
                         case HTTPStatus.UNAUTHORIZED:
-                            raise PermissionError('Unauthorized')
+                            msg = 'Unauthorized'
+
+                            raise PermissionError(msg)
                         case HTTPStatus.FORBIDDEN:
-                            raise PermissionError('Forbidden')
+                            msg = 'Forbidden'
+
+                            raise PermissionError(msg)
                         case HTTPStatus.NOT_FOUND:
-                            raise LookupError('Not found')
+                            msg = 'Not found'
+
+                            raise LookupError(msg)
                         case HTTPStatus.BAD_REQUEST:
-                            raise ValueError('Bad request')
+                            msg = 'Bad request'
+
+                            raise ValueError(msg)
                         case HTTPStatus.TOO_MANY_REQUESTS:
-                            raise InterruptedError('Too many requests')
+                            msg = 'Too many requests'
+
+                            raise InterruptedError(msg)
                         case _:
                             response.raise_for_status()
         else:
@@ -116,13 +128,21 @@ async def request(
 
                 yield response
     except client_exceptions.ClientConnectorError as e:
-        raise ConnectionRefusedError('Cient connection error') from e
+        msg = 'Cient connection error'
+
+        raise ConnectionRefusedError(msg) from e
     except client_exceptions.ClientOSError as e:
-        if e.errno == 32:
-            raise ConnectionResetError('Broken pipe') from e
-        elif e.errno == 104:
-            raise ConnectionResetError('Connection reset by peer') from e
+        if e.errno == errno.EPIPE:
+            msg = 'Broken pipe'
+
+            raise ConnectionResetError(msg) from e
+        elif e.errno == errno.ECONNRESET:
+            msg = 'Connection reset by peer'
+
+            raise ConnectionResetError(msg) from e
 
         raise
     except client_exceptions.ServerDisconnectedError as e:
-        raise ConnectionResetError('Server disconnected') from e
+        msg = 'Server disconnected'
+
+        raise ConnectionResetError(msg) from e

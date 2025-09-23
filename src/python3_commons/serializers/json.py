@@ -10,11 +10,9 @@ from typing import Any
 class CustomJSONEncoder(json.JSONEncoder):
     def default(self, o) -> Any:
         try:
-            return super(CustomJSONEncoder, self).default(o)
+            return super().default(o)
         except TypeError:
-            if isinstance(o, datetime):
-                return o.isoformat()
-            elif isinstance(o, date):
+            if isinstance(o, (datetime, date)):
                 return o.isoformat()
             elif isinstance(o, bytes):
                 return base64.b64encode(o).decode('ascii')

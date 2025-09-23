@@ -1,7 +1,8 @@
 import logging
 import socket
+from collections.abc import Mapping, Sequence
 from platform import platform
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 import valkey
 from pydantic import RedisDsn
@@ -34,7 +35,7 @@ class AsyncValkeyClient(metaclass=SingletonMeta):
 
     @staticmethod
     def _get_keepalive_options():
-        if platform == 'linux' or platform == 'darwin':
+        if platform in {'linux', 'darwin'}:
             return {socket.TCP_KEEPIDLE: 10, socket.TCP_KEEPINTVL: 5, socket.TCP_KEEPCNT: 5}
         else:
             return {}
@@ -88,7 +89,7 @@ async def delete(*names: str | bytes | memoryview):
     await get_valkey_client().delete(*names)
 
 
-async def store_bytes(name: str, data: bytes, ttl: int = None, if_not_set: bool = False):
+async def store_bytes(name: str, data: bytes, ttl: int = None, *, if_not_set: bool = False):
     r = get_valkey_client()
 
     return await r.set(name, data, ex=ttl, nx=if_not_set)
@@ -100,8 +101,8 @@ async def get_bytes(name: str) -> bytes | None:
     return await r.get(name)
 
 
-async def store(name: str, obj: Any, ttl: int = None, if_not_set: bool = False):
-    return await store_bytes(name, serialize_msgpack_native(obj), ttl, if_not_set)
+async def store(name: str, obj: Any, ttl: int = None, *, if_not_set: bool = False):
+    return await store_bytes(name, serialize_msgpack_native(obj), ttl, if_not_set=if_not_set)
 
 
 async def get(name: str, default=None, data_type: Any = None) -> Any:
