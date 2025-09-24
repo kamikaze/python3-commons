@@ -9,7 +9,7 @@ def test_encode_decode_dict_to_msgpack(data_dict):
         'A': 1,
         'B': 'B',
         'C': None,
-        'D': datetime(2023, 7, 25, 1, 2, 3, tzinfo=UTC),
+        'D': datetime(2023, 7, 25, 1, 2, 3),
         'E': date(2023, 7, 24),
         'F': Decimal('1.23'),
     }
