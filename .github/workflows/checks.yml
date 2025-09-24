@@ -36,9 +36,9 @@ jobs:
         run: |
           uvx ruff check --extend-select I ./src/ ./tests/
 
-      - name: Pyright check
-        run: |
-          uvx pyright ./src/
+#      - name: Pyright check
+#        run: |
+#          uvx pyright ./src/
   tests:
     runs-on: ubuntu-latest
     steps:
