@@ -33,7 +33,7 @@ class TestData:
 @pytest.fixture
 def data_dataclass():
     return TestData(
-        a=1, b='B', c=None, d=datetime(2023, 7, 25, 1, 2, 3, tzinfo=UTC), e=date(2023, 7, 24), f=Decimal('1.23')
+        a=1, b='B', c=None, d=datetime(2023, 7, 25, 1, 2, 3), e=date(2023, 7, 24), f=Decimal('1.23')
     )
 
 
