@@ -24,9 +24,8 @@ async def has_api_key_permission(session: AsyncSession, api_key_uid: UUID, permi
     )
 
     cursor = await session.execute(query)
-    result = cursor.scalar()
 
-    return result
+    return bool(cursor.scalar())
 
 
 async def has_user_permission(session: AsyncSession, user_id: UUID, permission: str) -> bool:
@@ -43,6 +42,5 @@ async def has_user_permission(session: AsyncSession, user_id: UUID, permission: 
     )
 
     cursor = await session.execute(query)
-    result = cursor.scalar()
 
-    return result
+    return bool(cursor.scalar())

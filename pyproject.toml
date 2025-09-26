@@ -114,9 +114,9 @@ select = [
     "PT",
     "PTH",
     "Q",
-#    "RET",
+    "RET",
     "RSE",
-#    "RUF",
+    "RUF",
     "S",
     "SIM",
     "SLF",
@@ -132,7 +132,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*.py" = ["S101"]
+"tests/*.py" = ["DTZ", "S101"]
 
 [tool.ruff.lint.flake8-quotes]
 docstring-quotes = "double"

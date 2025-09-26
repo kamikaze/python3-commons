@@ -37,8 +37,7 @@ class AsyncValkeyClient(metaclass=SingletonMeta):
     def _get_keepalive_options():
         if platform in {'linux', 'darwin'}:
             return {socket.TCP_KEEPIDLE: 10, socket.TCP_KEEPINTVL: 5, socket.TCP_KEEPCNT: 5}
-        else:
-            return {}
+        return {}
 
     def _initialize_sentinel(self, dsn: RedisDsn):
         sentinel = Sentinel(
@@ -89,7 +88,7 @@ async def delete(*names: str | bytes | memoryview):
     await get_valkey_client().delete(*names)
 
 
-async def store_bytes(name: str, data: bytes, ttl: int = None, *, if_not_set: bool = False):
+async def store_bytes(name: str, data: bytes, ttl: int | None = None, *, if_not_set: bool = False):
     r = get_valkey_client()
 
     return await r.set(name, data, ex=ttl, nx=if_not_set)
@@ -101,18 +100,18 @@ async def get_bytes(name: str) -> bytes | None:
     return await r.get(name)
 
 
-async def store(name: str, obj: Any, ttl: int = None, *, if_not_set: bool = False):
+async def store(name: str, obj: Any, ttl: int | None = None, *, if_not_set: bool = False):
     return await store_bytes(name, serialize_msgpack_native(obj), ttl, if_not_set=if_not_set)
 
 
-async def get(name: str, default=None, data_type: Any = None) -> Any:
+async def get(name: str, default: Any | None = None, data_type: Any = None) -> Any | None:
     if data := await get_bytes(name):
         return deserialize_msgpack_native(data, data_type)
 
     return default
 
 
-async def store_string(name: str, data: str, ttl: int = None):
+async def store_string(name: str, data: str, ttl: int | None = None):
     await store_bytes(name, data.encode(), ttl)
 
 
@@ -123,7 +122,7 @@ async def get_string(name: str) -> str | None:
     return None
 
 
-async def store_sequence(name: str, data: Sequence, ttl: int = None):
+async def store_sequence(name: str, data: Sequence, ttl: int | None = None):
     if data:
         try:
             r = get_valkey_client()
@@ -142,7 +141,7 @@ async def get_sequence(name: str, _type: type = list) -> Sequence:
     return _type(map(deserialize_msgpack_native, lrange))
 
 
-async def store_dict(name: str, data: Mapping, ttl: int = None):
+async def store_dict(name: str, data: Mapping, ttl: int | None = None):
     if data:
         try:
             r = get_valkey_client()
@@ -159,14 +158,12 @@ async def get_dict(name: str, value_data_type=None) -> dict | None:
     r = get_valkey_client()
 
     if data := await r.hgetall(name):
-        data = {k.decode(): deserialize_msgpack(v, value_data_type) for k, v in data.items()}
-
-        return data
+        return {k.decode(): deserialize_msgpack(v, value_data_type) for k, v in data.items()}
 
     return None
 
 
-async def set_dict(name: str, mapping: dict, ttl: int = None):
+async def set_dict(name: str, mapping: dict, ttl: int | None = None):
     if mapping:
         try:
             r = get_valkey_client()
@@ -209,7 +206,7 @@ async def delete_dict_item(name: str, *keys):
         logger.exception('Failed to delete dict item from cache.')
 
 
-async def store_set(name: str, value: set, ttl: int = None):
+async def store_set(name: str, value: set, ttl: int | None = None):
     try:
         r = get_valkey_client()
         await r.sadd(name, *map(serialize_msgpack_native, value))

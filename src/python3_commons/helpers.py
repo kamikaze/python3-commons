@@ -6,12 +6,12 @@ import threading
 import time
 from abc import ABCMeta
 from collections import defaultdict
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping, MutableMapping, Sequence
 from datetime import date, datetime, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 from http.cookies import BaseCookie
 from json import dumps
-from typing import Literal
+from typing import ClassVar, Literal
 from urllib.parse import urlencode
 
 from python3_commons.serializers.json import CustomJSONEncoder
@@ -24,8 +24,8 @@ class SingletonMeta(ABCMeta):
     A metaclass that creates a Singleton base class when called.
     """
 
-    __instances = {}
-    __locks = defaultdict(threading.Lock)
+    __instances: ClassVar[MutableMapping] = {}
+    __locks: ClassVar[defaultdict] = defaultdict(threading.Lock)
 
     def __call__(cls, *args, **kwargs):
         try:
@@ -70,6 +70,7 @@ def tries(times):
                 except Exception:
                     if _time >= times:
                         raise
+            return None
 
         return wrapper
 

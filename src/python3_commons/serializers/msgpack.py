@@ -16,11 +16,11 @@ logger = logging.getLogger(__name__)
 def msgpack_encoder(obj):
     if isinstance(obj, Decimal):
         return ExtType(ExtendedType.DECIMAL, str(obj).encode())
-    elif isinstance(obj, datetime):
+    if isinstance(obj, datetime):
         return ExtType(ExtendedType.DATETIME, obj.isoformat().encode())
-    elif isinstance(obj, date):
+    if isinstance(obj, date):
         return ExtType(ExtendedType.DATE, obj.isoformat().encode())
-    elif dataclasses.is_dataclass(obj):
+    if dataclasses.is_dataclass(obj):
         return ExtType(ExtendedType.DATACLASS, json.dumps(dataclasses.asdict(obj), cls=CustomJSONEncoder).encode())
 
     return f'no encoder for {obj}'
@@ -41,12 +41,8 @@ def msgpack_decoder(code, data):
 
 
 def serialize_msgpack(data) -> bytes:
-    result = msgpack.packb(data, default=msgpack_encoder)
-
-    return result
+    return msgpack.packb(data, default=msgpack_encoder)
 
 
 def deserialize_msgpack(data: bytes):
-    result = msgpack.unpackb(data, ext_hook=msgpack_decoder)
-
-    return result
+    return msgpack.unpackb(data, ext_hook=msgpack_decoder)

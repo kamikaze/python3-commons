@@ -20,11 +20,11 @@ T = TypeVar('T')
 def enc_hook(obj: Any) -> Any:
     if isinstance(obj, Decimal):
         return Ext(ExtendedType.DECIMAL, struct.pack('b', str(obj).encode()))
-    elif isinstance(obj, datetime):
+    if isinstance(obj, datetime):
         return Ext(ExtendedType.DATETIME, struct.pack('b', obj.isoformat().encode()))
-    elif isinstance(obj, date):
+    if isinstance(obj, date):
         return Ext(ExtendedType.DATE, struct.pack('b', obj.isoformat().encode()))
-    elif dataclasses.is_dataclass(obj):
+    if dataclasses.is_dataclass(obj):
         return Ext(
             ExtendedType.DATACLASS,
             struct.pack('b', json.dumps(dataclasses.asdict(obj), cls=CustomJSONEncoder).encode()),
@@ -60,9 +60,7 @@ def serialize_msgpack_native(data: Any) -> bytes:
     if isinstance(data, BaseModel):
         data = data.model_dump()
 
-    result = encode(data)
-
-    return result
+    return encode(data)
 
 
 def deserialize_msgpack_native[T](data: bytes, data_type: type[T] | None = None) -> T | Any:
@@ -82,9 +80,7 @@ def serialize_msgpack(data: Any) -> bytes:
     if isinstance(data, BaseModel):
         data = data.model_dump()
 
-    result = MSGPACK_ENCODER.encode(data)
-
-    return result
+    return MSGPACK_ENCODER.encode(data)
 
 
 def deserialize_msgpack[T](data: bytes, data_type: type[T] | None = None) -> T | Any:

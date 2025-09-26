@@ -81,7 +81,7 @@ def get_token_verifier[T](
         except jwt.ExpiredSignatureError as e:
             raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail='Token has expired') from e
         except JWTError as e:
-            raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail=f'Token is invalid: {str(e)}') from e
+            raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail=f'Token is invalid: {e!s}') from e
 
         return token_data
 

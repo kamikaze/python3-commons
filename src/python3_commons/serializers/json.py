@@ -14,11 +14,11 @@ class CustomJSONEncoder(json.JSONEncoder):
         except TypeError:
             if isinstance(o, (datetime, date)):
                 return o.isoformat()
-            elif isinstance(o, bytes):
+            if isinstance(o, bytes):
                 return base64.b64encode(o).decode('ascii')
-            elif dataclasses.is_dataclass(o):
+            if dataclasses.is_dataclass(o):
                 return dataclasses.asdict(o)
-            elif isinstance(o, (Decimal, socket, type, Exception)):
+            if isinstance(o, (Decimal, socket, type, Exception)):
                 return str(o)
 
         return type(o).__name__

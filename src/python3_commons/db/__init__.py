@@ -38,9 +38,8 @@ class AsyncSessionManager:
             'pool_timeout': db_settings.pool_timeout,
             'pool_recycle': db_settings.pool_recycle,
         }
-        engine = async_engine_from_config(configuration, prefix='')
 
-        return engine
+        return async_engine_from_config(configuration, prefix='')
 
     def get_engine(self, name: str) -> AsyncEngine:
         try:

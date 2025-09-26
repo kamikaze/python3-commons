@@ -150,7 +150,7 @@ async def remove_object(bucket_name: str, object_name: str):
 
 
 async def remove_objects(
-    bucket_name: str, prefix: str = None, object_names: Iterable[str] = None
+    bucket_name: str, prefix: str | None = None, object_names: Iterable[str] | None = None
 ) -> Sequence[Mapping] | None:
     storage = ObjectStorage(s3_settings)
 
