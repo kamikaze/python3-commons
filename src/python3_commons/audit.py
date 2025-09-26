@@ -138,7 +138,7 @@ logger = logging.getLogger(__name__)
 
 
 async def write_audit_data(settings: S3Settings, key: str, data: bytes):
-    if settings.s3_secret_access_key:
+    if settings.aws_secret_access_key:
         try:
             absolute_path = object_storage.get_absolute_path(f'audit/{key}')
 
