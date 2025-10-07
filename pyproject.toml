@@ -19,7 +19,7 @@ keywords = []
 requires-python = "==3.13.*"
 dependencies = [
     "aiobotocore~=2.24.2",
-    "aiohttp[speedups]~=3.12.15",
+    "aiohttp[speedups]~=3.13.0",
     "asyncpg~=0.30.0",
     "fastapi-users-db-sqlalchemy~=7.0.0",
     "fastapi-users[sqlalchemy]~=14.0.1",
