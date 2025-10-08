@@ -16,7 +16,7 @@ classifiers = [
     "Programming Language :: Python"
 ]
 keywords = []
-requires-python = "==3.13.*"
+requires-python = "==3.14.*"
 dependencies = [
     "aiobotocore~=2.24.3",
     "aiohttp[speedups]~=3.13.0",
@@ -24,7 +24,7 @@ dependencies = [
     "fastapi-users-db-sqlalchemy~=7.0.0",
     "fastapi-users[sqlalchemy]~=14.0.1",
     "lxml~=6.0.2",
-    "msgpack~=1.1.1",
+    "msgpack~=1.1.2",
     "msgspec~=0.19.0",
     "pydantic[email]~=2.12.0",
     "pydantic-settings~=2.11.0",
