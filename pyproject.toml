@@ -16,10 +16,10 @@ classifiers = [
     "Programming Language :: Python"
 ]
 keywords = []
-requires-python = "==3.13.*"
+requires-python = "==3.14.*"
 
 dependencies = [
-    "aiohttp[speedups]~=3.12.13",
+    "aiohttp[speedups]~=3.13.0",
     "asyncpg~=0.30.0",
     "fastapi-users-db-sqlalchemy~=7.0.0",
     "fastapi-users[sqlalchemy]~=14.0.1",
@@ -27,8 +27,8 @@ dependencies = [
     "minio~=7.2.15",
     "msgpack~=1.1.1",
     "msgspec~=0.19.0",
-    "pydantic[email]~=2.11.7",
-    "pydantic-settings~=2.10.1",
+    "pydantic[email]~=2.12.0",
+    "pydantic-settings~=2.11.0",
     "python-jose==3.5.0",
     "SQLAlchemy[asyncio]~=2.0.40",
     "valkey[libvalkey]~=6.1.0",
@@ -38,13 +38,13 @@ dependencies = [
 [dependency-groups]
 dev = [
     "build",
-    "pip==25.1.1",
-    "pre-commit==4.2.0",
-    "pyright==1.1.402",
-    "ruff==0.12.1",
-    "setuptools==80.9.0",
-    "setuptools_scm==8.3.1",
-    "wheel==0.45.1",
+    "pip",
+    "pre-commit",
+    "pyright",
+    "ruff",
+    "setuptools",
+    "setuptools_scm",
+    "wheel",
 ]
 testing = [
     "pytest",
