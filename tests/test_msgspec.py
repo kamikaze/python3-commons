@@ -69,3 +69,11 @@ def test_encode_decode_pydantic_struct_to_msgpack_native(pydantic_struct):
     decoded_struct = msgspec.deserialize_msgpack_native(binary_data, pydantic_struct.__class__)
 
     assert decoded_struct == pydantic_struct
+
+
+def test_encode_decode_struct_to_json(msgspec_struct):
+    import msgspec
+    data = msgspec.json.encode(msgspec_struct)
+    struct = msgspec.json.decode(data, type=msgspec_struct.__class__)
+
+    assert struct == msgspec_struct
