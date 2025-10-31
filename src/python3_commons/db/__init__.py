@@ -15,7 +15,7 @@ Base = declarative_base(metadata=metadata)
 
 
 class AsyncSessionManager:
-    def __init__(self, db_settings: Mapping[str, DBSettings]):
+    def __init__(self, db_settings: Mapping[str, DBSettings]) -> None:
         self.db_settings: Mapping[str, DBSettings] = db_settings
         self.engines: dict[str, AsyncEngine] = {}
         self.session_makers: dict = {}

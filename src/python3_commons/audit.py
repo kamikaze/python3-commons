@@ -137,7 +137,7 @@ logger = logging.getLogger(__name__)
 #                 logger.error(f'Failed to delete object in {bucket_name=}: {error}')
 
 
-async def write_audit_data(settings: S3Settings, key: str, data: bytes):
+async def write_audit_data(settings: S3Settings, key: str, data: bytes) -> None:
     if settings.aws_secret_access_key:
         try:
             absolute_path = object_storage.get_absolute_path(f'audit/{key}')
@@ -152,11 +152,11 @@ async def write_audit_data(settings: S3Settings, key: str, data: bytes):
 
 
 class ZeepAuditPlugin(Plugin):
-    def __init__(self, audit_name: str = 'zeep'):
+    def __init__(self, audit_name: str = 'zeep') -> None:
         super().__init__()
         self.audit_name = audit_name
 
-    def store_audit_in_s3(self, envelope, operation: AbstractOperation, direction: str):
+    def store_audit_in_s3(self, envelope, operation: AbstractOperation, direction: str) -> None:
         xml = etree.tostring(envelope, encoding='UTF-8', pretty_print=True)
         now = datetime.now(tz=UTC)
         date_path = now.strftime('%Y/%m/%d')

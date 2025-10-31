@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 class AsyncValkeyClient(metaclass=SingletonMeta):
-    def __init__(self, dsn: RedisDsn, sentinel_dsn: RedisDsn | None):
+    def __init__(self, dsn: RedisDsn, sentinel_dsn: RedisDsn | None) -> None:
         self._valkey_pool = None
         self._valkey = None
 
@@ -39,7 +39,7 @@ class AsyncValkeyClient(metaclass=SingletonMeta):
             return {socket.TCP_KEEPIDLE: 10, socket.TCP_KEEPINTVL: 5, socket.TCP_KEEPCNT: 5}
         return {}
 
-    def _initialize_sentinel(self, dsn: RedisDsn):
+    def _initialize_sentinel(self, dsn: RedisDsn) -> None:
         sentinel = Sentinel(
             [(dsn.host, dsn.port)],
             socket_connect_timeout=10,
@@ -62,7 +62,7 @@ class AsyncValkeyClient(metaclass=SingletonMeta):
             socket_keepalive_options=ka_options,
         )
 
-    def _initialize_standard_pool(self, dsn: RedisDsn):
+    def _initialize_standard_pool(self, dsn: RedisDsn) -> None:
         self._valkey_pool = ConnectionPool.from_url(str(dsn))
         self._valkey = StrictValkey(connection_pool=self._valkey_pool)
 
@@ -84,7 +84,7 @@ async def scan(
     return await get_valkey_client().scan(cursor, match, count, _type, **kwargs)
 
 
-async def delete(*names: str | bytes | memoryview):
+async def delete(*names: str | bytes | memoryview) -> None:
     await get_valkey_client().delete(*names)
 
 
@@ -111,7 +111,7 @@ async def get(name: str, default: Any | None = None, data_type: Any = None) -> A
     return default
 
 
-async def store_string(name: str, data: str, ttl: int | None = None):
+async def store_string(name: str, data: str, ttl: int | None = None) -> None:
     await store_bytes(name, data.encode(), ttl)
 
 
@@ -122,7 +122,7 @@ async def get_string(name: str) -> str | None:
     return None
 
 
-async def store_sequence(name: str, data: Sequence, ttl: int | None = None):
+async def store_sequence(name: str, data: Sequence, ttl: int | None = None) -> None:
     if data:
         try:
             r = get_valkey_client()
@@ -141,7 +141,7 @@ async def get_sequence(name: str, _type: type = list) -> Sequence:
     return _type(map(deserialize_msgpack_native, lrange))
 
 
-async def store_dict(name: str, data: Mapping, ttl: int | None = None):
+async def store_dict(name: str, data: Mapping, ttl: int | None = None) -> None:
     if data:
         try:
             r = get_valkey_client()
@@ -163,7 +163,7 @@ async def get_dict(name: str, value_data_type=None) -> dict | None:
     return None
 
 
-async def set_dict(name: str, mapping: dict, ttl: int | None = None):
+async def set_dict(name: str, mapping: dict, ttl: int | None = None) -> None:
     if mapping:
         try:
             r = get_valkey_client()
@@ -190,7 +190,7 @@ async def get_dict_item(name: str, key: str, data_type=None, default=None):
     return default
 
 
-async def set_dict_item(name: str, key: str, obj: Any):
+async def set_dict_item(name: str, key: str, obj: Any) -> None:
     try:
         r = get_valkey_client()
         await r.hset(name, key, serialize_msgpack_native(obj))
@@ -198,7 +198,7 @@ async def set_dict_item(name: str, key: str, obj: Any):
         logger.exception('Failed to set dict item in cache.')
 
 
-async def delete_dict_item(name: str, *keys):
+async def delete_dict_item(name: str, *keys) -> None:
     try:
         r = get_valkey_client()
         await r.hdel(name, *keys)
@@ -206,7 +206,7 @@ async def delete_dict_item(name: str, *keys):
         logger.exception('Failed to delete dict item from cache.')
 
 
-async def store_set(name: str, value: set, ttl: int | None = None):
+async def store_set(name: str, value: set, ttl: int | None = None) -> None:
     try:
         r = get_valkey_client()
         await r.sadd(name, *map(serialize_msgpack_native, value))
@@ -228,7 +228,7 @@ async def has_set_item(name: str, value: str) -> bool:
     return False
 
 
-async def add_set_item(name: str, *values: str):
+async def add_set_item(name: str, *values: str) -> None:
     try:
         r = get_valkey_client()
         await r.sadd(name, *map(serialize_msgpack_native, values))
@@ -236,7 +236,7 @@ async def add_set_item(name: str, *values: str):
         logger.exception('Failed to add set item into cache.')
 
 
-async def delete_set_item(name: str, value: str):
+async def delete_set_item(name: str, value: str) -> None:
     r = get_valkey_client()
     await r.srem(name, serialize_msgpack_native(value))
 

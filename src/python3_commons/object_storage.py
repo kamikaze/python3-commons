@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 class ObjectStorage(metaclass=SingletonMeta):
-    def __init__(self, settings: S3Settings):
+    def __init__(self, settings: S3Settings) -> None:
         self._session = aiobotocore.session.get_session()
         config = {
             'region_name': settings.aws_region,
@@ -136,7 +136,7 @@ async def get_objects(
         yield object_name, last_modified, data
 
 
-async def remove_object(bucket_name: str, object_name: str):
+async def remove_object(bucket_name: str, object_name: str) -> None:
     storage = ObjectStorage(s3_settings)
 
     async with storage.get_client() as s3_client:

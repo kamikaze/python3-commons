@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 async def _store_response_for_audit(
     response: ClientResponse, audit_name: str, uri_path: str, method: str, request_id: str
-):
+) -> None:
     response_text = await response.text()
 
     if response_text:

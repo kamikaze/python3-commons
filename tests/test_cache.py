@@ -4,5 +4,5 @@ from python3_commons import cache
 
 
 @pytest.mark.asyncio
-async def test_encode_decode_dict_to_msgpack(msgspec_struct):
+async def test_encode_decode_dict_to_msgpack(msgspec_struct) -> None:
     await cache.store('test:key', msgspec_struct, 8 * 3600)
