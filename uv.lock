@@ -1201,11 +1201,15 @@ dependencies = [
     { name = "asyncpg" },
     { name = "lxml" },
     { name = "msgpack" },
-    { name = "msgspec" },
     { name = "pydantic-settings" },
     { name = "sqlalchemy", extra = ["asyncio"] },
     { name = "valkey", extra = ["libvalkey"] },
     { name = "zeep" },
+]
+
+[package.optional-dependencies]
+msgspec = [
+    { name = "msgspec" },
 ]
 
 [package.dev-dependencies]
@@ -1234,12 +1238,13 @@ requires-dist = [
     { name = "asyncpg", specifier = "~=0.30.0" },
     { name = "lxml", specifier = "~=6.0.2" },
     { name = "msgpack", specifier = "~=1.1.2" },
-    { name = "msgspec", git = "https://github.com/kamikaze/msgspec.git?rev=v0.20.0" },
+    { name = "msgspec", marker = "extra == 'msgspec'", git = "https://github.com/kamikaze/msgspec.git?rev=v0.20.0" },
     { name = "pydantic-settings", specifier = "~=2.11.0" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = "~=2.0.44" },
     { name = "valkey", extras = ["libvalkey"], specifier = "~=6.1.1" },
     { name = "zeep", specifier = "~=4.3.2" },
 ]
+provides-extras = ["msgspec"]
 
 [package.metadata.requires-dev]
 dev = [

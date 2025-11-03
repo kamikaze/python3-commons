@@ -23,11 +23,14 @@ dependencies = [
     "asyncpg~=0.30.0",
     "lxml~=6.0.2",
     "msgpack~=1.1.2",
-    "msgspec @ git+https://github.com/kamikaze/msgspec.git@v0.20.0",
     "pydantic-settings~=2.11.0",
     "SQLAlchemy[asyncio]~=2.0.44",
     "valkey[libvalkey]~=6.1.1",
     "zeep~=4.3.2"
+]
+[project.optional-dependencies]
+msgspec = [
+    "msgspec @ git+https://github.com/kamikaze/msgspec.git@v0.20.0",
 ]
 
 [dependency-groups]
