@@ -137,3 +137,7 @@ def log_execution_time(func):
     wrapper.__signature__ = inspect.signature(func)
 
     return wrapper
+
+
+def to_snake_case(s: str) -> str:
+    return '_'.join(s.strip().lower().split())
