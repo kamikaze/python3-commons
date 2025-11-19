@@ -1,6 +1,7 @@
 import functools
 import inspect
 import logging
+import re
 import shlex
 import threading
 import time
@@ -140,4 +141,14 @@ def log_execution_time(func):
 
 
 def to_snake_case(s: str) -> str:
-    return '_'.join(s.strip().lower().split())
+    # Lowercase and strip whitespace
+    s = s.strip().lower()
+
+    # Replace all whitespace with underscores
+    s = re.sub(r'\s+', '_', s)
+
+    # Keep only alphanumeric and underscore characters
+    s = re.sub(r'[^a-z0-9_]', '', s)
+
+    # Collapse consecutive underscores
+    return re.sub(r'_+', '_', s)
