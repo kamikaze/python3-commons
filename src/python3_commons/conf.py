@@ -13,7 +13,6 @@ class CommonSettings(BaseSettings):
 class OIDCSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix='OIDC_')
 
-    enabled: bool = True
     authority_url: HttpUrl | None = None
     client_id: str | None = None
 
