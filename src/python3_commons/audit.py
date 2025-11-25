@@ -126,7 +126,9 @@ def write_audit_data_sync(settings: S3Settings, key: str, data: bytes):
             client = ObjectStorage(settings).get_client()
             absolute_path = object_storage.get_absolute_path(f'audit/{key}')
 
-            client.put_object(settings.s3_bucket, absolute_path, io.BytesIO(data), len(data))
+            client.put_object(
+                bucket_name=settings.s3_bucket, object_name=absolute_path, data=io.BytesIO(data), length=len(data)
+            )
         except S3Error as e:
             logger.error(f'Failed storing object in storage: {e}')
         else:
