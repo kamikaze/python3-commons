@@ -1,9 +1,12 @@
 import logging
 from collections.abc import Mapping
+from typing import TYPE_CHECKING
 
 import sqlalchemy as sa
 from sqlalchemy import asc, desc, func
-from sqlalchemy.sql.elements import BooleanClauseList, UnaryExpression
+
+if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import BooleanClauseList, UnaryExpression
 
 logger = logging.getLogger(__name__)
 

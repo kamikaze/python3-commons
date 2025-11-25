@@ -2,14 +2,17 @@ import asyncio
 import io
 import logging
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 from uuid import uuid4
 
 from lxml import etree
 from zeep.plugins import Plugin
-from zeep.wsdl.definitions import AbstractOperation
 
 from python3_commons import object_storage
 from python3_commons.conf import S3Settings, s3_settings
+
+if TYPE_CHECKING:
+    from zeep.wsdl.definitions import AbstractOperation
 
 logger = logging.getLogger(__name__)
 

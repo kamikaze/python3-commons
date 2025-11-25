@@ -1,13 +1,15 @@
 import contextlib
 import logging
 from collections.abc import AsyncGenerator, Callable, Mapping
+from typing import TYPE_CHECKING
 
 from sqlalchemy import MetaData
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_engine_from_config
 from sqlalchemy.ext.asyncio.session import async_sessionmaker
 from sqlalchemy.orm import declarative_base
 
-from python3_commons.conf import DBSettings
+if TYPE_CHECKING:
+    from python3_commons.conf import DBSettings
 
 logger = logging.getLogger(__name__)
 metadata = MetaData()

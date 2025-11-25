@@ -2,14 +2,12 @@ import logging
 import socket
 from collections.abc import Mapping, Sequence
 from platform import platform
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import valkey
-from pydantic import RedisDsn
 from valkey.asyncio import ConnectionPool, Sentinel, StrictValkey, Valkey
 from valkey.asyncio.retry import Retry
 from valkey.backoff import FullJitterBackoff
-from valkey.typing import ResponseT
 
 from python3_commons.conf import valkey_settings
 from python3_commons.helpers import SingletonMeta
@@ -19,6 +17,10 @@ from python3_commons.serializers.msgspec import (
     serialize_msgpack,
     serialize_msgpack_native,
 )
+
+if TYPE_CHECKING:
+    from pydantic import RedisDsn
+    from valkey.typing import ResponseT
 
 logger = logging.getLogger(__name__)
 

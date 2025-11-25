@@ -42,7 +42,7 @@ class DBSettings(BaseSettings):
     pool_recycle: int = 1800  # 30 minutes
 
     @model_validator(mode='after')
-    def build_dsn_if_missing(self) -> 'DBSettings':
+    def build_dsn_if_missing(self) -> DBSettings:
         if self.dsn is None and all(
             (
                 self.user,
