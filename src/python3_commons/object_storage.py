@@ -44,7 +44,9 @@ def get_absolute_path(path: str) -> str:
 
 def put_object(bucket_name: str, path: str, data: io.BytesIO, length: int, part_size: int = 0) -> str | None:
     if s3_client := ObjectStorage(s3_settings).get_client():
-        result = s3_client.put_object(bucket_name, path, data, length, part_size=part_size)
+        result = s3_client.put_object(
+            bucket_name=bucket_name, object_name=path, data=data, length=length, part_size=part_size
+        )
 
         logger.debug(f'Stored object into object storage: {bucket_name}:{path}')
 
@@ -59,7 +61,7 @@ def get_object_stream(bucket_name: str, path: str):
         logger.debug(f'Getting object from object storage: {bucket_name}:{path}')
 
         try:
-            response = s3_client.get_object(bucket_name, path)
+            response = s3_client.get_object(bucket_name=bucket_name, object_name=path)
         except Exception as e:
             logger.debug(f'Failed getting object from object storage: {bucket_name}:{path}', exc_info=e)
 
@@ -85,7 +87,7 @@ def get_object(bucket_name: str, path: str) -> bytes:
 def list_objects(bucket_name: str, prefix: str, recursive: bool = True) -> Generator[Object, None, None]:
     s3_client = ObjectStorage(s3_settings).get_client()
 
-    yield from s3_client.list_objects(bucket_name, prefix=prefix, recursive=recursive)
+    yield from s3_client.list_objects(bucket_name=bucket_name, prefix=prefix, recursive=recursive)
 
 
 def get_objects(
@@ -104,7 +106,7 @@ def get_objects(
 
 def remove_object(bucket_name: str, object_name: str):
     s3_client = ObjectStorage(s3_settings).get_client()
-    s3_client.remove_object(bucket_name, object_name)
+    s3_client.remove_object(bucket_name=bucket_name, object_name=object_name)
 
 
 def remove_objects(
@@ -115,13 +117,13 @@ def remove_objects(
     if prefix:
         delete_object_list = map(
             lambda obj: DeleteObject(obj.object_name),
-            s3_client.list_objects(bucket_name, prefix=prefix, recursive=True),
+            s3_client.list_objects(bucket_name=bucket_name, prefix=prefix, recursive=True),
         )
     elif object_names:
         delete_object_list = map(DeleteObject, object_names)
     else:
         return None
 
-    errors = s3_client.remove_objects(bucket_name, delete_object_list)
+    errors = s3_client.remove_objects(bucket_name=bucket_name, delete_object_list=delete_object_list)
 
     return errors
