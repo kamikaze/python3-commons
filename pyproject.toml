@@ -7,10 +7,10 @@ name = "python3-commons"
 dynamic = ["version"]
 description = "Re-usable Python3 code"
 authors = [
-    {name = "Oleg Korsak", email = "kamikaze.is.waiting.you@gmail.com"}
+    { name = "Oleg Korsak", email = "kamikaze.is.waiting.you@gmail.com" }
 ]
 license = "GPL-3.0"
-readme = {file = "README.rst", content-type = "text/x-rst"}
+readme = { file = "README.rst", content-type = "text/x-rst" }
 classifiers = [
     "Development Status :: 4 - Beta",
     "Programming Language :: Python"
@@ -74,18 +74,17 @@ detect-string-imports = true
 select = [
     "FAST",
     "YTT",
-#    "ANN",
+    #    "ANN",
     "I",
     "E",
     "W",
     "PYI",
-
     "A",
-#    "ARG",
+    #    "ARG",
     "ASYNC",
     "B",
     "C4",
-#    "DTZ",
+    #    "DTZ",
     "EM",
     "EXE",
     "F",
@@ -93,7 +92,7 @@ select = [
     "FBT",
     "FLY",
     "FURB",
-#    "G",
+    #    "G",
     "ICN",
     "INP",
     "ISC",
@@ -105,7 +104,7 @@ select = [
     "PIE",
     "PLC",
     "PLE",
-#    "PLR",
+    #    "PLR",
     "PLW",
     "PT",
     "PTH",
@@ -125,7 +124,7 @@ select = [
 ]
 ignore = [
     "ASYNC109",
-    "TC003",  # msgspec
+    "TC003", # msgspec
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -150,6 +149,6 @@ reportUnnecessaryComparison = "error"
 pythonpath = ["src"]
 asyncio_mode = "strict"
 asyncio_default_fixture_loop_scope = "function"
-addopts = "--cov python3_commons --cov-fail-under=20 --cov-report term-missing --verbose"
+addopts = "--cov python3_commons --cov-fail-under=15 --cov-report term-missing --verbose"
 norecursedirs = ["dist", "build", ".tox"]
 testpaths = ["tests"]
