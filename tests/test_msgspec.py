@@ -1,5 +1,7 @@
 from decimal import Decimal
 
+import msgspec.json as msgspec_json
+
 from python3_commons.serializers import msgspec
 
 
@@ -72,7 +74,7 @@ def test_encode_decode_pydantic_struct_to_msgpack_native(pydantic_struct) -> Non
 
 
 def test_encode_decode_struct_to_json(msgspec_struct) -> None:
-    data = msgspec.json.encode(msgspec_struct)
-    struct = msgspec.json.decode(data, type=msgspec_struct.__class__)
+    data = msgspec_json.encode(msgspec_struct)
+    struct = msgspec_json.decode(data, type=msgspec_struct.__class__)
 
     assert struct == msgspec_struct
