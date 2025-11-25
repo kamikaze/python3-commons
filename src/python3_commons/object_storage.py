@@ -20,7 +20,7 @@ class ObjectStorage(metaclass=SingletonMeta):
             raise ValueError('s3_settings.s3_endpoint_url must be set')
 
         self._client = Minio(
-            settings.s3_endpoint_url,
+            endpoint=settings.s3_endpoint_url,
             region=settings.s3_region_name,
             access_key=settings.s3_access_key_id.get_secret_value(),
             secret_key=settings.s3_secret_access_key.get_secret_value(),
