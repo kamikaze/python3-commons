@@ -14,10 +14,14 @@ logger = logging.getLogger(__name__)
 
 
 class TokenData(msgspec.Struct):
-    sub: str
     aud: str | Sequence[str]
     exp: int
+    iat: int
     iss: str
+    sub: str
+    email: str | None = None
+    name: str | None = None
+    preferred_username: str | None = None
 
 
 T = TypeVar('T', bound=TokenData)

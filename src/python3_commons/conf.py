@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from typing import Literal
 
 from pydantic import Field, HttpUrl, PostgresDsn, RedisDsn, SecretStr, model_validator
@@ -15,6 +16,12 @@ class OIDCSettings(BaseSettings):
 
     authority_url: HttpUrl | None = None
     client_id: str | None = None
+    redirect_uri: str | None = None
+    scopes: Sequence[str] = (
+        'openid',
+        'profile',
+        'email',
+    )
 
 
 class ValkeySettings(BaseSettings):

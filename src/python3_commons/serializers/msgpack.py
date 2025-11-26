@@ -36,8 +36,8 @@ def msgpack_decoder(code, data):
             return date.fromisoformat(data.decode())
         case ExtendedType.DATACLASS:
             return json.loads(data)
-
-    return f'no decoder for type {code}'
+        case _:
+            return f'no decoder for type {code}'
 
 
 def serialize_msgpack(data) -> bytes:
