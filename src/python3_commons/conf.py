@@ -34,7 +34,7 @@ class ValkeySettings(BaseSettings):
 class DBSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix='DB_', validate_by_name=True, validate_by_alias=True)
 
-    dsn: PostgresDsn | None = None
+    dsn: PostgresDsn | str | None = None
     scheme: str = 'postgresql+asyncpg'
     host: str = 'localhost'
     port: int = 5432
