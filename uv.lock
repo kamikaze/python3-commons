@@ -245,6 +245,18 @@ wheels = [
 ]
 
 [[package]]
+name = "botocore-stubs"
+version = "1.42.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "types-awscrt" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/5d/65/f2c02dae9371c396b98c73641c8c2d9692b0e22e75b60794749b83411fdb/botocore_stubs-1.42.1.tar.gz", hash = "sha256:f23dc7ecffde89918077c3f935a1aef1e4af672882cb98e2362a8b71d8ab0939", size = 42412, upload-time = "2025-12-02T18:41:16.848Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0d/4b/56f323b66ed157f0d4bf14066e5c6d28b3e4860cd1bed577fe11700736c8/botocore_stubs-1.42.1-py3-none-any.whl", hash = "sha256:181417984475967abbc76bb75a1cc60e01eb7068430c185a9e48ce1314af79bb", size = 66749, upload-time = "2025-12-02T18:41:15.417Z" },
+]
+
+[[package]]
 name = "brotli"
 version = "1.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1275,7 +1287,7 @@ dev = [
     { name = "ruff" },
     { name = "setuptools" },
     { name = "setuptools-scm" },
-    { name = "types-aiobotocore" },
+    { name = "types-aiobotocore", extra = ["s3"] },
     { name = "wheel" },
 ]
 testing = [
@@ -1487,11 +1499,37 @@ asyncio = [
 
 [[package]]
 name = "types-aiobotocore"
-version = "2.26.0.post1"
+version = "2.26.0.post2"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/25/1a/282cf6eec5ff6e9c9ddcf7009176554f22c0862d5daeb5bdc467571ef9ea/types_aiobotocore-2.26.0.post1.tar.gz", hash = "sha256:a0aadb9dfd10ecb2bca4b2eac59c71a7536b50145f3027aebf80084589252ed4", size = 13393, upload-time = "2025-11-30T08:20:42Z" }
+dependencies = [
+    { name = "botocore-stubs" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/3e/27/c60789f312a3630cbc82181e4d6e809bd8801b471de99f14ceb11f4c5c26/types_aiobotocore-2.26.0.post2.tar.gz", hash = "sha256:68ebe5e9de3201442e56359af182493e2e642e855a9133a5918352cbf5ac4e2d", size = 86472, upload-time = "2025-12-02T16:52:55.101Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/70/0a/98364f7c1237af4ab30ae7adedb7afe6470e143347903e29f9b463c53314/types_aiobotocore-2.26.0.post1-py3-none-any.whl", hash = "sha256:de72760a09029ef74c92cf07e8081f5286d1d0f78a509e86b491d9aecb6a4f38", size = 22506, upload-time = "2025-11-30T08:20:40.634Z" },
+    { url = "https://files.pythonhosted.org/packages/3d/47/e080e365376619d4062da8989747ecf7c8404bd94b2de10904239a3104f0/types_aiobotocore-2.26.0.post2-py3-none-any.whl", hash = "sha256:0e19caffd6ce6b1c3e7ba5b085d1d03357672e1aa65e5bcdfd9efb026a1041f7", size = 54207, upload-time = "2025-12-02T16:52:48.246Z" },
+]
+
+[package.optional-dependencies]
+s3 = [
+    { name = "types-aiobotocore-s3" },
+]
+
+[[package]]
+name = "types-aiobotocore-s3"
+version = "2.26.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/b5/8a/dd2190fb5b19933b93c6f153226ac41ddc71a1e81d55f490168944156c43/types_aiobotocore_s3-2.26.0.tar.gz", hash = "sha256:35eb714401883febb61cca3dd65766724105ead3e8325082146a89d244f74768", size = 76495, upload-time = "2025-11-29T01:49:23.844Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b9/a4/abcd852032d7de6c1766d78d7b2769f1937b634bffc00e03afd68dc1bb22/types_aiobotocore_s3-2.26.0-py3-none-any.whl", hash = "sha256:b8c085c93db877d79f0d128c7d21c131bd596e1d8400ae807d25bf7b3ff1eff6", size = 84159, upload-time = "2025-11-29T01:49:22.519Z" },
+]
+
+[[package]]
+name = "types-awscrt"
+version = "0.29.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/bb/68/a580122cf8e8ee1154ee8795241f1b1e097e91050af5e7f5f5c800194f7b/types_awscrt-0.29.1.tar.gz", hash = "sha256:545f100e17d7633aa1791f92a8a4716f8ee1fc7cc9ee98dd31676d6c5e07e733", size = 17787, upload-time = "2025-11-30T07:43:33.014Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a6/0e/69a9ca202a8543146e189962d7069b3ef241d48a544e192856045c0ea792/types_awscrt-0.29.1-py3-none-any.whl", hash = "sha256:f583bef3d42a307b3f3c02ef8d5d49fbec04e02bf3aacd3ada3953213c9150a7", size = 42394, upload-time = "2025-11-30T07:43:31.555Z" },
 ]
 
 [[package]]
