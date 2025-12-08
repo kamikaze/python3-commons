@@ -1,8 +1,12 @@
 from collections.abc import Sequence
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import Field, HttpUrl, PostgresDsn, RedisDsn, SecretStr, model_validator
+from pydantic import BeforeValidator, Field, HttpUrl, PostgresDsn, RedisDsn, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from python3_commons.helpers import parse_string_list
+
+StringSeq = Annotated[Sequence[str] | tuple[str, ...], BeforeValidator(parse_string_list)]
 
 
 class CommonSettings(BaseSettings):
@@ -17,12 +21,12 @@ class OIDCSettings(BaseSettings):
     authority_url: HttpUrl | None = None
     client_id: str | None = None
     redirect_uri: str | None = None
-    scope: Sequence[str] = (
+    scope: StringSeq = (
         'openid',
         'profile',
         'email',
     )
-    audience: Sequence[str] = ()
+    audience: StringSeq = ()
 
 
 class ValkeySettings(BaseSettings):

@@ -152,3 +152,10 @@ def to_snake_case(s: str) -> str:
 
     # Collapse consecutive underscores
     return re.sub(r'_+', '_', s)
+
+
+def parse_string_list(v: str | Sequence[str]) -> Sequence[str]:
+    if isinstance(v, str):
+        return tuple(map(str.strip, v.split(',')))
+
+    return v
