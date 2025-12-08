@@ -17,11 +17,12 @@ class OIDCSettings(BaseSettings):
     authority_url: HttpUrl | None = None
     client_id: str | None = None
     redirect_uri: str | None = None
-    scopes: Sequence[str] = (
+    scope: Sequence[str] = (
         'openid',
         'profile',
         'email',
     )
+    audience: Sequence[str] = ()
 
 
 class ValkeySettings(BaseSettings):
