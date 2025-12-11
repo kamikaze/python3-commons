@@ -142,6 +142,7 @@ indent-style = "space"
 quote-style = "single"
 
 [tool.pyright]
+pythonVersion = "3.14"
 venvPath = "."
 venv = ".venv"
 reportMatchNotExhaustive = "error"
