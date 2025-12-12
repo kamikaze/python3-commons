@@ -17,9 +17,16 @@ class JSONFormatter(logging.Formatter):
         if corr_id := correlation_id.get():
             record.correlation_id = corr_id
 
+        record.message = record.getMessage()
+
         if record.exc_info:
             record.exc_text = self.format_exception(record.exc_info)
         else:
             record.exc_text = None
 
-        return json.dumps(record.__dict__, cls=CustomJSONEncoder)
+        record_dict = record.__dict__
+
+        del record_dict['args']
+        del record_dict['msg']
+
+        return json.dumps(record_dict, cls=CustomJSONEncoder)
