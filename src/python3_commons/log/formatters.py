@@ -10,10 +10,10 @@ correlation_id: ContextVar[str | None] = ContextVar('correlation_id', default=No
 
 class JSONFormatter(logging.Formatter):
     @staticmethod
-    def format_exception(exc_info):
+    def format_exception(exc_info: logging._SysExcInfoType):
         return ''.join(traceback.format_exception(*exc_info))
 
-    def format(self, record):
+    def format(self, record: logging.LogRecord):
         if corr_id := correlation_id.get():
             record.correlation_id = corr_id
 
