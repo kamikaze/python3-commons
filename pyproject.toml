@@ -7,16 +7,16 @@ name = "python3-commons"
 dynamic = ["version"]
 description = "Re-usable Python3 code"
 authors = [
-    {name = "Oleg Korsak", email = "kamikaze.is.waiting.you@gmail.com"}
+    { name = "Oleg Korsak", email = "kamikaze.is.waiting.you@gmail.com" }
 ]
 license = "GPL-3.0"
-readme = {file = "README.rst", content-type = "text/x-rst"}
+readme = { file = "README.rst", content-type = "text/x-rst" }
 classifiers = [
     "Development Status :: 4 - Beta",
     "Programming Language :: Python"
 ]
 keywords = []
-requires-python = "==3.13.*"
+requires-python = ">=3.14.2,<3.15.0"
 
 dependencies = [
     "aiohttp[speedups]~=3.13.2",
@@ -66,23 +66,78 @@ exclude = ["tests"]
 [tool.bdist_wheel]
 universal = true
 
-[tool.pytest.ini_options]
-addopts = [
-    "--verbose"
-]
-norecursedirs = ["dist", "build", ".tox"]
-testpaths = ["tests"]
-
 [tool.ruff]
 line-length = 120
 indent-width = 4
-target-version = "py313"
+target-version = "py314"
 
 [tool.ruff.analyze]
 detect-string-imports = true
 
+[tool.ruff.lint]
+select = [
+    "A",
+    "ANN",
+    "ARG",
+    "ASYNC",
+    "B",
+    "C4",
+    "DTZ",
+    "E",
+    "EM",
+    "EXE",
+    "F",
+    "FA",
+    "FAST",
+    "FBT",
+    "FLY",
+    "FURB",
+    "G",
+    "I",
+    "ICN",
+    "INP",
+    "ISC",
+    "LOG",
+    "N",
+    "NPY",
+    "PD",
+    "PERF",
+    "PIE",
+    "PLC",
+    "PLE",
+    "PLR",
+    "PLW",
+    "PT",
+    "PTH",
+    "PYI",
+    "Q",
+    "RET",
+    "RSE",
+    "RUF",
+    "S",
+    "SIM",
+    "SLF",
+    "SLOT",
+    "T20",
+    "TC",
+    "TID",
+    "TRY",
+    "UP",
+    "W",
+    "YTT",
+]
+ignore = [
+    "TC001",
+    "TC002",
+    "TC003", # issues with msgspec.Struct subclasses
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*.py" = ["S101"]
+
 [tool.ruff.lint.flake8-quotes]
 docstring-quotes = "double"
+inline-quotes = "single"
 
 [tool.ruff.format]
 exclude = ["*.pyi"]
@@ -90,7 +145,16 @@ indent-style = "space"
 quote-style = "single"
 
 [tool.pyright]
+pythonVersion = "3.14"
 venvPath = "."
 venv = ".venv"
 reportMatchNotExhaustive = "error"
 reportUnnecessaryComparison = "error"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+asyncio_mode = "strict"
+asyncio_default_fixture_loop_scope = "function"
+addopts = "--cov fastapi_project_template --cov-fail-under=20 --cov-report term-missing --verbose"
+norecursedirs = ["dist", "build", ".tox"]
+testpaths = ["tests"]
