@@ -94,7 +94,7 @@ select = [
     "FBT",
     "FLY",
     "FURB",
-    #    "G",
+    "G",
     "ICN",
     "INP",
     "ISC",

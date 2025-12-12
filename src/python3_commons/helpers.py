@@ -133,7 +133,7 @@ def log_execution_time(func):
             return await func(*args, **kwargs)
         finally:
             elapsed = time.monotonic() - start_time
-            _logger.info(f'{func.__module__}.{func.__name__} executed in {elapsed:.4f} seconds')
+            _logger.info('%s.%s executed in %.4f seconds', func.__module__, func.__name__, elapsed)
 
     wrapper.__signature__ = inspect.signature(func)
 

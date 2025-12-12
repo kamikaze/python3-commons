@@ -26,7 +26,7 @@ class AsyncSessionManager:
         try:
             return self.db_settings[name]
         except KeyError:
-            logger.exception(f'Missing database settings: {name}')
+            logger.exception('Missing database settings: %s', name)
 
             raise
 
@@ -47,7 +47,7 @@ class AsyncSessionManager:
         try:
             engine = self.engines[name]
         except KeyError:
-            logger.debug(f'Creating engine: {name}')
+            logger.debug('Creating engine: %s', name)
             engine = self.async_engine_from_db_settings(name)
             self.engines[name] = engine
 
@@ -57,7 +57,7 @@ class AsyncSessionManager:
         try:
             session_maker = self.session_makers[name]
         except KeyError:
-            logger.debug(f'Creating session maker: {name}')
+            logger.debug('Creating session maker: %s', name)
             engine = self.get_engine(name)
             session_maker = async_sessionmaker(engine, expire_on_commit=False)
             self.session_makers[name] = session_maker

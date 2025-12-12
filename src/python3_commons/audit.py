@@ -26,9 +26,9 @@ async def write_audit_data(settings: S3Settings, key: str, data: bytes) -> None:
         except Exception:
             logger.exception('Failed storing object in storage.')
         else:
-            logger.debug(f'Stored object in storage: {key}')
+            logger.debug('Stored object in storage: %s', key)
     else:
-        logger.debug(f'S3 is not configured, not storing object in storage: {key}')
+        logger.debug('S3 is not configured, not storing object in storage: %s', key)
 
 
 class ZeepAuditPlugin(Plugin):

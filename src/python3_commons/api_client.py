@@ -79,7 +79,7 @@ async def request(
 
     client_method = getattr(client, method)
 
-    logger.debug(f'Requesting {method} {url}')
+    logger.debug('Requesting %s %s', method, url)
 
     try:
         if method == 'get':
