@@ -17,7 +17,10 @@ class JSONFormatter(logging.Formatter):
         if corr_id := correlation_id.get():
             record.correlation_id = corr_id
 
-        record.message = record.getMessage()
+        try:
+            record.message = record.getMessage()
+        except TypeError:
+            record.message = str(record.msg)
 
         if record.exc_info:
             record.exc_text = self.format_exception(record.exc_info)
