@@ -46,6 +46,7 @@ class DBSettings(BaseSettings):
     name: str | None = None
     user: str | None = None
     password: SecretStr | None = Field(default=None, alias='DB_PASS')
+    query: str | None = None
 
     echo: bool = False
     pool_size: int = 20
@@ -69,6 +70,7 @@ class DBSettings(BaseSettings):
                 host=self.host,
                 port=self.port,
                 path=self.name,
+                query=self.query,
             )
 
         return self
