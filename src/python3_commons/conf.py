@@ -26,7 +26,7 @@ class OIDCSettings(BaseSettings):
         'profile',
         'email',
     )
-    audience: StringSeq = ()
+    audience: StringSeq | str | None = None
 
 
 class ValkeySettings(BaseSettings):
