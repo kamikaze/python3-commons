@@ -186,4 +186,4 @@ async def remove_objects(
 
             raise
 
-        return errors if errors else None
+        return errors or None
