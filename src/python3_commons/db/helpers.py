@@ -6,14 +6,14 @@ import sqlalchemy as sa
 from sqlalchemy import asc, desc, func
 
 if TYPE_CHECKING:
-    from sqlalchemy.sql.elements import BooleanClauseList, UnaryExpression
+    from sqlalchemy.sql.elements import ColumnElement
 
 logger = logging.getLogger(__name__)
 
 
 def get_query(
     search: Mapping[str, str] | None = None, order_by: str | None = None, columns: Mapping | None = None
-) -> tuple[BooleanClauseList, UnaryExpression]:
+) -> tuple[ColumnElement[bool] | None, tuple[ColumnElement[bool]] | None]:
     """
     :columns:
         Param name ->
@@ -25,7 +25,7 @@ def get_query(
 
     order_by_cols = {}
 
-    if order_by:
+    if order_by and columns:
         for order_by_col in order_by.split(','):
             if order_by_col.startswith('-'):
                 direction = desc
@@ -42,7 +42,7 @@ def get_query(
     else:
         order_by_clauses = None
 
-    if search:
+    if search and columns:
         where_parts = [
             *(
                 (func.upper(columns[k][0]) if columns[k][1] else columns[k][0]) == columns[k][2](v)
