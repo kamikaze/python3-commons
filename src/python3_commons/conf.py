@@ -19,6 +19,7 @@ class OIDCSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix='OIDC_')
 
     authority_url: HttpUrl | None = None
+    authority_internal_url: HttpUrl | None = None
     client_id: str | None = None
     redirect_uri: str | None = None
     scope: StringSeq = (

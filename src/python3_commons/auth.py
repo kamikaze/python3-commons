@@ -25,7 +25,9 @@ class TokenData(msgspec.Struct):
 
 
 T = TypeVar('T', bound=TokenData)
-OIDC_CONFIG_URL = f'{oidc_settings.authority_url}/.well-known/openid-configuration'
+OIDC_CONFIG_URL = (
+    f'{oidc_settings.authority_internal_url or oidc_settings.authority_url}/.well-known/openid-configuration'
+)
 
 
 async def fetch_openid_config() -> dict:
