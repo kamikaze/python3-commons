@@ -22,6 +22,21 @@ class TokenData(msgspec.Struct):
     email: str | None = None
     name: str | None = None
     preferred_username: str | None = None
+    realm_access: dict[str, Sequence[str]] | None = None
+    resource_access: dict[str, dict[str, Sequence[str]]] | None = None
+
+    @property
+    def roles(self) -> list[str]:
+        roles_list = []
+
+        if self.realm_access:
+            roles_list.extend(self.realm_access.get('roles', []))
+
+        if self.resource_access:
+            for client in self.resource_access.values():
+                roles_list.extend(client.get('roles', []))
+
+        return list(set(roles_list))
 
 
 T = TypeVar('T', bound=TokenData)
