@@ -1008,7 +1008,7 @@ testing = [
 
 [package.metadata]
 requires-dist = [
-    { name = "aiobotocore", specifier = "~=3.2.0" },
+    { name = "aiobotocore", specifier = "~=3.2.1" },
     { name = "aiohttp", extras = ["speedups"], specifier = ">=3.13.3,<3.15.0" },
     { name = "asyncpg", specifier = "~=0.31.0" },
     { name = "lxml", specifier = "~=6.0.2" },
