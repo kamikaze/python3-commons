@@ -649,6 +649,17 @@ wheels = [
 ]
 
 [[package]]
+name = "object-storage-client"
+version = "0.0.14"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e8/61/873a336e827a3d4508cfe6e5f8be4591220eb08cc7b0b70d14989d7e8e0c/object_storage_client-0.0.14.tar.gz", hash = "sha256:cc4fe0efa55a1fee778465fd9919d13a0ce96c94e05b34d1c214b8b46169816e", size = 38281, upload-time = "2026-03-06T16:14:48.003Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/79/93/4577072f83430757b0a49905b58a6f98ab41ce23c0fc56571c51d970de4a/object_storage_client-0.0.14-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:73f541dda7517a8537fca411a25658c0375e4628797afc4045017f0b57936909", size = 1912098, upload-time = "2026-03-06T16:14:55.091Z" },
+    { url = "https://files.pythonhosted.org/packages/2b/4a/4a189540ecf8cebddcd35624b03672f1c1f27c49e231e2f5998f66c872f8/object_storage_client-0.0.14-cp314-cp314-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c6e0249cd33ce5103d882cdf788810c9de0471264a82ae9e440bd323dfaef9c1", size = 2092904, upload-time = "2026-03-06T16:14:51.738Z" },
+    { url = "https://files.pythonhosted.org/packages/7f/8d/250fbcfcaecb4ed43d5491a8f9019a0943d12d65f0b19d3472b7851f9615/object_storage_client-0.0.14-cp314-cp314-win_amd64.whl", hash = "sha256:dbfd268c9c5905c1c7974168a7920428ba5dadec7bec3b77cec164892f31cba8", size = 2082822, upload-time = "2026-03-06T16:14:50.356Z" },
+]
+
+[[package]]
 name = "packaging"
 version = "26.0"
 source = { registry = "https://pypi.org/simple" }
@@ -980,6 +991,7 @@ dependencies = [
     { name = "lxml" },
     { name = "msgpack" },
     { name = "msgspec" },
+    { name = "object-storage-client" },
     { name = "pydantic-settings" },
     { name = "sqlalchemy", extra = ["asyncio"] },
     { name = "valkey", extra = ["libvalkey"] },
@@ -1014,6 +1026,7 @@ requires-dist = [
     { name = "lxml", specifier = "~=6.0.2" },
     { name = "msgpack", specifier = "~=1.1.2" },
     { name = "msgspec", specifier = "==0.20.0" },
+    { name = "object-storage-client", specifier = "==0.0.14" },
     { name = "pydantic-settings", specifier = "~=2.13.1" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = "~=2.0.48" },
     { name = "valkey", extras = ["libvalkey"], specifier = "~=6.1.1" },
