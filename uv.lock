@@ -666,13 +666,13 @@ wheels = [
 
 [[package]]
 name = "object-storage-client"
-version = "0.0.19"
+version = "0.0.20"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/f2/65/800546c01213e5a7781790e4191738c88b43b95fb83b613d0e20b2a541d9/object_storage_client-0.0.19.tar.gz", hash = "sha256:222ca4e6a01bd0a8890b5ba92e8dce45bb482906528059c87f262be8461af053", size = 39065, upload-time = "2026-03-09T23:07:16.004Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/af/b3/c2a0c4067d829f49d6e777a9c11f28b899226e117492c6f6ed230890b327/object_storage_client-0.0.20.tar.gz", hash = "sha256:ca4bf4ce6c7061081caeb8d11e05f34ec597829a8178e94f62b17dc7e9b12498", size = 39116, upload-time = "2026-03-20T17:27:56.377Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d9/40/545c1ff4b6833201730f663c4ad3caa3ae677992999f62a2290eb697693f/object_storage_client-0.0.19-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:19e53194c0bf4aa377c54c5787c49db4f740e21b318ef7fc322692fcaf9448ee", size = 1920528, upload-time = "2026-03-09T23:07:14.425Z" },
-    { url = "https://files.pythonhosted.org/packages/1c/e3/7079a9d1ff66eeada95b7831e48608c0f4fea846d6c3ba7bb132e0b092a3/object_storage_client-0.0.19-cp314-cp314-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:02fa2499d8d53f59b2d12e0d97836305d1cea236aa1c20c46530b75c087165c8", size = 2101981, upload-time = "2026-03-09T23:07:07.387Z" },
-    { url = "https://files.pythonhosted.org/packages/32/45/d13ebf65d35711425a0b6d0b7e0eefef989cc74dc280fd3594bd2589ef92/object_storage_client-0.0.19-cp314-cp314-win_amd64.whl", hash = "sha256:26878e1aee99b6b5e5b8218982ca9d3dad6b4297a17aedad1804882b0299b0d1", size = 2090163, upload-time = "2026-03-09T23:07:17.078Z" },
+    { url = "https://files.pythonhosted.org/packages/30/56/5c32ba20a482dd861f6faa18372410fb4abaaca74f419d60ef925ba64d9e/object_storage_client-0.0.20-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:7fe6781539b4f29aef6836411e100a946f22ac409926ab0b0ec9362a198451fd", size = 1914810, upload-time = "2026-03-20T17:27:51.906Z" },
+    { url = "https://files.pythonhosted.org/packages/41/2d/2e5b7b195a0e4478e4ae08efb249746c7b0df8aa25f58aa913540882617e/object_storage_client-0.0.20-cp314-cp314-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:aa0037016589a153f7c7d6e9c2b84cdd046d280420c8a4120cebe6cb1e7665a6", size = 2102642, upload-time = "2026-03-20T17:27:55.24Z" },
+    { url = "https://files.pythonhosted.org/packages/68/84/256c571a540017429009c289b2cccf174fc0cf731bae5697a214f57e26c8/object_storage_client-0.0.20-cp314-cp314-win_amd64.whl", hash = "sha256:49003b38f22af4cdb60f62fed7b55890c93fba0e837f1c6a216f9566b4167629", size = 2095189, upload-time = "2026-03-20T17:28:00.145Z" },
 ]
 
 [[package]]
@@ -926,16 +926,16 @@ wheels = [
 
 [[package]]
 name = "pytest-cov"
-version = "7.0.0"
+version = "7.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "coverage" },
     { name = "pluggy" },
     { name = "pytest" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/5e/f7/c933acc76f5208b3b00089573cf6a2bc26dc80a8aece8f52bb7d6b1855ca/pytest_cov-7.0.0.tar.gz", hash = "sha256:33c97eda2e049a0c5298e91f519302a1334c26ac65c1a483d6206fd458361af1", size = 54328, upload-time = "2025-09-09T10:57:02.113Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b1/51/a849f96e117386044471c8ec2bd6cfebacda285da9525c9106aeb28da671/pytest_cov-7.1.0.tar.gz", hash = "sha256:30674f2b5f6351aa09702a9c8c364f6a01c27aae0c1366ae8016160d1efc56b2", size = 55592, upload-time = "2026-03-21T20:11:16.284Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ee/49/1377b49de7d0c1ce41292161ea0f721913fa8722c19fb9c1e3aa0367eecb/pytest_cov-7.0.0-py3-none-any.whl", hash = "sha256:3b8e9558b16cc1479da72058bdecf8073661c7f57f7d3c5f22a1c23507f2d861", size = 22424, upload-time = "2025-09-09T10:57:00.695Z" },
+    { url = "https://files.pythonhosted.org/packages/9d/7a/d968e294073affff457b041c2be9868a40c1c71f4a35fcc1e45e5493067b/pytest_cov-7.1.0-py3-none-any.whl", hash = "sha256:a0461110b7865f9a271aa1b51e516c9a95de9d696734a2f71e3e78f46e1d4678", size = 22876, upload-time = "2026-03-21T20:11:14.438Z" },
 ]
 
 [[package]]
@@ -1026,7 +1026,7 @@ requires-dist = [
     { name = "lxml", specifier = "~=6.0.2" },
     { name = "msgpack", specifier = "~=1.1.2" },
     { name = "msgspec", specifier = "==0.20.0" },
-    { name = "object-storage-client", specifier = "==0.0.19" },
+    { name = "object-storage-client", specifier = "==0.0.20" },
     { name = "pydantic-settings", specifier = "~=2.13.1" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = "~=2.0.48" },
     { name = "valkey", extras = ["libvalkey"], specifier = "~=6.1.1" },
