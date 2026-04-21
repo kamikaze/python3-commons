@@ -17,28 +17,28 @@ Base = declarative_base(metadata=metadata)
 
 
 class AsyncSessionManager:
-    def __init__(self, db_settings: Mapping[str, DBSettings]) -> None:
-        self.db_settings: Mapping[str, DBSettings] = db_settings
+    def __init__(self, db_configs: Mapping[str, DBSettings]) -> None:
+        self.db_configs: Mapping[str, DBSettings] = db_configs
         self.engines: dict[str, AsyncEngine] = {}
         self.session_makers: dict = {}
 
-    def get_db_settings(self, name: str) -> DBSettings:
+    def get_db_config(self, name: str) -> DBSettings:
         try:
-            return self.db_settings[name]
+            return self.db_configs[name]
         except KeyError:
             logger.exception('Missing database settings: %s', name)
 
             raise
 
-    def async_engine_from_db_settings(self, name):
-        db_settings = self.get_db_settings(name)
+    def async_engine_from_db_config(self, name):
+        db_config = self.get_db_config(name)
         configuration = {
-            'url': str(db_settings.dsn),
-            'echo': db_settings.echo,
-            'pool_size': db_settings.pool_size,
-            'max_overflow': db_settings.max_overflow,
-            'pool_timeout': db_settings.pool_timeout,
-            'pool_recycle': db_settings.pool_recycle,
+            'url': str(db_config.dsn),
+            'echo': db_config.echo,
+            'pool_size': db_config.pool_size,
+            'max_overflow': db_config.max_overflow,
+            'pool_timeout': db_config.pool_timeout,
+            'pool_recycle': db_config.pool_recycle,
         }
 
         return async_engine_from_config(configuration, prefix='')
@@ -48,7 +48,7 @@ class AsyncSessionManager:
             engine = self.engines[name]
         except KeyError:
             logger.debug('Creating engine: %s', name)
-            engine = self.async_engine_from_db_settings(name)
+            engine = self.async_engine_from_db_config(name)
             self.engines[name] = engine
 
         return engine
