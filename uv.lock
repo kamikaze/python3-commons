@@ -4,7 +4,7 @@ requires-python = ">=3.14.4, <3.15.0"
 
 [[package]]
 name = "aiobotocore"
-version = "3.4.0"
+version = "3.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -15,9 +15,9 @@ dependencies = [
     { name = "python-dateutil" },
     { name = "wrapt" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b8/50/a48ed11b15f926ce3dbb33e7fb0f25af17dbb99bcb7ae3b30c763723eca7/aiobotocore-3.4.0.tar.gz", hash = "sha256:a918b5cb903f81feba7e26835aed4b5e6bb2d0149d7f42bb2dd7d8089e3d9000", size = 122360, upload-time = "2026-04-07T06:12:24.884Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e6/89/9533b377e9412013cc43a539d81bc5f8feeb4b6830643821ad612f78b09b/aiobotocore-3.5.0.tar.gz", hash = "sha256:d45d1c4659ad0e48b694a5aa4ff18829100386f7de96c8d146ec7757a6f12918", size = 123061, upload-time = "2026-04-21T07:25:26.993Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/df/d8/ce9386e6d76ea79e61dee15e62aa48cff6be69e89246b0ac4a11857cb02c/aiobotocore-3.4.0-py3-none-any.whl", hash = "sha256:26290eb6830ea92d8a6f5f90b56e9f5cedd6d126074d5db63b195e281d982465", size = 88018, upload-time = "2026-04-07T06:12:22.684Z" },
+    { url = "https://files.pythonhosted.org/packages/2d/05/6eeeadef45c24630af0ceae4d038b883e9a394786300529286ba8cc1e62d/aiobotocore-3.5.0-py3-none-any.whl", hash = "sha256:49ce35bb8b96b85d3251c2cbbb2ed7a028dc0cb0d0d0801f9ccca1ccd0d41ded", size = 88281, upload-time = "2026-04-21T07:25:25.258Z" },
 ]
 
 [[package]]
@@ -164,16 +164,16 @@ wheels = [
 
 [[package]]
 name = "botocore"
-version = "1.42.84"
+version = "1.42.91"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jmespath" },
     { name = "python-dateutil" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b4/b7/1c03423843fb0d1795b686511c00ee63fed1234c2400f469aeedfd42212f/botocore-1.42.84.tar.gz", hash = "sha256:234064604c80d9272a5e9f6b3566d260bcaa053a5e05246db90d7eca1c2cf44b", size = 15148615, upload-time = "2026-04-06T19:38:56.673Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/21/bc/a4b7c46471c2e789ad8c4c7acfd7f302fdb481d93ff870f441249b924ae6/botocore-1.42.91.tar.gz", hash = "sha256:d252e27bc454afdbf5ed3dc617aa423f2c855c081e98b7963093399483ecc698", size = 15213010, upload-time = "2026-04-17T19:30:50.793Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e3/37/0c0c90361c8a1b9e6c75222ca24ae12996a298c0e18822a72ab229c37207/botocore-1.42.84-py3-none-any.whl", hash = "sha256:15f3fe07dfa6545e46a60c4b049fe2bdf63803c595ae4a4eec90e8f8172764f3", size = 14827061, upload-time = "2026-04-06T19:38:53.613Z" },
+    { url = "https://files.pythonhosted.org/packages/b1/fc/24cc0a47c824f13933e210e9ad034b4fba22f7185b8d904c0fbf5a3b2be8/botocore-1.42.91-py3-none-any.whl", hash = "sha256:7a28c3cc6bfab5724ad18899d52402b776a0de7d87fa20c3c5270bcaaf199ce8", size = 14897344, upload-time = "2026-04-17T19:30:44.245Z" },
 ]
 
 [[package]]
@@ -478,11 +478,11 @@ wheels = [
 
 [[package]]
 name = "idna"
-version = "3.11"
+version = "3.12"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/6f/6d/0703ccc57f3a7233505399edb88de3cbd678da106337b9fcde432b65ed60/idna-3.11.tar.gz", hash = "sha256:795dafcc9c04ed0c1fb032c2aa73654d8e8c5023a7df64a53f39190ada629902", size = 194582, upload-time = "2025-10-12T14:55:20.501Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/22/12/2948fbe5513d062169bd91f7d7b1cd97bc8894f32946b71fa39f6e63ca0c/idna-3.12.tar.gz", hash = "sha256:724e9952cc9e2bd7550ea784adb098d837ab5267ef67a1ab9cf7846bdbdd8254", size = 194350, upload-time = "2026-04-21T13:32:48.916Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0e/61/66938bbb5fc52dbdf84594873d5b51fb1f7c7794e9c0f5bd885f30bc507b/idna-3.11-py3-none-any.whl", hash = "sha256:771a87f49d9defaf64091e6e6fe9c18d4833f140bd19464795bc32d966ca37ea", size = 71008, upload-time = "2025-10-12T14:55:18.883Z" },
+    { url = "https://files.pythonhosted.org/packages/53/b2/acc33950394b3becb2b664741a0c0889c7ef9f9ffbfa8d47eddb53a50abd/idna-3.12-py3-none-any.whl", hash = "sha256:60ffaa1858fac94c9c124728c24fcde8160f3fb4a7f79aa8cdd33a9d1af60a67", size = 68634, upload-time = "2026-04-21T13:32:47.403Z" },
 ]
 
 [[package]]
@@ -668,13 +668,13 @@ wheels = [
 
 [[package]]
 name = "object-storage-client"
-version = "0.0.20"
+version = "0.0.22"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/af/b3/c2a0c4067d829f49d6e777a9c11f28b899226e117492c6f6ed230890b327/object_storage_client-0.0.20.tar.gz", hash = "sha256:ca4bf4ce6c7061081caeb8d11e05f34ec597829a8178e94f62b17dc7e9b12498", size = 39116, upload-time = "2026-03-20T17:27:56.377Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/1a/49/9af56487b380cef1132c1aa718702095a0ab3ddb3e82bb4eab9593dde316/object_storage_client-0.0.22.tar.gz", hash = "sha256:00535617e1f50c0dab066e7dc6bdc9d1690e989febcfaacc27737988dd5a4101", size = 40622, upload-time = "2026-04-21T12:36:41.782Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/30/56/5c32ba20a482dd861f6faa18372410fb4abaaca74f419d60ef925ba64d9e/object_storage_client-0.0.20-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:7fe6781539b4f29aef6836411e100a946f22ac409926ab0b0ec9362a198451fd", size = 1914810, upload-time = "2026-03-20T17:27:51.906Z" },
-    { url = "https://files.pythonhosted.org/packages/41/2d/2e5b7b195a0e4478e4ae08efb249746c7b0df8aa25f58aa913540882617e/object_storage_client-0.0.20-cp314-cp314-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:aa0037016589a153f7c7d6e9c2b84cdd046d280420c8a4120cebe6cb1e7665a6", size = 2102642, upload-time = "2026-03-20T17:27:55.24Z" },
-    { url = "https://files.pythonhosted.org/packages/68/84/256c571a540017429009c289b2cccf174fc0cf731bae5697a214f57e26c8/object_storage_client-0.0.20-cp314-cp314-win_amd64.whl", hash = "sha256:49003b38f22af4cdb60f62fed7b55890c93fba0e837f1c6a216f9566b4167629", size = 2095189, upload-time = "2026-03-20T17:28:00.145Z" },
+    { url = "https://files.pythonhosted.org/packages/e3/0b/c9a4dc7ae9bc8f67877190d97c0efb94a0a9e7aef6423feaa45d93232215/object_storage_client-0.0.22-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:db7d843f11e1d281ba16533bc573343ec9e0a8d2cf779cd43464df6adca0a5a8", size = 1922610, upload-time = "2026-04-21T12:36:40.278Z" },
+    { url = "https://files.pythonhosted.org/packages/7e/f3/3e34cc1e70e9f48ad0be5d7af1771d864a3ee618c07aad43978e2d3a131c/object_storage_client-0.0.22-cp314-cp314-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:4d7c92c2ca19f9d734be99162df7dc573535e7022e5a9b5c1dce121a102a85ae", size = 2114290, upload-time = "2026-04-21T12:36:37.82Z" },
+    { url = "https://files.pythonhosted.org/packages/ee/73/4af6bf9dc086e9c0a69988d2258d2f6f5d02d00ef891d9df3d6d08c3355a/object_storage_client-0.0.22-cp314-cp314-win_amd64.whl", hash = "sha256:df863a2a3f8f1c77d06bdc547d674b321878dca7cb7db94606b763cb9cc7e508", size = 2095414, upload-time = "2026-04-21T12:36:38.966Z" },
 ]
 
 [[package]]
@@ -1024,13 +1024,13 @@ testing = [
 
 [package.metadata]
 requires-dist = [
-    { name = "aiobotocore", specifier = "~=3.4.0" },
+    { name = "aiobotocore", specifier = "~=3.5.0" },
     { name = "aiohttp", extras = ["speedups"], specifier = ">=3.13.5,<3.15.0" },
     { name = "asyncpg", specifier = "~=0.31.0" },
     { name = "lxml", specifier = "~=6.1.0" },
     { name = "msgpack", specifier = "~=1.1.2" },
     { name = "msgspec", specifier = "==0.21.1" },
-    { name = "object-storage-client", specifier = "==0.0.20" },
+    { name = "object-storage-client", specifier = "==0.0.22" },
     { name = "pydantic-settings", specifier = "~=2.14.0" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = "~=2.0.49" },
     { name = "valkey", extras = ["libvalkey"], specifier = "~=6.1.1" },

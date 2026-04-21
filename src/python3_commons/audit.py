@@ -20,9 +20,7 @@ logger = logging.getLogger(__name__)
 async def write_audit_data(settings: S3Settings, key: str, data: bytes) -> None:
     if settings.aws_secret_access_key:
         try:
-            absolute_path = object_storage.get_absolute_path(f'audit/{key}')
-
-            await object_storage.put_object(settings.s3_bucket, absolute_path, io.BytesIO(data), len(data))
+            await object_storage.put_object(settings.s3_bucket, f'audit/{key}', io.BytesIO(data), len(data))
         except Exception:
             logger.exception('Failed storing object in storage.')
         else:

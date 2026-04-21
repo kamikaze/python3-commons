@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import logging
+import threading
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING
 
 import aiobotocore.session
 from botocore.config import Config
+from object_storage_client import ObjectStorageClient
 
 if TYPE_CHECKING:
     import io
@@ -19,6 +21,22 @@ from python3_commons.conf import S3Settings, s3_settings
 from python3_commons.helpers import SingletonMeta
 
 logger = logging.getLogger(__name__)
+_CLIENT: ObjectStorageClient | None = None
+_CLIENT_LOCK = threading.Lock()
+
+
+def get_client() -> ObjectStorageClient:
+    global _CLIENT  # noqa: PLW0603
+
+    if not _CLIENT:
+        with _CLIENT_LOCK:
+            if not _CLIENT:
+                client = ObjectStorageClient()
+                _CLIENT = client
+            else:
+                client = _CLIENT
+
+    return client
 
 
 class ObjectStorage(metaclass=SingletonMeta):
@@ -58,21 +76,21 @@ def get_absolute_path(path: str) -> str:
 
 
 async def put_object(bucket_name: str, path: str, data: io.BytesIO, length: int, part_size: int = 0) -> str | None:
-    storage = ObjectStorage(s3_settings)
+    try:
+        client = get_client()
+        data.seek(0)
+        absolute_path = get_absolute_path(path)
+        url = f's3://{bucket_name}/{absolute_path}'
 
-    async with storage.get_client() as s3_client:
-        try:
-            data.seek(0)
+        await client.put_object(url, data.getvalue())
 
-            await s3_client.put_object(Bucket=bucket_name, Key=path, Body=data, ContentLength=length)
+        logger.debug('Stored object into object storage: %s:%s', bucket_name, path)
+    except Exception as e:
+        logger.exception('Failed to put object to object storage: %s:%s', bucket_name, path, exc_info=e)
 
-            logger.debug('Stored object into object storage: %s:%s', bucket_name, path)
-        except Exception as e:
-            logger.exception('Failed to put object to object storage: %s:%s', bucket_name, path, exc_info=e)
+        raise
 
-            raise
-
-        return f's3://{bucket_name}/{path}'
+    return f's3://{bucket_name}/{path}'
 
 
 @asynccontextmanager
@@ -117,7 +135,7 @@ async def list_objects(bucket_name: str, prefix: str, *, recursive: bool = True)
 
 
 async def get_object_streams(
-    bucket_name: str, path: str, *, recursive: bool = True
+        bucket_name: str, path: str, *, recursive: bool = True
 ) -> AsyncGenerator[tuple[str, datetime, StreamingBody]]:
     async for obj in list_objects(bucket_name, path, recursive=recursive):
         object_name = obj['Key']
@@ -128,7 +146,7 @@ async def get_object_streams(
 
 
 async def get_objects(
-    bucket_name: str, path: str, *, recursive: bool = True
+        bucket_name: str, path: str, *, recursive: bool = True
 ) -> AsyncGenerator[tuple[str, datetime, bytes]]:
     async for object_name, last_modified, stream in get_object_streams(bucket_name, path, recursive=recursive):
         data = await stream.read()
@@ -150,7 +168,7 @@ async def remove_object(bucket_name: str, object_name: str) -> None:
 
 
 async def remove_objects(
-    bucket_name: str, prefix: str | None = None, object_names: Iterable[str] | None = None
+        bucket_name: str, prefix: str | None = None, object_names: Iterable[str] | None = None
 ) -> Sequence[Mapping] | None:
     storage = ObjectStorage(s3_settings)
 
@@ -173,7 +191,7 @@ async def remove_objects(
             chunk_size = 1000
 
             for i in range(0, len(objects_to_delete), chunk_size):
-                chunk = objects_to_delete[i : i + chunk_size]
+                chunk = objects_to_delete[i: i + chunk_size]
 
                 response = await s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': chunk})
 
