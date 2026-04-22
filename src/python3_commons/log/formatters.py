@@ -5,7 +5,7 @@ from datetime import UTC, datetime, date
 from decimal import Decimal
 from typing import Any, Final, Callable
 
-import orjson
+import msgspec
 
 correlation_id: ContextVar[str | None] = ContextVar('correlation_id', default=None)
 
@@ -36,7 +36,6 @@ _STD_LOG_FIELDS: Final[frozenset[str]] = frozenset(
 )
 
 
-# Keep normalization minimal and branch-based (faster than dict dispatch)
 def _normalize(v: Any) -> Any:
     if isinstance(v, datetime | date):
         return v.isoformat()
@@ -54,7 +53,7 @@ def _normalize(v: Any) -> Any:
 
 
 class JSONFormatter(logging.Formatter):
-    __slots__ = ('_get_correlation_id', '_max_tb_chars')
+    __slots__ = ('_get_correlation_id', '_max_tb_chars', '_encoder')
 
     def __init__(
             self,
@@ -64,19 +63,18 @@ class JSONFormatter(logging.Formatter):
             **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
+
         self._get_correlation_id = get_correlation_id
         self._max_tb_chars = max_exc_tb_chars
+        self._encoder = msgspec.json.Encoder()
 
     def format(self, record: logging.LogRecord) -> str:
-        # --- message (fast path, avoid Formatter.formatMessage) ---
         try:
             message = record.getMessage()
         except Exception:
             message = str(record.msg)
 
-        # --- timestamp (no Formatter.formatTime overhead) ---
         timestamp = datetime.fromtimestamp(record.created, UTC).isoformat().replace('+00:00', 'Z')
-
         log: dict[str, Any] = {
             'message': message,
             'level': record.levelname,
@@ -94,7 +92,6 @@ class JSONFormatter(logging.Formatter):
             log['exc_value'] = str(exc_value)
 
             tb = ''.join(traceback.format_exception(exc_type, exc_value, exc_tb)).rstrip()
-
             cap = self._max_tb_chars
 
             if cap and len(tb) > cap:
@@ -112,7 +109,6 @@ class JSONFormatter(logging.Formatter):
             for k, v in record_dict.items():
                 if k[0] == '_' or k in std_log_fields:
                     continue
-
                 out_set(k, normalize(v))
 
-        return orjson.dumps(log).decode('utf-8')
+        return self._encoder.encode(log).decode('utf-8')
