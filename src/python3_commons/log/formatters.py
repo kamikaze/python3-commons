@@ -24,6 +24,7 @@ _STD_LOG_FIELDS: Final[frozenset[str]] = frozenset(
         'created',
         'msecs',
         'relativeCreated',
+        'taskName',
         'thread',
         'threadName',
         'process',
