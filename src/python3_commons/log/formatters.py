@@ -1,35 +1,118 @@
-import json
 import logging
 import traceback
 from contextvars import ContextVar
+from datetime import UTC, datetime, date
+from decimal import Decimal
+from typing import Any, Final, Callable
 
-from python3_commons.serializers.json import CustomJSONEncoder
+import orjson
 
 correlation_id: ContextVar[str | None] = ContextVar('correlation_id', default=None)
 
+_DEFAULT_MAX_TB_CHARS: Final[int] = 8_000
+_STD_LOG_FIELDS: Final[frozenset[str]] = frozenset(
+    {
+        'msg',
+        'args',
+        'levelname',
+        'levelno',
+        'pathname',
+        'filename',
+        'module',
+        'exc_info',
+        'exc_text',
+        'stack_info',
+        'lineno',
+        'funcName',
+        'created',
+        'msecs',
+        'relativeCreated',
+        'thread',
+        'threadName',
+        'process',
+        'processName',
+        'name',
+    }
+)
+
+
+# Keep normalization minimal and branch-based (faster than dict dispatch)
+def _normalize(v: Any) -> Any:
+    if isinstance(v, datetime | date):
+        return v.isoformat()
+
+    if isinstance(v, bytes):
+        return v.decode('utf-8', errors='replace')
+
+    if isinstance(v, Decimal):
+        return str(v)
+
+    if isinstance(v, Exception):
+        return str(v)
+
+    return v
+
 
 class JSONFormatter(logging.Formatter):
-    @staticmethod
-    def format_exception(exc_info: logging._SysExcInfoType) -> str:
-        return ''.join(traceback.format_exception(*exc_info))
+    __slots__ = ('_get_correlation_id', '_max_tb_chars')
+
+    def __init__(
+            self,
+            *,
+            get_correlation_id: Callable[[], str | None] = lambda: correlation_id.get(),
+            max_exc_tb_chars: int = _DEFAULT_MAX_TB_CHARS,
+            **kwargs: Any,
+    ) -> None:
+        super().__init__(**kwargs)
+        self._get_correlation_id = get_correlation_id
+        self._max_tb_chars = max_exc_tb_chars
 
     def format(self, record: logging.LogRecord) -> str:
-        if corr_id := correlation_id.get():
-            record.correlation_id = corr_id
-
+        # --- message (fast path, avoid Formatter.formatMessage) ---
         try:
-            record.message = record.getMessage()
-        except TypeError:
-            record.message = str(record.msg)
+            message = record.getMessage()
+        except Exception:
+            message = str(record.msg)
 
-        if record.exc_info:
-            record.exc_text = self.format_exception(record.exc_info)
-        else:
-            record.exc_text = None
+        # --- timestamp (no Formatter.formatTime overhead) ---
+        timestamp = datetime.fromtimestamp(record.created, UTC).isoformat().replace('+00:00', 'Z')
+
+        log: dict[str, Any] = {
+            'message': message,
+            'level': record.levelname,
+            'logger': record.name,
+            'timestamp': timestamp,
+        }
+
+        if (corr_id := self._get_correlation_id()) is not None:
+            log['correlation_id'] = corr_id
+
+        if (exc_info := record.exc_info) and exc_info[0] is not None:
+            exc_type, exc_value, exc_tb = exc_info
+
+            log['exc_type'] = f'{exc_type.__module__}.{exc_type.__qualname__}'
+            log['exc_value'] = str(exc_value)
+
+            tb = ''.join(traceback.format_exception(exc_type, exc_value, exc_tb)).rstrip()
+
+            cap = self._max_tb_chars
+
+            if cap and len(tb) > cap:
+                tb = tb[:cap] + '\n... <truncated>'
+
+            log['exc_traceback'] = tb
 
         record_dict = record.__dict__
+        std_log_fields = _STD_LOG_FIELDS
 
-        del record_dict['args']
-        del record_dict['msg']
+        if len(record_dict) > len(std_log_fields):
+            normalize = _normalize
+            out_set = log.__setitem__
 
-        return json.dumps(record_dict, cls=CustomJSONEncoder)
+            for k, v in record_dict.items():
+                if k[0] == '_' or k in std_log_fields:
+                    continue
+
+                out_set(k, normalize(v))
+
+        return orjson.dumps(log).decode('utf-8')
