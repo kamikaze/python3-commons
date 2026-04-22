@@ -31,7 +31,7 @@ def get_client() -> ObjectStorageClient:
     if not _CLIENT:
         with _CLIENT_LOCK:
             if not _CLIENT:
-                _CLIENT: ObjectStorageClient = ObjectStorageClient()
+                _CLIENT = ObjectStorageClient()
 
     return _CLIENT
 
