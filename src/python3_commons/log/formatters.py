@@ -1,13 +1,10 @@
 import logging
 import traceback
-from contextvars import ContextVar
 from datetime import UTC, datetime, date
 from decimal import Decimal
-from typing import Any, Final, Callable
+from typing import Any, Final
 
 import msgspec
-
-correlation_id: ContextVar[str | None] = ContextVar('correlation_id', default=None)
 
 _DEFAULT_MAX_TB_CHARS: Final[int] = 8_000
 _STD_LOG_FIELDS: Final[frozenset[str]] = frozenset(
@@ -53,18 +50,16 @@ def _normalize(v: Any) -> Any:
 
 
 class JSONFormatter(logging.Formatter):
-    __slots__ = ('_get_correlation_id', '_max_tb_chars', '_encoder')
+    __slots__ = ('_max_tb_chars', '_encoder')
 
     def __init__(
             self,
             *,
-            get_correlation_id: Callable[[], str | None] = lambda: correlation_id.get(),
             max_exc_tb_chars: int = _DEFAULT_MAX_TB_CHARS,
             **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
 
-        self._get_correlation_id = get_correlation_id
         self._max_tb_chars = max_exc_tb_chars
         self._encoder = msgspec.json.Encoder()
 
@@ -81,9 +76,6 @@ class JSONFormatter(logging.Formatter):
             'logger': record.name,
             'timestamp': timestamp,
         }
-
-        if (corr_id := self._get_correlation_id()) is not None:
-            log['correlation_id'] = corr_id
 
         if (exc_info := record.exc_info) and exc_info[0] is not None:
             exc_type, exc_value, exc_tb = exc_info
