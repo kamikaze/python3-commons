@@ -8,8 +8,9 @@ try:
     from sqlalchemy.orm import Mapped, mapped_column
     from sqlalchemy.sql import expression
     from sqlalchemy.sql.ddl import CreateColumn
-except ImportError:
-    raise RuntimeError("Install python3_commons[database] to use this feature")
+except ImportError as e:
+    msg = 'Install python3_commons[database] to use this feature'
+    raise RuntimeError(msg) from e
 
 
 class UTCNow(expression.FunctionElement):

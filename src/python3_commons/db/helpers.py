@@ -5,8 +5,9 @@ from typing import TYPE_CHECKING
 try:
     import sqlalchemy as sa
     from sqlalchemy import asc, desc, func
-except ImportError:
-    raise RuntimeError("Install python3_commons[database] to use this feature")
+except ImportError as e:
+    msg = 'Install python3_commons[database] to use this feature'
+    raise RuntimeError(msg) from e
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement

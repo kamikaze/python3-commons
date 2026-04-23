@@ -5,8 +5,9 @@ from uuid import UUID
 try:
     import sqlalchemy as sa
     from sqlalchemy import and_, exists, func
-except ImportError:
-    raise RuntimeError("Install python3_commons[authz] to use this feature")
+except ImportError as e:
+    msg = 'Install python3_commons[authz] to use this feature'
+    raise RuntimeError(msg) from e
 
 from python3_commons.db.models.rbac import RBACApiKeyRole, RBACPermission, RBACRolePermission, RBACUserRole
 

@@ -12,8 +12,9 @@ from uuid import uuid4
 try:
     from aiohttp import ClientResponse, ClientSession, ClientTimeout, client_exceptions
     from aiohttp.abc import URL
-except ImportError:
-    raise RuntimeError("Install python3_commons[api-client] to use this feature")
+except ImportError as e:
+    msg = 'Install python3_commons[api-client] to use this feature'
+    raise RuntimeError(msg) from e
 
 from python3_commons import audit
 from python3_commons.conf import s3_settings

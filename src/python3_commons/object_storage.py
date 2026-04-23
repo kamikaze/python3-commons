@@ -9,8 +9,9 @@ try:
     import aiobotocore.session
     from botocore.config import Config
     from object_storage_client import ObjectStorageClient
-except ImportError:
-    raise RuntimeError("Install python3_commons[object-storage] to use this feature")
+except ImportError as e:
+    msg = 'Install python3_commons[object-storage] to use this feature'
+    raise RuntimeError(msg) from e
 
 if TYPE_CHECKING:
     import io

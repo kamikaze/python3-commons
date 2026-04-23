@@ -9,8 +9,9 @@ try:
     from valkey.asyncio import ConnectionPool, Sentinel, StrictValkey, Valkey
     from valkey.asyncio.retry import Retry
     from valkey.backoff import FullJitterBackoff
-except ImportError:
-    raise RuntimeError("Install python3_commons[cache] to use this feature")
+except ImportError as e:
+    msg = 'Install python3_commons[cache] to use this feature'
+    raise RuntimeError(msg) from e
 
 from python3_commons.conf import valkey_settings
 from python3_commons.helpers import SingletonMeta

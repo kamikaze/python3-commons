@@ -1,6 +1,6 @@
 import logging
 import traceback
-from datetime import UTC, datetime, date
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from typing import Any, Final
 
@@ -51,13 +51,13 @@ def _normalize(v: Any) -> Any:
 
 
 class JSONFormatter(logging.Formatter):
-    __slots__ = ('_max_tb_chars', '_encoder')
+    __slots__ = ('_encoder', '_max_tb_chars')
 
     def __init__(
-            self,
-            *,
-            max_exc_tb_chars: int = _DEFAULT_MAX_TB_CHARS,
-            **kwargs: Any,
+        self,
+        *,
+        max_exc_tb_chars: int = _DEFAULT_MAX_TB_CHARS,
+        **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
 

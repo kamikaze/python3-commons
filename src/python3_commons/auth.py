@@ -7,8 +7,9 @@ from typing import TypeVar
 
 try:
     import aiohttp
-except ImportError:
-    raise RuntimeError("Install python3_commons[authn] to use this feature")
+except ImportError as e:
+    msg = 'Install python3_commons[authn] to use this feature'
+    raise RuntimeError(msg) from e
 
 import msgspec
 
@@ -55,9 +56,9 @@ async def fetch_openid_config() -> dict:
     """
     async with aiohttp.ClientSession() as session, session.get(OIDC_CONFIG_URL) as response:
         if response.status != HTTPStatus.OK:
-            msg = 'Failed to fetch OpenID configuration'
+            _msg = 'Failed to fetch OpenID configuration'
 
-            raise RuntimeError(msg)
+            raise RuntimeError(_msg)
 
         return await response.json()
 
@@ -71,8 +72,8 @@ async def fetch_jwks(jwks_uri: str) -> dict:
 
     async with aiohttp.ClientSession() as session, session.get(jwks_uri) as response:
         if response.status != HTTPStatus.OK:
-            msg = 'Failed to fetch JWKS'
+            _msg = 'Failed to fetch JWKS'
 
-            raise RuntimeError(msg)
+            raise RuntimeError(_msg)
 
         return await response.json()

@@ -8,8 +8,9 @@ from uuid import uuid4
 try:
     from lxml import etree
     from zeep.plugins import Plugin
-except ImportError:
-    raise RuntimeError("Install python3_commons[api-client] to use this feature")
+except ImportError as e:
+    msg = 'Install python3_commons[api-client] to use this feature'
+    raise RuntimeError(msg) from e
 
 from python3_commons import object_storage
 from python3_commons.conf import S3Settings, s3_settings
