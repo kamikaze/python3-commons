@@ -9,7 +9,7 @@ try:
     from sqlalchemy.ext.asyncio.session import async_sessionmaker
     from sqlalchemy.orm import declarative_base
 except ImportError as e:
-    msg = 'Install python3_commons[database] to use this feature'
+    msg = 'Install python3-commons[database] to use this feature'
     raise RuntimeError(msg) from e
 
 if TYPE_CHECKING:

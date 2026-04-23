@@ -6,7 +6,7 @@ try:
     import sqlalchemy as sa
     from sqlalchemy import asc, desc, func
 except ImportError as e:
-    msg = 'Install python3_commons[database] to use this feature'
+    msg = 'Install python3-commons[database] to use this feature'
     raise RuntimeError(msg) from e
 
 if TYPE_CHECKING:
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_query(
-    search: Mapping[str, str] | None = None, order_by: str | None = None, columns: Mapping | None = None
+        search: Mapping[str, str] | None = None, order_by: str | None = None, columns: Mapping | None = None
 ) -> tuple[ColumnElement[bool] | None, tuple[ColumnElement[bool]] | None]:
     """
     :columns:

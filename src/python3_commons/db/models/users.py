@@ -4,7 +4,7 @@ try:
     from sqlalchemy import UUID, ForeignKey, String
     from sqlalchemy.orm import Mapped, mapped_column
 except ImportError as e:
-    msg = 'Install python3_commons[database] to use this feature'
+    msg = 'Install python3-commons[database] to use this feature'
     raise RuntimeError(msg) from e
 
 from python3_commons.db import Base

@@ -9,7 +9,7 @@ try:
     from lxml import etree
     from zeep.plugins import Plugin
 except ImportError as e:
-    msg = 'Install python3_commons[api-client] to use this feature'
+    msg = 'Install python3-commons[api-client] to use this feature'
     raise RuntimeError(msg) from e
 
 from python3_commons import object_storage

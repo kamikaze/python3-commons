@@ -8,7 +8,7 @@ from typing import TypeVar
 try:
     import aiohttp
 except ImportError as e:
-    msg = 'Install python3_commons[authn] to use this feature'
+    msg = 'Install python3-commons[authn] to use this feature'
     raise RuntimeError(msg) from e
 
 import msgspec

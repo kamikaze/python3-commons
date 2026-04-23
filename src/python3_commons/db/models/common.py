@@ -9,7 +9,7 @@ try:
     from sqlalchemy.sql import expression
     from sqlalchemy.sql.ddl import CreateColumn
 except ImportError as e:
-    msg = 'Install python3_commons[database] to use this feature'
+    msg = 'Install python3-commons[database] to use this feature'
     raise RuntimeError(msg) from e
 
 

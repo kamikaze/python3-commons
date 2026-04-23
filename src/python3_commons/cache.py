@@ -10,7 +10,7 @@ try:
     from valkey.asyncio.retry import Retry
     from valkey.backoff import FullJitterBackoff
 except ImportError as e:
-    msg = 'Install python3_commons[cache] to use this feature'
+    msg = 'Install python3-commons[cache] to use this feature'
     raise RuntimeError(msg) from e
 
 from python3_commons.conf import valkey_settings
@@ -81,11 +81,11 @@ def get_valkey_client() -> Valkey:
 
 
 async def scan(
-    cursor: int = 0,
-    match: bytes | str | memoryview | None = None,
-    count: int | None = None,
-    _type: str | None = None,
-    **kwargs,
+        cursor: int = 0,
+        match: bytes | str | memoryview | None = None,
+        count: int | None = None,
+        _type: str | None = None,
+        **kwargs,
 ) -> ResponseT:
     return await get_valkey_client().scan(cursor, match, count, _type, **kwargs)
 
