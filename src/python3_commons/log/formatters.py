@@ -71,7 +71,7 @@ class JSONFormatter(logging.Formatter):
             message = str(record.msg)
 
         timestamp = datetime.fromtimestamp(record.created, UTC).isoformat().replace('+00:00', 'Z')
-        log: dict[str, Any] = {
+        log_dict: dict[str, Any] = {
             'message': message,
             'level': record.levelname,
             'logger': record.name,
@@ -81,8 +81,8 @@ class JSONFormatter(logging.Formatter):
         if (exc_info := record.exc_info) and exc_info[0] is not None:
             exc_type, exc_value, exc_tb = exc_info
 
-            log['exc_type'] = f'{exc_type.__module__}.{exc_type.__qualname__}'
-            log['exc_value'] = str(exc_value)
+            log_dict['exc_type'] = f'{exc_type.__module__}.{exc_type.__qualname__}'
+            log_dict['exc_value'] = str(exc_value)
 
             tb = ''.join(traceback.format_exception(exc_type, exc_value, exc_tb)).rstrip()
             cap = self._max_tb_chars
@@ -90,18 +90,19 @@ class JSONFormatter(logging.Formatter):
             if cap and len(tb) > cap:
                 tb = tb[:cap] + '\n... <truncated>'
 
-            log['exc_traceback'] = tb
+            log_dict['exc_traceback'] = tb
 
         record_dict = record.__dict__
         std_log_fields = _STD_LOG_FIELDS
 
         if len(record_dict) > len(std_log_fields):
             normalize = _normalize
-            out_set = log.__setitem__
+            log_dict_set = log_dict.__setitem__
 
             for k, v in record_dict.items():
                 if k[0] == '_' or k in std_log_fields:
                     continue
-                out_set(k, normalize(v))
 
-        return self._encoder.encode(log).decode('utf-8')
+                log_dict_set(k, normalize(v))
+
+        return self._encoder.encode(log_dict).decode('utf-8')
