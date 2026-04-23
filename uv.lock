@@ -1004,6 +1004,7 @@ all = [
     { name = "asyncpg" },
     { name = "object-storage-client" },
     { name = "sqlalchemy", extra = ["asyncio"] },
+    { name = "valkey", extra = ["libvalkey"] },
 ]
 api-client = [
     { name = "aiobotocore" },
@@ -1059,7 +1060,7 @@ requires-dist = [
     { name = "msgspec", specifier = "==0.21.1" },
     { name = "object-storage-client", marker = "extra == 'object-storage'", specifier = "==0.0.22" },
     { name = "pydantic-settings", specifier = "~=2.14.0" },
-    { name = "python3-commons", extras = ["audit", "authn", "authz", "database", "object-storage", "valkey"], marker = "extra == 'all'" },
+    { name = "python3-commons", extras = ["audit", "authn", "authz", "cache", "database", "object-storage"], marker = "extra == 'all'" },
     { name = "python3-commons", extras = ["database"], marker = "extra == 'authz'" },
     { name = "python3-commons", extras = ["object-storage"], marker = "extra == 'api-client'" },
     { name = "sqlalchemy", extras = ["asyncio"], marker = "extra == 'database'", specifier = "~=2.0.49" },
