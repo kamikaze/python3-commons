@@ -2,8 +2,11 @@ import logging
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-import sqlalchemy as sa
-from sqlalchemy import and_, exists, func
+try:
+    import sqlalchemy as sa
+    from sqlalchemy import and_, exists, func
+except ImportError:
+    raise RuntimeError("Install python3_commons[authz] to use this feature")
 
 from python3_commons.db.models.rbac import RBACApiKeyRole, RBACPermission, RBACRolePermission, RBACUserRole
 

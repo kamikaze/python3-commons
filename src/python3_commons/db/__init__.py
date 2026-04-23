@@ -3,10 +3,13 @@ import logging
 from collections.abc import AsyncGenerator, Callable, Mapping
 from typing import TYPE_CHECKING
 
-from sqlalchemy import MetaData
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_engine_from_config
-from sqlalchemy.ext.asyncio.session import async_sessionmaker
-from sqlalchemy.orm import declarative_base
+try:
+    from sqlalchemy import MetaData
+    from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_engine_from_config
+    from sqlalchemy.ext.asyncio.session import async_sessionmaker
+    from sqlalchemy.orm import declarative_base
+except ImportError:
+    raise RuntimeError("Install python3_commons[database] to use this feature")
 
 if TYPE_CHECKING:
     from python3_commons.conf import DBSettings

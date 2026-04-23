@@ -4,10 +4,13 @@ from collections.abc import Mapping, Sequence
 from platform import platform
 from typing import TYPE_CHECKING, Any
 
-import valkey
-from valkey.asyncio import ConnectionPool, Sentinel, StrictValkey, Valkey
-from valkey.asyncio.retry import Retry
-from valkey.backoff import FullJitterBackoff
+try:
+    import valkey
+    from valkey.asyncio import ConnectionPool, Sentinel, StrictValkey, Valkey
+    from valkey.asyncio.retry import Retry
+    from valkey.backoff import FullJitterBackoff
+except ImportError:
+    raise RuntimeError("Install python3_commons[cache] to use this feature")
 
 from python3_commons.conf import valkey_settings
 from python3_commons.helpers import SingletonMeta
@@ -77,11 +80,11 @@ def get_valkey_client() -> Valkey:
 
 
 async def scan(
-    cursor: int = 0,
-    match: bytes | str | memoryview | None = None,
-    count: int | None = None,
-    _type: str | None = None,
-    **kwargs,
+        cursor: int = 0,
+        match: bytes | str | memoryview | None = None,
+        count: int | None = None,
+        _type: str | None = None,
+        **kwargs,
 ) -> ResponseT:
     return await get_valkey_client().scan(cursor, match, count, _type, **kwargs)
 

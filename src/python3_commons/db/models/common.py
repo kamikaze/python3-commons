@@ -1,12 +1,15 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import BIGINT, DateTime
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy.sql import expression
-from sqlalchemy.sql.ddl import CreateColumn
+try:
+    from sqlalchemy import BIGINT, DateTime
+    from sqlalchemy.dialects.postgresql import UUID
+    from sqlalchemy.ext.compiler import compiles
+    from sqlalchemy.orm import Mapped, mapped_column
+    from sqlalchemy.sql import expression
+    from sqlalchemy.sql.ddl import CreateColumn
+except ImportError:
+    raise RuntimeError("Install python3_commons[database] to use this feature")
 
 
 class UTCNow(expression.FunctionElement):

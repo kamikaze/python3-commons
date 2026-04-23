@@ -2,8 +2,11 @@ import logging
 from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
-import sqlalchemy as sa
-from sqlalchemy import asc, desc, func
+try:
+    import sqlalchemy as sa
+    from sqlalchemy import asc, desc, func
+except ImportError:
+    raise RuntimeError("Install python3_commons[database] to use this feature")
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
@@ -12,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_query(
-    search: Mapping[str, str] | None = None, order_by: str | None = None, columns: Mapping | None = None
+        search: Mapping[str, str] | None = None, order_by: str | None = None, columns: Mapping | None = None
 ) -> tuple[ColumnElement[bool] | None, tuple[ColumnElement[bool]] | None]:
     """
     :columns:

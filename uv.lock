@@ -992,17 +992,43 @@ wheels = [
 name = "python3-commons"
 source = { editable = "." }
 dependencies = [
+    { name = "msgpack" },
+    { name = "msgspec" },
+    { name = "pydantic-settings" },
+]
+
+[package.optional-dependencies]
+all = [
     { name = "aiobotocore" },
     { name = "aiohttp", extra = ["speedups"] },
     { name = "asyncpg" },
-    { name = "lxml" },
-    { name = "msgpack" },
-    { name = "msgspec" },
     { name = "object-storage-client" },
-    { name = "pydantic-settings" },
     { name = "sqlalchemy", extra = ["asyncio"] },
-    { name = "valkey", extra = ["libvalkey"] },
+]
+api-client = [
+    { name = "aiobotocore" },
+    { name = "aiohttp", extra = ["speedups"] },
+    { name = "lxml" },
+    { name = "object-storage-client" },
     { name = "zeep" },
+]
+authn = [
+    { name = "aiohttp", extra = ["speedups"] },
+]
+authz = [
+    { name = "asyncpg" },
+    { name = "sqlalchemy", extra = ["asyncio"] },
+]
+cache = [
+    { name = "valkey", extra = ["libvalkey"] },
+]
+database = [
+    { name = "asyncpg" },
+    { name = "sqlalchemy", extra = ["asyncio"] },
+]
+object-storage = [
+    { name = "aiobotocore" },
+    { name = "object-storage-client" },
 ]
 
 [package.dev-dependencies]
@@ -1024,18 +1050,23 @@ testing = [
 
 [package.metadata]
 requires-dist = [
-    { name = "aiobotocore", specifier = "~=3.5.0" },
-    { name = "aiohttp", extras = ["speedups"], specifier = ">=3.13.5,<3.15.0" },
-    { name = "asyncpg", specifier = "~=0.31.0" },
-    { name = "lxml", specifier = "~=6.1.0" },
+    { name = "aiobotocore", marker = "extra == 'object-storage'", specifier = "~=3.5.0" },
+    { name = "aiohttp", extras = ["speedups"], marker = "extra == 'api-client'", specifier = ">=3.13.5,<3.15.0" },
+    { name = "aiohttp", extras = ["speedups"], marker = "extra == 'authn'", specifier = ">=3.13.5,<3.15.0" },
+    { name = "asyncpg", marker = "extra == 'database'", specifier = "~=0.31.0" },
+    { name = "lxml", marker = "extra == 'api-client'", specifier = "~=6.1.0" },
     { name = "msgpack", specifier = "~=1.1.2" },
     { name = "msgspec", specifier = "==0.21.1" },
-    { name = "object-storage-client", specifier = "==0.0.22" },
+    { name = "object-storage-client", marker = "extra == 'object-storage'", specifier = "==0.0.22" },
     { name = "pydantic-settings", specifier = "~=2.14.0" },
-    { name = "sqlalchemy", extras = ["asyncio"], specifier = "~=2.0.49" },
-    { name = "valkey", extras = ["libvalkey"], specifier = "~=6.1.1" },
-    { name = "zeep", specifier = "~=4.3.2" },
+    { name = "python3-commons", extras = ["audit", "authn", "authz", "database", "object-storage", "valkey"], marker = "extra == 'all'" },
+    { name = "python3-commons", extras = ["database"], marker = "extra == 'authz'" },
+    { name = "python3-commons", extras = ["object-storage"], marker = "extra == 'api-client'" },
+    { name = "sqlalchemy", extras = ["asyncio"], marker = "extra == 'database'", specifier = "~=2.0.49" },
+    { name = "valkey", extras = ["libvalkey"], marker = "extra == 'cache'", specifier = "~=6.1.1" },
+    { name = "zeep", marker = "extra == 'api-client'", specifier = "~=4.3.2" },
 ]
+provides-extras = ["all", "api-client", "authn", "authz", "cache", "database", "object-storage"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -1193,14 +1224,14 @@ asyncio = [
 
 [[package]]
 name = "types-aiobotocore"
-version = "3.4.0"
+version = "3.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "botocore-stubs" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/77/95/349d980d5e7da4e3f300bba5f09de71ffd70f3d96ad70b260420a4f4ff89/types_aiobotocore-3.4.0.tar.gz", hash = "sha256:010fa82ddc8aba6084e18edbf22981e541b7efc1f85e49e2320501c22913ef35", size = 87621, upload-time = "2026-04-08T02:46:37.316Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d5/99/3863acdc373aa621cf56634bb08145fb54f2213e647d893c1ac7b2636c11/types_aiobotocore-3.5.0.tar.gz", hash = "sha256:8636c9e5a9837d41e45264570349d98c0cdad51fe7961ee19664a11094bb2262", size = 87983, upload-time = "2026-04-23T02:57:02.576Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a7/e2/f2e1baa388a1ef70522132c287b1d9b23c89b4d6a7ec2981fa2f2d65c1a4/types_aiobotocore-3.4.0-py3-none-any.whl", hash = "sha256:17a52c57d879d5f9fbf7b69671dae8d8f593544a89a6f794b9bed4680e7fd334", size = 54653, upload-time = "2026-04-08T02:46:34.185Z" },
+    { url = "https://files.pythonhosted.org/packages/ed/d7/2b2d4d5b64b81149b08cc3fde6e826788c703c012b687cd4cc4d83742afd/types_aiobotocore-3.5.0-py3-none-any.whl", hash = "sha256:7c75ff73c10098d1d885e5b061f05945afdc4e9d0d5b573274292c329abe8a62", size = 54805, upload-time = "2026-04-23T02:56:59.721Z" },
 ]
 
 [package.optional-dependencies]
@@ -1210,11 +1241,11 @@ s3 = [
 
 [[package]]
 name = "types-aiobotocore-s3"
-version = "3.4.0"
+version = "3.5.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/31/12/070369e99af9c9f29b101386b8bda024e79b93ba926414907b2c1015f854/types_aiobotocore_s3-3.4.0.tar.gz", hash = "sha256:c85ef911ad4206a5af45656fc82f73bd49d364f40823f3cc9fb3887704c3f72b", size = 77156, upload-time = "2026-04-08T02:45:34.329Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2d/6b/0d9fd45a69afbd2007480a35e8612121f6e27b988741b3a6d0b05c964229/types_aiobotocore_s3-3.5.0.tar.gz", hash = "sha256:147e2128be67de8c8a33b8a9bcca5fa8e963c6c54e52c58c17fa5c6013195a5a", size = 77175, upload-time = "2026-04-23T02:54:40.652Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2b/fe/995476195978ddf5441ff5a1204dac0d385dc924d954c529557dd1e20631/types_aiobotocore_s3-3.4.0-py3-none-any.whl", hash = "sha256:4356c21155818fbb75ea60639069441a432c90ed1d4f38364f6ccf090838355b", size = 84917, upload-time = "2026-04-08T02:45:33.313Z" },
+    { url = "https://files.pythonhosted.org/packages/3b/c4/ce16af65a9227fe0ff3e737c0b4317e138fffbd06f7d631fe3a1b5a7f0f3/types_aiobotocore_s3-3.5.0-py3-none-any.whl", hash = "sha256:6fc53a6da5ec5cfb5478197fca74e1d11c389e0e20df7c0e0006a84c56224ada", size = 84930, upload-time = "2026-04-23T02:54:36.283Z" },
 ]
 
 [[package]]

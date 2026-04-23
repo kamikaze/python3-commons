@@ -1,7 +1,10 @@
 import uuid
 
-from sqlalchemy import UUID, ForeignKey, String
-from sqlalchemy.orm import Mapped, mapped_column
+try:
+    from sqlalchemy import UUID, ForeignKey, String
+    from sqlalchemy.orm import Mapped, mapped_column
+except ImportError:
+    raise RuntimeError("Install python3_commons[database] to use this feature")
 
 from python3_commons.db import Base
 from python3_commons.db.models.common import BaseDBUUIDModel

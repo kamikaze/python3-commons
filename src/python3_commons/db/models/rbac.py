@@ -1,9 +1,12 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, PrimaryKeyConstraint, String
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+try:
+    from sqlalchemy import CheckConstraint, DateTime, ForeignKey, PrimaryKeyConstraint, String
+    from sqlalchemy.dialects.postgresql import UUID
+    from sqlalchemy.orm import Mapped, mapped_column
+except ImportError:
+    raise RuntimeError("Install python3_commons[database] to use this feature")
 
 from python3_commons.db import Base
 

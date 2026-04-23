@@ -5,8 +5,11 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
-from lxml import etree
-from zeep.plugins import Plugin
+try:
+    from lxml import etree
+    from zeep.plugins import Plugin
+except ImportError:
+    raise RuntimeError("Install python3_commons[api-client] to use this feature")
 
 from python3_commons import object_storage
 from python3_commons.conf import S3Settings, s3_settings

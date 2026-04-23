@@ -5,7 +5,11 @@ from collections.abc import Sequence
 from http import HTTPStatus
 from typing import TypeVar
 
-import aiohttp
+try:
+    import aiohttp
+except ImportError:
+    raise RuntimeError("Install python3_commons[authn] to use this feature")
+
 import msgspec
 
 from python3_commons.conf import oidc_settings

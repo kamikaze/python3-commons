@@ -5,9 +5,12 @@ import threading
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING
 
-import aiobotocore.session
-from botocore.config import Config
-from object_storage_client import ObjectStorageClient
+try:
+    import aiobotocore.session
+    from botocore.config import Config
+    from object_storage_client import ObjectStorageClient
+except ImportError:
+    raise RuntimeError("Install python3_commons[object-storage] to use this feature")
 
 if TYPE_CHECKING:
     import io
