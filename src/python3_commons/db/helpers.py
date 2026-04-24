@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_query(
-        search: Mapping[str, str] | None = None, order_by: str | None = None, columns: Mapping | None = None
+    search: Mapping[str, str] | None = None, order_by: str | None = None, columns: Mapping | None = None
 ) -> tuple[ColumnElement[bool] | None, tuple[ColumnElement[bool]] | None]:
     """
     :columns:

@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 async def _store_response_for_audit(
-        response: ClientResponse, audit_name: str, uri_path: str, method: str, request_id: str
+    response: ClientResponse, audit_name: str, uri_path: str, method: str, request_id: str
 ) -> None:
     response_text = await response.text()
 
@@ -43,16 +43,16 @@ async def _store_response_for_audit(
 
 @asynccontextmanager
 async def request(
-        client: ClientSession,
-        base_url: str,
-        uri: str,
-        query: Mapping | None = None,
-        method: Literal['get', 'post', 'put', 'patch', 'options', 'head', 'delete'] = 'get',
-        headers: Mapping | None = None,
-        json: Mapping | Sequence | str | None = None,
-        data: bytes | None = None,
-        timeout: ClientTimeout | Enum | None = None,
-        audit_name: str | None = None,
+    client: ClientSession,
+    base_url: str,
+    uri: str,
+    query: Mapping | None = None,
+    method: Literal['get', 'post', 'put', 'patch', 'options', 'head', 'delete'] = 'get',
+    headers: Mapping | None = None,
+    json: Mapping | Sequence | str | None = None,
+    data: bytes | None = None,
+    timeout: ClientTimeout | Enum | None = None,
+    audit_name: str | None = None,
 ) -> AsyncGenerator[ClientResponse]:
     now = datetime.now(tz=UTC)
     date_path = now.strftime('%Y/%m/%d')
