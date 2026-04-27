@@ -58,11 +58,11 @@ class DBSettings(BaseSettings):
     @model_validator(mode='after')
     def build_dsn_if_missing(self) -> DBSettings:
         if self.dsn is None and all(
-            (
-                self.user,
-                self.password,
-                self.name,
-            )
+                (
+                        self.user,
+                        self.password,
+                        self.name,
+                )
         ):
             self.dsn = PostgresDsn.build(
                 scheme=self.scheme,
@@ -82,7 +82,6 @@ class S3Settings(BaseSettings):
     aws_access_key_id: SecretStr | None = None
     aws_secret_access_key: SecretStr | None = None
 
-    s3_endpoint_url: str | None = None
     s3_addressing_style: Literal['path', 'virtual'] = 'virtual'
     s3_secure: bool = True
     s3_bucket: str | None = None
