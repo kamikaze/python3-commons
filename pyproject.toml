@@ -29,6 +29,7 @@ all = [
 ]
 api-client = [
     "aiohttp[speedups]>=3.13.5,<3.15.0",
+    "certifi==2026.4.22",
     "python3_commons[object-storage]"
 ]
 audit = [
@@ -38,6 +39,7 @@ audit = [
 ]
 authn = [
     "aiohttp[speedups]>=3.13.5,<3.15.0",
+    "certifi==2026.4.22",
     "python3_commons[api-client]"
 ]
 authz = [
@@ -57,6 +59,7 @@ object-storage = [
 ]
 soap-client = [
     "aiohttp[speedups]>=3.13.5,<3.15.0",
+    "certifi==2026.4.22",
     "lxml~=6.1.0",
     "requests~=2.33.1",
     "zeep[async]~=4.3.2",

@@ -1051,6 +1051,7 @@ all = [
     { name = "aiobotocore" },
     { name = "aiohttp", extra = ["speedups"] },
     { name = "asyncpg" },
+    { name = "certifi" },
     { name = "lxml" },
     { name = "object-storage-client" },
     { name = "requests" },
@@ -1061,7 +1062,7 @@ all = [
 api-client = [
     { name = "aiobotocore" },
     { name = "aiohttp", extra = ["speedups"] },
-    { name = "lxml" },
+    { name = "certifi" },
     { name = "object-storage-client" },
 ]
 audit = [
@@ -1073,14 +1074,14 @@ audit = [
 authn = [
     { name = "aiobotocore" },
     { name = "aiohttp", extra = ["speedups"] },
-    { name = "lxml" },
+    { name = "certifi" },
     { name = "object-storage-client" },
 ]
 authz = [
     { name = "aiobotocore" },
     { name = "aiohttp", extra = ["speedups"] },
     { name = "asyncpg" },
-    { name = "lxml" },
+    { name = "certifi" },
     { name = "object-storage-client" },
     { name = "sqlalchemy", extra = ["asyncio"] },
 ]
@@ -1097,6 +1098,7 @@ object-storage = [
 ]
 soap-client = [
     { name = "aiohttp", extra = ["speedups"] },
+    { name = "certifi" },
     { name = "lxml" },
     { name = "requests" },
     { name = "zeep", extra = ["async"] },
@@ -1126,7 +1128,9 @@ requires-dist = [
     { name = "aiohttp", extras = ["speedups"], marker = "extra == 'authn'", specifier = ">=3.13.5,<3.15.0" },
     { name = "aiohttp", extras = ["speedups"], marker = "extra == 'soap-client'", specifier = ">=3.13.5,<3.15.0" },
     { name = "asyncpg", marker = "extra == 'database'", specifier = "~=0.31.0" },
-    { name = "lxml", marker = "extra == 'api-client'", specifier = "~=6.1.0" },
+    { name = "certifi", marker = "extra == 'api-client'", specifier = "==2026.4.22" },
+    { name = "certifi", marker = "extra == 'authn'", specifier = "==2026.4.22" },
+    { name = "certifi", marker = "extra == 'soap-client'", specifier = "==2026.4.22" },
     { name = "lxml", marker = "extra == 'audit'", specifier = "~=6.1.0" },
     { name = "lxml", marker = "extra == 'soap-client'", specifier = "~=6.1.0" },
     { name = "msgpack", specifier = "~=1.1.2" },

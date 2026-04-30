@@ -7,10 +7,13 @@ from __future__ import annotations
 import asyncio
 import concurrent.futures
 import logging
+import ssl
 from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Self
+
+import certifi
 
 try:
     import aiohttp
@@ -31,6 +34,13 @@ if TYPE_CHECKING:
     from zeep.plugins import Plugin
 
 logger = logging.getLogger(__name__)
+
+
+def _make_ssl_context(*, verify: bool) -> ssl.SSLContext | bool:
+    if not verify:
+        return False  # aiohttp accepts False to disable verification
+
+    return ssl.create_default_context(cafile=certifi.where())
 
 
 @dataclass(frozen=True, slots=True)
@@ -58,11 +68,11 @@ class AsyncTransport(Transport):
     """
 
     def __init__(
-            self,
-            *,
-            session: ClientSession,
-            config: TransportConfig,
-            _owns_session: bool = False,
+        self,
+        *,
+        session: ClientSession,
+        config: TransportConfig,
+        _owns_session: bool = False,
     ) -> None:
         super().__init__()
         self._session = session
@@ -71,23 +81,17 @@ class AsyncTransport(Transport):
 
     @classmethod
     def from_config(
-            cls,
-            config: TransportConfig | None = None,
-            *,
-            session: ClientSession | None = None,
+        cls,
+        config: TransportConfig | None = None,
+        *,
+        session: ClientSession | None = None,
     ) -> Self:
-        """
-        Create a transport, optionally sharing an existing ClientSession.
-
-        If *session* is omitted the transport owns (and will close) the
-        session it creates.
-        """
         config = config or TransportConfig()
         owns_session = session is None
 
         if owns_session:
             session = ClientSession(
-                connector=TCPConnector(ssl=config.verify_ssl),
+                connector=TCPConnector(ssl=_make_ssl_context(verify=config.verify_ssl)),
                 timeout=ClientTimeout(total=config.operation_timeout),
                 headers={'User-Agent': f'Zeep/{get_version()} (www.python-zeep.org)'},
             )
@@ -136,7 +140,7 @@ class AsyncTransport(Transport):
         async def _fetch() -> bytes:
             async with (
                 ClientSession(
-                    connector=TCPConnector(ssl=self._config.verify_ssl),
+                    connector=TCPConnector(ssl=_make_ssl_context(verify=self._config.verify_ssl)),
                     timeout=ClientTimeout(total=self._config.timeout),
                     headers={'User-Agent': f'Zeep/{get_version()} (www.python-zeep.org)'},
                 ) as session,
@@ -159,57 +163,60 @@ class AsyncTransport(Transport):
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
             return pool.submit(asyncio.run, _fetch()).result()
 
-    async def post(
-            self,
-            address: str,
-            message: bytes,
-            headers: dict[str, str],
-            *,
-            timeout: int | None = None,
-    ) -> Response:
-        logger.debug('SOAP POST → %s\n%s', address, message)
 
-        async with self._session.post(
-                address,
-                data=message,
-                headers=headers,
-                proxy=self._config.proxy,
-                timeout=ClientTimeout(total=timeout) if timeout is not None else None,
-        ) as resp:
-            body = await resp.read()
-            logger.debug('SOAP ← %s (HTTP %d)\n%s', address, resp.status, body)
+async def post(
+    self,
+    address: str,
+    message: bytes,
+    headers: dict[str, str],
+    *,
+    timeout: int | None = None,
+) -> Response:
+    logger.debug('SOAP POST → %s\n%s', address, message)
 
-            return self._build_response(resp, body)
+    async with self._session.post(
+        address,
+        data=message,
+        headers=headers,
+        proxy=self._config.proxy,
+        timeout=ClientTimeout(total=timeout) if timeout is not None else None,
+    ) as resp:
+        body = await resp.read()
+        logger.debug('SOAP ← %s (HTTP %d)\n%s', address, resp.status, body)
 
-    async def post_xml(
-            self,
-            address: str,
-            envelope: Any,
-            headers: dict[str, str],
-    ) -> Response:
-        return await self.post(address, etree_to_string(envelope), headers)
+        return self._build_response(resp, body)
 
-    async def get(
-            self,
-            address: str,
-            params: dict[str, str],
-            headers: dict[str, str],
-    ) -> Response:
-        async with self._session.get(
-                address,
-                params=params,
-                headers=headers,
-                proxy=self._config.proxy,
-        ) as resp:
-            body = await resp.read()
 
-            return self._build_response(resp, body)
+async def post_xml(
+    self,
+    address: str,
+    envelope: Any,
+    headers: dict[str, str],
+) -> Response:
+    return await self.post(address, etree_to_string(envelope), headers)
+
+
+async def get(
+    self,
+    address: str,
+    params: dict[str, str],
+    headers: dict[str, str],
+) -> Response:
+    async with self._session.get(
+        address,
+        params=params,
+        headers=headers,
+        proxy=self._config.proxy,
+    ) as resp:
+        body = await resp.read()
+
+        return self._build_response(resp, body)
 
 
 def build_soap_client(
-        wsdl_url: str,
-        transport: AsyncTransport,
-        plugins: Sequence[Plugin] | None = None,
+    wsdl_url: str,
+    transport: AsyncTransport,
+    plugins: Sequence[Plugin] | None = None,
 ) -> AsyncClient:
     if not wsdl_url:
         msg = 'wsdl_url must be a non-empty string.'
@@ -221,11 +228,11 @@ def build_soap_client(
 
 @asynccontextmanager
 async def soap_client(
-        wsdl_url: str,
-        *,
-        config: TransportConfig | None = None,
-        session: ClientSession | None = None,
-        plugins: Sequence[Plugin] | None = None,
+    wsdl_url: str,
+    *,
+    config: TransportConfig | None = None,
+    session: ClientSession | None = None,
+    plugins: Sequence[Plugin] | None = None,
 ) -> AsyncIterator[AsyncClient]:
     """
     Async context manager yielding a ready-to-use zeep AsyncClient.
