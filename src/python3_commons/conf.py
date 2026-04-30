@@ -21,6 +21,7 @@ class OIDCSettings(BaseSettings):
     authority_url: HttpUrl | None = None
     authority_internal_url: HttpUrl | None = None
     client_id: str | None = None
+    client_secret: SecretStr = SecretStr('')
     redirect_uri: str | None = None
     scope: StringSeq = (
         'openid',
@@ -58,11 +59,11 @@ class DBSettings(BaseSettings):
     @model_validator(mode='after')
     def build_dsn_if_missing(self) -> DBSettings:
         if self.dsn is None and all(
-                (
-                        self.user,
-                        self.password,
-                        self.name,
-                )
+            (
+                self.user,
+                self.password,
+                self.name,
+            )
         ):
             self.dsn = PostgresDsn.build(
                 scheme=self.scheme,

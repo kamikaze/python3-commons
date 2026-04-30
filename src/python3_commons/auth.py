@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Sequence
 from http import HTTPStatus
-from typing import TypeVar
+from typing import Self, TypeVar
 
 try:
     import aiohttp
@@ -50,6 +50,15 @@ OIDC_CONFIG_URL = (
 )
 
 
+class OIDCTokenResponse(msgspec.Struct):
+    access_token: str
+    token_type: str
+    expires_in: int
+    refresh_token: str
+    scope: str
+    id_token: str
+
+
 async def fetch_openid_config() -> dict:
     """
     Fetch the OpenID configuration (including JWKS URI) from OIDC authority.
@@ -77,3 +86,93 @@ async def fetch_jwks(jwks_uri: str) -> dict:
             raise RuntimeError(_msg)
 
         return await response.json()
+
+
+class OIDCError(Exception):
+    pass
+
+
+class OIDCAuthError(OIDCError):
+    pass
+
+
+class OIDCClient:
+    def __init__(
+            self,
+            token_url: str,
+            client_id: str,
+            client_secret: str | None = None,
+            *,
+            timeout: float = 10.0,
+            session: aiohttp.ClientSession | None = None,
+    ) -> None:
+        self._token_url = token_url
+        self._client_id = client_id
+        self._client_secret = client_secret
+        self._timeout = aiohttp.ClientTimeout(total=timeout)
+        self._session = session
+        self._owns_session = session is None
+
+    async def __aenter__(self) -> Self:
+        if self._session is None:
+            self._session = aiohttp.ClientSession(timeout=self._timeout)
+        return self
+
+    async def __aexit__(self, *_: object) -> None:
+        if self._owns_session and self._session:
+            await self._session.close()
+
+    async def fetch_token(
+            self,
+            *,
+            username: str,
+            password: str,
+            scope: str = 'openid profile email',
+    ) -> OIDCTokenResponse:
+        if self._session is None:
+            msg = 'ClientSession not initialized'
+
+            raise RuntimeError(msg)
+
+        data = {
+            'grant_type': 'password',
+            'username': username,
+            'password': password,
+            'client_id': self._client_id,
+            'scope': scope,
+        }
+
+        if self._client_secret:
+            data['client_secret'] = self._client_secret
+
+        try:
+            async with self._session.post(
+                    self._token_url,
+                    data=data,
+                    headers={'Content-Type': 'application/x-www-form-urlencoded'},
+            ) as resp:
+                payload = await resp.json(content_type=None)
+
+        except TimeoutError as e:
+            msg = 'OIDC request timed out'
+
+            raise OIDCError(msg) from e
+        except aiohttp.ClientError as e:
+            msg = 'OIDC transport error'
+
+            raise OIDCError(msg) from e
+
+        if not resp.ok:
+            error = payload.get('error')
+            description = payload.get('error_description')
+
+            if error in {'invalid_grant', 'invalid_client'}:
+                msg = f'{error}: {description}'
+
+                raise OIDCAuthError(msg)
+
+            msg = f'{error}: {description}'
+
+            raise OIDCError(msg)
+
+        return payload
