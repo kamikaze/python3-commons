@@ -4,24 +4,19 @@ Async SOAP client built on aiohttp + zeep.
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Self
-from uuid import uuid4
 
 try:
     import aiohttp
     from aiohttp import ClientSession, ClientTimeout, TCPConnector
-    from lxml import etree
     from requests import Response
     from requests.cookies import RequestsCookieJar
     from zeep import AsyncClient
     from zeep.exceptions import TransportError
-    from zeep.plugins import HistoryPlugin, Plugin
     from zeep.transports import Transport
     from zeep.utils import get_version
     from zeep.wsdl.utils import etree_to_string
@@ -30,47 +25,10 @@ except ImportError as e:
 
     raise RuntimeError(msg) from e
 
-from python3_commons.audit import write_audit_data
-from python3_commons.conf import s3_settings
-
 if TYPE_CHECKING:
-    from zeep.wsdl.definitions import AbstractOperation
+    from zeep.plugins import Plugin
 
 logger = logging.getLogger(__name__)
-
-
-class ZeepAuditPlugin(Plugin):
-    def __init__(self, audit_name: str = 'zeep') -> None:
-        super().__init__()
-        self.audit_name = audit_name
-
-    def store_audit_in_s3(self, envelope, operation: AbstractOperation, direction: str) -> None:
-        xml = etree.tostring(envelope, encoding='UTF-8', pretty_print=True)
-        now = datetime.now(tz=UTC)
-        date_path = now.strftime('%Y/%m/%d')
-        timestamp = now.strftime('%H%M%S')
-        path = f'{date_path}/{self.audit_name}/{operation.name}/{timestamp}_{str(uuid4())[-12:]}_{direction}.xml'
-        coro = write_audit_data(s3_settings, path, xml)
-
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = None
-
-        if loop and loop.is_running():
-            loop.create_task(coro)
-        else:
-            asyncio.run(coro)
-
-    def ingress(self, envelope, http_headers, operation: AbstractOperation):
-        self.store_audit_in_s3(envelope, operation, 'ingress')
-
-        return envelope, http_headers
-
-    def egress(self, envelope, http_headers, operation: AbstractOperation, binding_options):
-        self.store_audit_in_s3(envelope, operation, 'egress')
-
-        return envelope, http_headers
 
 
 @dataclass(frozen=True, slots=True)
@@ -300,11 +258,3 @@ async def soap_client(
 
     async with transport:
         yield build_soap_client(wsdl_url, transport, plugins)
-
-
-def get_history_plugin(client: AsyncClient) -> HistoryPlugin | None:
-    """Return the first HistoryPlugin attached to *client*, or None."""
-    return next(
-        (p for p in client.plugins if isinstance(p, HistoryPlugin)),
-        None,
-    )
