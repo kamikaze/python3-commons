@@ -170,15 +170,35 @@ class AsyncTransport(Transport):
     def load(self, url: str) -> bytes:
         """Sync entry-point zeep calls during WSDL document init."""
         if not url:
-            return b''
+            return b""
+
+        async def _fetch() -> bytes:
+            connector = TCPConnector(ssl=self._config.verify_ssl)
+
+            async with ClientSession(
+                    connector=connector,
+                    timeout=ClientTimeout(total=self._config.timeout),
+                    headers={"User-Agent": f"Zeep/{get_version()} (www.python-zeep.org)"},
+            ) as session:
+                async with session.get(url, proxy=self._config.proxy) as resp:
+                    content = await resp.read()
+
+                    if resp.status >= 400:
+                        raise TransportError(
+                            status_code=resp.status,
+                            message=content.decode(errors="ignore"),
+                        )
+
+                    return content
 
         try:
             loop = asyncio.get_event_loop()
 
-            return loop.run_until_complete(self._load_remote_data(url))
+            return loop.run_until_complete(_fetch())
         except RuntimeError:
             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-                future = pool.submit(asyncio.run, self._load_remote_data(url))
+                future = pool.submit(asyncio.run, _fetch())
+
                 return future.result()
 
     async def post(
