@@ -96,17 +96,18 @@ class OIDCAuthError(OIDCError):
     pass
 
 
+# TODO: use api_client
 class OIDCClient:
     def __init__(
             self,
-            token_url: str,
+            authority_url: str,
             client_id: str,
             client_secret: str | None = None,
             *,
             timeout: float = 10.0,
             session: aiohttp.ClientSession | None = None,
     ) -> None:
-        self._token_url = token_url
+        self._token_url = f'{authority_url}/protocol/openid-connect/token'  # TODO: get it from openid-configuration
         self._client_id = client_id
         self._client_secret = client_secret
         self._timeout = aiohttp.ClientTimeout(total=timeout)
