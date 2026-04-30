@@ -40,9 +40,11 @@ audit = [
 ]
 authn = [
     "aiohttp[speedups]>=3.13.5,<3.15.0",
+    "python3_commons[api-client]"
 ]
 authz = [
-    "python3_commons[database]"
+    "python3_commons[database]",
+    "python3_commons[api-client]"
 ]
 cache = [
     "valkey[libvalkey]~=6.1.1"
