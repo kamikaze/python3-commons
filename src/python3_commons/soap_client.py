@@ -4,6 +4,8 @@ Async SOAP client built on aiohttp + zeep.
 
 from __future__ import annotations
 
+import asyncio
+import concurrent.futures
 import logging
 from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
@@ -165,6 +167,20 @@ class AsyncTransport(Transport):
 
         return await _fetch()
 
+    def load(self, url: str) -> bytes:
+        """Sync entry-point zeep calls during WSDL document init."""
+        if not url:
+            return b''
+
+        try:
+            loop = asyncio.get_event_loop()
+
+            return loop.run_until_complete(self._load_remote_data(url))
+        except RuntimeError:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                future = pool.submit(asyncio.run, self._load_remote_data(url))
+                return future.result()
+
     async def post(
         self,
         address: str,
@@ -256,5 +272,9 @@ async def soap_client(
     """
     transport = AsyncTransport.from_config(config, session=session)
 
-    async with transport:
-        yield build_soap_client(wsdl_url, transport, plugins)
+    try:
+        client = build_soap_client(wsdl_url, transport, plugins)  # WSDL loaded here (sync via load())
+
+        yield client
+    finally:
+        await transport.aclose()
