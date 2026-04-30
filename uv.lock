@@ -130,6 +130,18 @@ wheels = [
 ]
 
 [[package]]
+name = "anyio"
+version = "4.13.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "idna" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/19/14/2c5dd9f512b66549ae92767a9c7b330ae88e1932ca57876909410251fe13/anyio-4.13.0.tar.gz", hash = "sha256:334b70e641fd2221c1505b3890c69882fe4a2df910cba14d97019b90b24439dc", size = 231622, upload-time = "2026-03-24T12:59:09.671Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/da/42/e921fccf5015463e32a3cf6ee7f980a6ed0f395ceeaa45060b61d86486c2/anyio-4.13.0-py3-none-any.whl", hash = "sha256:08b310f9e24a9594186fd75b4f73f4a4152069e3853f1ed8bfbf58369f4ad708", size = 114353, upload-time = "2026-03-24T12:59:08.246Z" },
+]
+
+[[package]]
 name = "asyncpg"
 version = "0.31.0"
 source = { registry = "https://pypi.org/simple" }
@@ -465,6 +477,43 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/ef/d0/079ebe12e4b1fc758857ce5be1a5e73f06870f2101e52611d1e71925ce54/greenlet-3.5.0-cp314-cp314t-musllinux_1_2_aarch64.whl", hash = "sha256:e5ddf316ced87539144621453c3aef229575825fe60c604e62bedc4003f372b2", size = 1614204, upload-time = "2026-04-27T12:53:32.618Z" },
     { url = "https://files.pythonhosted.org/packages/6d/89/6c2fb63df3596552d20e58fb4d96669243388cf680cff222758812c7bfaa/greenlet-3.5.0-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:4a448128607be0de65342dc9b31be7f948ef4cc0bc8832069350abefd310a8f2", size = 1675480, upload-time = "2026-04-27T12:25:34.168Z" },
     { url = "https://files.pythonhosted.org/packages/15/32/77ee8a6c1564fc345a491a4e85b3bf360e4cf26eac98c4532d2fdb96e01f/greenlet-3.5.0-cp314-cp314t-win_amd64.whl", hash = "sha256:d60097128cb0a1cab9ea541186ea13cd7b847b8449a7787c2e2350da0cb82d86", size = 245324, upload-time = "2026-04-27T12:24:40.295Z" },
+]
+
+[[package]]
+name = "h11"
+version = "0.16.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/01/ee/02a2c011bdab74c6fb3c75474d40b3052059d95df7e73351460c8588d963/h11-0.16.0.tar.gz", hash = "sha256:4e35b956cf45792e4caa5885e69fba00bdbc6ffafbfa020300e549b208ee5ff1", size = 101250, upload-time = "2025-04-24T03:35:25.427Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/04/4b/29cac41a4d98d144bf5f6d33995617b185d14b22401f75ca86f384e87ff1/h11-0.16.0-py3-none-any.whl", hash = "sha256:63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86", size = 37515, upload-time = "2025-04-24T03:35:24.344Z" },
+]
+
+[[package]]
+name = "httpcore"
+version = "1.0.9"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "certifi" },
+    { name = "h11" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/06/94/82699a10bca87a5556c9c59b5963f2d039dbd239f25bc2a63907a05a14cb/httpcore-1.0.9.tar.gz", hash = "sha256:6e34463af53fd2ab5d807f399a9b45ea31c3dfa2276f15a2c3f00afff6e176e8", size = 85484, upload-time = "2025-04-24T22:06:22.219Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7e/f5/f66802a942d491edb555dd61e3a9961140fd64c90bce1eafd741609d334d/httpcore-1.0.9-py3-none-any.whl", hash = "sha256:2d400746a40668fc9dec9810239072b40b4484b640a8c38fd654a024c7a1bf55", size = 78784, upload-time = "2025-04-24T22:06:20.566Z" },
+]
+
+[[package]]
+name = "httpx"
+version = "0.28.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "anyio" },
+    { name = "certifi" },
+    { name = "httpcore" },
+    { name = "idna" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b1/df/48c586a5fe32a0f01324ee087459e112ebb7224f646c0b5023f5e79e9956/httpx-0.28.1.tar.gz", hash = "sha256:75e98c5f16b0f35b567856f597f06ff2270a374470a5c2392242528e3e3e42fc", size = 141406, upload-time = "2024-12-06T15:37:23.222Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2a/39/e50c7c3a983047577ee07d2a9e53faf5a69493943ec3f6a384bdc792deb2/httpx-0.28.1-py3-none-any.whl", hash = "sha256:d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad", size = 73517, upload-time = "2024-12-06T15:37:21.509Z" },
 ]
 
 [[package]]
@@ -1004,29 +1053,28 @@ all = [
     { name = "asyncpg" },
     { name = "lxml" },
     { name = "object-storage-client" },
+    { name = "requests" },
     { name = "sqlalchemy", extra = ["asyncio"] },
     { name = "valkey", extra = ["libvalkey"] },
-    { name = "zeep" },
+    { name = "zeep", extra = ["async"] },
 ]
 api-client = [
     { name = "aiobotocore" },
     { name = "aiohttp", extra = ["speedups"] },
     { name = "lxml" },
     { name = "object-storage-client" },
-    { name = "zeep" },
 ]
 audit = [
     { name = "aiobotocore" },
     { name = "lxml" },
     { name = "object-storage-client" },
-    { name = "zeep" },
+    { name = "zeep", extra = ["async"] },
 ]
 authn = [
     { name = "aiobotocore" },
     { name = "aiohttp", extra = ["speedups"] },
     { name = "lxml" },
     { name = "object-storage-client" },
-    { name = "zeep" },
 ]
 authz = [
     { name = "aiobotocore" },
@@ -1035,7 +1083,6 @@ authz = [
     { name = "lxml" },
     { name = "object-storage-client" },
     { name = "sqlalchemy", extra = ["asyncio"] },
-    { name = "zeep" },
 ]
 cache = [
     { name = "valkey", extra = ["libvalkey"] },
@@ -1047,6 +1094,12 @@ database = [
 object-storage = [
     { name = "aiobotocore" },
     { name = "object-storage-client" },
+]
+soap-client = [
+    { name = "aiohttp", extra = ["speedups"] },
+    { name = "lxml" },
+    { name = "requests" },
+    { name = "zeep", extra = ["async"] },
 ]
 
 [package.dev-dependencies]
@@ -1071,25 +1124,28 @@ requires-dist = [
     { name = "aiobotocore", marker = "extra == 'object-storage'", specifier = "~=3.5.0" },
     { name = "aiohttp", extras = ["speedups"], marker = "extra == 'api-client'", specifier = ">=3.13.5,<3.15.0" },
     { name = "aiohttp", extras = ["speedups"], marker = "extra == 'authn'", specifier = ">=3.13.5,<3.15.0" },
+    { name = "aiohttp", extras = ["speedups"], marker = "extra == 'soap-client'", specifier = ">=3.13.5,<3.15.0" },
     { name = "asyncpg", marker = "extra == 'database'", specifier = "~=0.31.0" },
     { name = "lxml", marker = "extra == 'api-client'", specifier = "~=6.1.0" },
     { name = "lxml", marker = "extra == 'audit'", specifier = "~=6.1.0" },
+    { name = "lxml", marker = "extra == 'soap-client'", specifier = "~=6.1.0" },
     { name = "msgpack", specifier = "~=1.1.2" },
     { name = "msgspec", specifier = "==0.21.1" },
     { name = "object-storage-client", marker = "extra == 'object-storage'", specifier = "==0.0.23" },
     { name = "pydantic-settings", specifier = "~=2.14.0" },
     { name = "python3-commons", extras = ["api-client"], marker = "extra == 'authn'" },
     { name = "python3-commons", extras = ["api-client"], marker = "extra == 'authz'" },
-    { name = "python3-commons", extras = ["api-client", "audit", "authn", "authz", "cache", "database", "object-storage"], marker = "extra == 'all'" },
+    { name = "python3-commons", extras = ["api-client", "audit", "authn", "authz", "cache", "database", "object-storage", "soap-client"], marker = "extra == 'all'" },
     { name = "python3-commons", extras = ["database"], marker = "extra == 'authz'" },
     { name = "python3-commons", extras = ["object-storage"], marker = "extra == 'api-client'" },
     { name = "python3-commons", extras = ["object-storage"], marker = "extra == 'audit'" },
+    { name = "requests", marker = "extra == 'soap-client'", specifier = "~=2.33.1" },
     { name = "sqlalchemy", extras = ["asyncio"], marker = "extra == 'database'", specifier = "~=2.0.49" },
     { name = "valkey", extras = ["libvalkey"], marker = "extra == 'cache'", specifier = "~=6.1.1" },
-    { name = "zeep", marker = "extra == 'api-client'", specifier = "~=4.3.2" },
-    { name = "zeep", marker = "extra == 'audit'", specifier = "~=4.3.2" },
+    { name = "zeep", extras = ["async"], marker = "extra == 'audit'", specifier = "~=4.3.2" },
+    { name = "zeep", extras = ["async"], marker = "extra == 'soap-client'", specifier = "~=4.3.2" },
 ]
-provides-extras = ["all", "api-client", "audit", "authn", "authz", "cache", "database", "object-storage"]
+provides-extras = ["all", "api-client", "audit", "authn", "authz", "cache", "database", "object-storage", "soap-client"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -1461,4 +1517,10 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/e8/06/4f1d3ff61e930163565fb73616c6251e412a4d2fc7ed18214e1c2107258d/zeep-4.3.2.tar.gz", hash = "sha256:1a23a667ce9d73a0dbfdf15745bfa2b7ab0b6402135c0cd5067574838398e0e6", size = 166687, upload-time = "2025-09-15T10:26:03.4Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/cd/78/f43f3feb70d67cbe260ec5b682ecc3c1850c8f437f1df707495126e51817/zeep-4.3.2-py3-none-any.whl", hash = "sha256:ed08c3179709172bfaaa9b76a6a545f8a57043ec6218e64e9deb81ff1e0ff79b", size = 101853, upload-time = "2025-09-15T10:26:02.12Z" },
+]
+
+[package.optional-dependencies]
+async = [
+    { name = "httpx" },
+    { name = "packaging" },
 ]

@@ -25,17 +25,16 @@ dependencies = [
 
 [project.optional-dependencies]
 all = [
-    "python3_commons[api-client,audit,authn,authz,cache,database,object-storage]"
+    "python3_commons[api-client,audit,authn,authz,cache,database,object-storage,soap-client]"
 ]
 api-client = [
     "aiohttp[speedups]>=3.13.5,<3.15.0",
     "lxml~=6.1.0",
-    "zeep~=4.3.2",
     "python3_commons[object-storage]"
 ]
 audit = [
     "lxml~=6.1.0",
-    "zeep~=4.3.2",
+    "zeep[async]~=4.3.2",
     "python3_commons[object-storage]"
 ]
 authn = [
@@ -56,6 +55,12 @@ database = [
 object-storage = [
     "aiobotocore~=3.5.0",
     "object-storage-client==0.0.23"
+]
+soap-client = [
+    "aiohttp[speedups]>=3.13.5,<3.15.0",
+    "lxml~=6.1.0",
+    "requests~=2.33.1",
+    "zeep[async]~=4.3.2",
 ]
 
 

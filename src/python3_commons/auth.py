@@ -101,13 +101,13 @@ class OIDCAuthError(OIDCError):
 # TODO: use api_client
 class OIDCClient:
     def __init__(
-            self,
-            authority_url: str,
-            client_id: str,
-            client_secret: str | None = None,
-            *,
-            timeout: float = 10.0,
-            session: aiohttp.ClientSession | None = None,
+        self,
+        authority_url: str,
+        client_id: str,
+        client_secret: str | None = None,
+        *,
+        timeout: float = 10.0,
+        session: aiohttp.ClientSession | None = None,
     ) -> None:
         self._token_url = f'{authority_url}/protocol/openid-connect/token'  # TODO: get it from openid-configuration
         self._client_id = client_id
@@ -126,11 +126,11 @@ class OIDCClient:
             await self._session.close()
 
     async def fetch_token(
-            self,
-            *,
-            username: str,
-            password: str,
-            scope: str = 'openid profile email',
+        self,
+        *,
+        username: str,
+        password: str,
+        scope: str = 'openid profile email',
     ) -> OIDCTokenResponse:
         if self._session is None:
             msg = 'ClientSession not initialized'
@@ -150,9 +150,9 @@ class OIDCClient:
 
         try:
             async with self._session.post(
-                    self._token_url,
-                    data=data,
-                    headers={'Content-Type': 'application/x-www-form-urlencoded'},
+                self._token_url,
+                data=data,
+                headers={'Content-Type': 'application/x-www-form-urlencoded'},
             ) as resp:
                 payload = await resp.read()
                 decoder = msgspec.json.Decoder(type=OIDCTokenResponse)
