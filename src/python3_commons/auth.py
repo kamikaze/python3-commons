@@ -57,6 +57,8 @@ class OIDCTokenResponse(msgspec.Struct):
     refresh_token: str
     scope: str
     id_token: str
+    error: str | None = None
+    error_description: str | None = None
 
 
 async def fetch_openid_config() -> dict:
@@ -152,7 +154,9 @@ class OIDCClient:
                     data=data,
                     headers={'Content-Type': 'application/x-www-form-urlencoded'},
             ) as resp:
-                payload = await resp.json(content_type=None)
+                payload = await resp.read()
+                decoder = msgspec.json.Decoder(type=OIDCTokenResponse)
+                token = decoder.decode(payload)
 
         except TimeoutError as e:
             msg = 'OIDC request timed out'
@@ -164,8 +168,8 @@ class OIDCClient:
             raise OIDCError(msg) from e
 
         if not resp.ok:
-            error = payload.get('error')
-            description = payload.get('error_description')
+            error = token.error
+            description = token.error_description
 
             if error in {'invalid_grant', 'invalid_client'}:
                 msg = f'{error}: {description}'
@@ -176,4 +180,4 @@ class OIDCClient:
 
             raise OIDCError(msg)
 
-        return payload
+        return token
