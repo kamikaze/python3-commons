@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import concurrent.futures
 import logging
 import ssl
 from collections.abc import AsyncIterator, Sequence
@@ -136,32 +137,38 @@ class AsyncTransport(Transport):
 
     def load(self, url: str) -> bytes:
         """
-        Called synchronously by zeep during WSDL parsing.
-
-        We safely hop into the main loop.
+        Called synchronously by zeep during WSDL/XSD parsing.
+        Always runs in a fresh thread with its own isolated event loop —
+        never touches self._loop to avoid deadlock.
         """
         if not url:
             return b''
 
-        future = asyncio.run_coroutine_threadsafe(
-            self._fetch(url),
-            self._loop,
-        )
+        async def _fetch() -> bytes:
+            async with ClientSession(
+                    connector=TCPConnector(ssl=_make_ssl_context(verify=self._config.verify_ssl)),
+                    timeout=ClientTimeout(total=self._config.timeout),
+                    headers={'User-Agent': f'Zeep/{get_version()} (www.python-zeep.org)'},
+            ) as session:
+                async with session.get(url, proxy=self._config.proxy) as resp:
+                    body = await resp.read()
+                    if resp.status >= 400:
+                        raise TransportError(
+                            status_code=resp.status,
+                            message=body.decode(errors='ignore'),
+                        )
+                    return body
 
-        return future.result()
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+            return pool.submit(asyncio.run, _fetch()).result()
 
-    def post_xml(
-        self,
-        address: str,
-        envelope: Any,
-        headers: dict[str, str],
+    async def post_xml(
+            self,
+            address: str,
+            envelope: Any,
+            headers: dict[str, str],
     ) -> Response:
-        future = asyncio.run_coroutine_threadsafe(
-            self.post(address, etree_to_string(envelope), headers),
-            self._loop,
-        )
-
-        return future.result()
+        return await self.post(address, etree_to_string(envelope), headers)
 
     async def post(
         self,
