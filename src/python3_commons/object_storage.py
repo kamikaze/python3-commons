@@ -166,7 +166,7 @@ async def remove_object(bucket_name: str, path: str) -> None:
         client = get_client()
         absolute_path = get_absolute_path(path)
         url = f's3://{bucket_name}/{absolute_path}'
-        await client.remove_object(url)
+        await client.delete_object(url)
     except Exception as e:
         logger.exception('Failed to remove object from object storage: %s:%s', bucket_name, path, exc_info=e)
 
