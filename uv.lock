@@ -717,13 +717,13 @@ wheels = [
 
 [[package]]
 name = "object-storage-client"
-version = "0.0.26"
+version = "0.0.27"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/b3/29/ffd4b0ac2edc22b6ff152c84d6b4dbf2cb9bfd63a56c0e754a05275eeec7/object_storage_client-0.0.26.tar.gz", hash = "sha256:0b1d2c14fcedc40b570d146099093876d2a4687397f1e10026aa78a625bf4731", size = 41789, upload-time = "2026-05-06T13:00:30.294Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/24/54/43951fe39851aa6929069341afcdc08e0cf50e4f65527e89e14b424d1251/object_storage_client-0.0.27.tar.gz", hash = "sha256:56d9f0e065bb6670257af6e9cf5cfe6feeb4e38811551e3815cf19992a4e3ef4", size = 42080, upload-time = "2026-05-06T13:30:15.086Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/02/b6/68dd1289550615c2108ba6d0e3b8898a4b0b797db53d22bdf0af7cb974b8/object_storage_client-0.0.26-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:15946756649a79b7e1cce4d0bfcb0d8a0b0e61de23b8b0c760174848e3acd33f", size = 1945407, upload-time = "2026-05-06T13:00:24.829Z" },
-    { url = "https://files.pythonhosted.org/packages/d4/34/c36d11465cfcdca40b8389267ceedce28c623e84d74d1d7a2b5cddf70622/object_storage_client-0.0.26-cp314-cp314-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:40cf561fa56555510c1f68f25ae3a1ff67599492218b523ec5b8ce97c42e57ad", size = 2133216, upload-time = "2026-05-06T13:00:26.831Z" },
-    { url = "https://files.pythonhosted.org/packages/ff/b1/58e884f24cbfc23866a38ccd658a5c7438dae0ea68fbdcf4806419058a7c/object_storage_client-0.0.26-cp314-cp314-win_amd64.whl", hash = "sha256:7fa8d933668b619b60bee70cdeba270ac4d48653836b4323fc28b3d097c978f3", size = 2131434, upload-time = "2026-05-06T13:00:28.494Z" },
+    { url = "https://files.pythonhosted.org/packages/81/14/bf95f8bb1ca883b01ad5058d2b40ee966401b7c5c4d6ec6fa7284ff57103/object_storage_client-0.0.27-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:aef040c2c80b1fe7942647d78325aabfcc0cbfefbf416d20be4940032057b13e", size = 1945339, upload-time = "2026-05-06T13:30:07.29Z" },
+    { url = "https://files.pythonhosted.org/packages/29/dc/bf5aebe26bbeeca8354c5fafe753c05f365a178b1a1cddd2c19175960628/object_storage_client-0.0.27-cp314-cp314-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:5e4c6d6761cb20bc1dbf7ba747d3930a996bf20f0ee3cad37f68f1e9b2e1e267", size = 2133324, upload-time = "2026-05-06T13:30:08.549Z" },
+    { url = "https://files.pythonhosted.org/packages/62/37/23b2e36287186f39ef5c1c592957705660af493ca2e09cba92ab1d478e81/object_storage_client-0.0.27-cp314-cp314-win_amd64.whl", hash = "sha256:ed573848ebb0eef521ac7edf360395f22adb26d4b881ae117f76d26bc883ccdc", size = 2131455, upload-time = "2026-05-06T13:30:12.315Z" },
 ]
 
 [[package]]
@@ -1135,7 +1135,7 @@ requires-dist = [
     { name = "lxml", marker = "extra == 'soap-client'", specifier = "~=6.1.0" },
     { name = "msgpack", specifier = "~=1.1.2" },
     { name = "msgspec", specifier = "==0.21.1" },
-    { name = "object-storage-client", marker = "extra == 'object-storage'", specifier = "==0.0.26" },
+    { name = "object-storage-client", marker = "extra == 'object-storage'", specifier = "==0.0.27" },
     { name = "pydantic-settings", specifier = "~=2.14.0" },
     { name = "python3-commons", extras = ["api-client"], marker = "extra == 'authn'" },
     { name = "python3-commons", extras = ["api-client"], marker = "extra == 'authz'" },
