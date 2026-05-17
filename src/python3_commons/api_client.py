@@ -108,7 +108,8 @@ async def request(
 
                             raise LookupError(msg)
                         case HTTPStatus.BAD_REQUEST:
-                            msg = 'Bad request'
+                            response_text = await response.text()
+                            msg = response_text or 'Bad request'
 
                             raise ValueError(msg)
                         case HTTPStatus.TOO_MANY_REQUESTS:
