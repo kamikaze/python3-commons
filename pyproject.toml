@@ -55,7 +55,7 @@ database = [
 ]
 object-storage = [
     "aiobotocore~=3.7.0",
-    "object-storage-client==0.0.29"
+    "object-storage-client==0.0.30"
 ]
 soap-client = [
     "aiohttp[speedups]>=3.13.5,<3.15.0",

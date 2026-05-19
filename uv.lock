@@ -715,14 +715,14 @@ wheels = [
 
 [[package]]
 name = "object-storage-client"
-version = "0.0.29"
+version = "0.0.30"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/89/28/cba1bd9df42eb16900d000dfd581dcf2e3d2505e5cd814ad90de91006b25/object_storage_client-0.0.29.tar.gz", hash = "sha256:1bc6ad85d0dd1fe6ccd654a8eccb7780db3e3a0767e6068d844986182dbda0cf", size = 42274, upload-time = "2026-05-06T14:06:19.741Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4d/de/2a1604fd29b4d5c5934c0f12acb6fadb644c44d3bb91ee89021fc73627de/object_storage_client-0.0.30.tar.gz", hash = "sha256:48bb4afb4f5f4871167d2593ac77147deae09849b138c29b51fb1ab32e0c6e4c", size = 42287, upload-time = "2026-05-19T15:00:13.826Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/84/04/6c423dafd66b7ef07a50f866d7b7541f6297d86ea0bec85812458d382027/object_storage_client-0.0.29-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:5abdf9259831f803eb38c25d2caba882ad7a5286e809a53f512c47941eac1a87", size = 1945274, upload-time = "2026-05-06T14:06:23.736Z" },
-    { url = "https://files.pythonhosted.org/packages/c4/98/22bd8627e28a3fb7d1b783ded42d880ae1d2ac477b9efc9bf30bd5f73162/object_storage_client-0.0.29-cp314-cp314-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:fcfc44c039f2456da67f19d4fb5ad233aacf6c8823f524988b97c7da0432d2de", size = 2133172, upload-time = "2026-05-06T14:06:31.616Z" },
-    { url = "https://files.pythonhosted.org/packages/b6/68/8536a0b4308bb9dba95ed77d7a5978ccce8afa803056e1776ca81e3d1fb1/object_storage_client-0.0.29-cp314-cp314-manylinux_2_28_aarch64.whl", hash = "sha256:6b18fa4eb9b5356d2e1ff562f5e6addf32286549cbd1564a47192750b848b0ec", size = 2132853, upload-time = "2026-05-06T14:06:28.474Z" },
-    { url = "https://files.pythonhosted.org/packages/96/bf/0d0354cfe6a160d39d85b1afbe459aeb0b82538352c6594c3fdc5e141f20/object_storage_client-0.0.29-cp314-cp314-win_amd64.whl", hash = "sha256:d126149f728aa7937bd0e7b47d1929bacfa60317fdda6eca2204f1b599cb4b5c", size = 2131379, upload-time = "2026-05-06T14:06:26.474Z" },
+    { url = "https://files.pythonhosted.org/packages/39/9c/e1d01b382e1f7bcceb5b4dce1246349f4777a420c07ef8249e3da1d085d0/object_storage_client-0.0.30-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:9ea41b5953aa2d9ce1f8947b55a1bf19fef194738ec90e97ccd802b4e18ec27c", size = 1945635, upload-time = "2026-05-19T15:00:12.34Z" },
+    { url = "https://files.pythonhosted.org/packages/30/bc/67a991c7544d13356804047225c1822546c58199544c9f2dee66f2073023/object_storage_client-0.0.30-cp314-cp314-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:8d6308f860bf6495f9bfcf57e66343042e84160dfb067b0a1cb8fb5a268de806", size = 2137471, upload-time = "2026-05-19T15:00:08.739Z" },
+    { url = "https://files.pythonhosted.org/packages/55/b0/46cc1b484ba3850480b9c7142b69b909eacb6df2ae1ae3e93416fa6108db/object_storage_client-0.0.30-cp314-cp314-manylinux_2_28_aarch64.whl", hash = "sha256:ce2ae89142c997b69a5aff954d0a3e810d10586fad67c69e6f6083dae25b839e", size = 2131313, upload-time = "2026-05-19T15:00:14.988Z" },
+    { url = "https://files.pythonhosted.org/packages/80/01/0909fd906c4c63c791394831a4ef49e007bf3256173941f9acf7bf4d623a/object_storage_client-0.0.30-cp314-cp314-win_amd64.whl", hash = "sha256:7a5cb07aa7928a5495b41c46901f9de11ead197f5e0c7b23d1e02688c7e35456", size = 2130202, upload-time = "2026-05-19T15:00:10.624Z" },
 ]
 
 [[package]]
@@ -1160,7 +1160,7 @@ requires-dist = [
     { name = "lxml", marker = "extra == 'soap-client'", specifier = "~=6.1.1" },
     { name = "msgpack", specifier = "~=1.1.2" },
     { name = "msgspec", specifier = "==0.21.1" },
-    { name = "object-storage-client", marker = "extra == 'object-storage'", specifier = "==0.0.29" },
+    { name = "object-storage-client", marker = "extra == 'object-storage'", specifier = "==0.0.30" },
     { name = "pydantic-settings", specifier = "~=2.14.1" },
     { name = "python3-commons", extras = ["api-client"], marker = "extra == 'authn'" },
     { name = "python3-commons", extras = ["api-client"], marker = "extra == 'authz'" },
