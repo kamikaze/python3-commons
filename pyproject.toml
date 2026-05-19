@@ -33,7 +33,7 @@ api-client = [
     "python3_commons[audit,object-storage]"
 ]
 audit = [
-    "lxml~=6.1.0",
+    "lxml~=6.1.1",
     "zeep[async]~=4.3.2",
     "python3_commons[object-storage]"
 ]
@@ -60,7 +60,7 @@ object-storage = [
 soap-client = [
     "aiohttp[speedups]>=3.13.5,<3.15.0",
     "certifi==2026.4.22",
-    "lxml~=6.1.0",
+    "lxml~=6.1.1",
     "requests~=2.34.2",
     "zeep[async]~=4.3.2",
 ]
