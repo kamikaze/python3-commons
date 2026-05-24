@@ -73,7 +73,7 @@ async def fetch_openid_config() -> dict:
     if oidc_settings.authority_internal_host:
         authority_url = replace_origin(authority_url, oidc_settings.authority_internal_host)
 
-    oidc_config_url = f'{authority_url}.well-known/openid-configuration'
+    oidc_config_url = f'{authority_url}/.well-known/openid-configuration'
 
     logger.debug('Fetching OpenID configuration from: %s', oidc_config_url)
 

@@ -172,7 +172,7 @@ def replace_origin(url: HttpUrl, host_url: HttpUrl) -> HttpUrl:
         scheme=host_url.scheme,
         host=host_url.host,
         port=host_url.port,
-        path=url.path,
+        path=url_path.lstrip('/') if (url_path := url.path) else url_path,
         query=url.query,
         fragment=url.fragment,
     )
