@@ -145,28 +145,30 @@ class AsyncTransport(Transport):
             return b''
 
         async def _fetch() -> bytes:
-            async with ClientSession(
+            async with (
+                ClientSession(
                     connector=TCPConnector(ssl=_make_ssl_context(verify=self._config.verify_ssl)),
                     timeout=ClientTimeout(total=self._config.timeout),
                     headers={'User-Agent': f'Zeep/{get_version()} (www.python-zeep.org)'},
-            ) as session:
-                async with session.get(url, proxy=self._config.proxy) as resp:
-                    body = await resp.read()
-                    if resp.status >= 400:
-                        raise TransportError(
-                            status_code=resp.status,
-                            message=body.decode(errors='ignore'),
-                        )
-                    return body
+                ) as session,
+                session.get(url, proxy=self._config.proxy) as resp,
+            ):
+                body = await resp.read()
+                if resp.status >= 400:
+                    raise TransportError(
+                        status_code=resp.status,
+                        message=body.decode(errors='ignore'),
+                    )
+                return body
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
             return pool.submit(asyncio.run, _fetch()).result()
 
     async def post_xml(
-            self,
-            address: str,
-            envelope: Any,
-            headers: dict[str, str],
+        self,
+        address: str,
+        envelope: Any,
+        headers: dict[str, str],
     ) -> Response:
         return await self.post(address, etree_to_string(envelope), headers)
 

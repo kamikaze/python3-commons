@@ -140,7 +140,7 @@ async def list_objects(bucket_name: str, prefix: str, *, recursive: bool = True)
 
 
 async def get_object_streams(
-        bucket_name: str, path: str, *, recursive: bool = True
+    bucket_name: str, path: str, *, recursive: bool = True
 ) -> AsyncGenerator[tuple[str, datetime, StreamingBody]]:
     async for obj in list_objects(bucket_name, path, recursive=recursive):
         object_name = obj['Key']
@@ -151,7 +151,7 @@ async def get_object_streams(
 
 
 async def get_objects(
-        bucket_name: str, path: str, *, recursive: bool = True
+    bucket_name: str, path: str, *, recursive: bool = True
 ) -> AsyncGenerator[tuple[str, datetime, bytes]]:
     async for object_name, last_modified, stream in get_object_streams(bucket_name, path, recursive=recursive):
         data = await stream.read()
@@ -174,7 +174,7 @@ async def remove_object(bucket_name: str, path: str) -> None:
 
 
 async def remove_objects(
-        bucket_name: str, prefix: str | None = None, object_names: Iterable[str] | None = None
+    bucket_name: str, prefix: str | None = None, object_names: Iterable[str] | None = None
 ) -> Sequence[Mapping] | None:
     storage = ObjectStorage(s3_settings)
 
@@ -197,7 +197,7 @@ async def remove_objects(
             chunk_size = 1000
 
             for i in range(0, len(objects_to_delete), chunk_size):
-                chunk = objects_to_delete[i: i + chunk_size]
+                chunk = objects_to_delete[i : i + chunk_size]
 
                 response = await s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': chunk})
 

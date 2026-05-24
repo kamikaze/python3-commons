@@ -15,6 +15,8 @@ from json import dumps
 from typing import ClassVar, Literal
 from urllib.parse import urlencode
 
+from pydantic import HttpUrl
+
 from python3_commons.serializers.json import CustomJSONEncoder
 
 logger = logging.getLogger(__name__)
@@ -159,3 +161,18 @@ def parse_string_list(v: str | Sequence[str]) -> Sequence[str]:
         return tuple(map(str.strip, v.split(',')))
 
     return v
+
+
+def replace_origin(url: HttpUrl, host_url: HttpUrl) -> HttpUrl:
+    if host_url.host is None:
+        msg = 'Host URL must have a host'
+        raise ValueError(msg)
+
+    return HttpUrl.build(
+        scheme=host_url.scheme,
+        host=host_url.host,
+        port=host_url.port,
+        path=url.path,
+        query=url.query,
+        fragment=url.fragment,
+    )

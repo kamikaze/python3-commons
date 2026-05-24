@@ -18,8 +18,8 @@ class CommonSettings(BaseSettings):
 class OIDCSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix='OIDC_')
 
-    authority_url: HttpUrl | None = None
-    authority_internal_url: HttpUrl | None = None
+    authority_url: HttpUrl | None = None  # https://login.externaldomain.com/realm/app
+    authority_internal_host: HttpUrl | None = None  # http://localhost:8080/ which will substitute host in authority_url
     client_id: str | None = None
     client_secret: SecretStr = SecretStr('')
     redirect_uri: str | None = None

@@ -5,6 +5,10 @@ from collections.abc import Sequence
 from http import HTTPStatus
 from typing import Self, TypeVar
 
+from pydantic import HttpUrl
+
+from python3_commons.helpers import replace_origin
+
 try:
     import aiohttp
 except ImportError as e:
@@ -45,9 +49,6 @@ class TokenData(msgspec.Struct):
 
 
 T = TypeVar('T', bound=TokenData)
-OIDC_CONFIG_URL = (
-    f'{oidc_settings.authority_internal_url or oidc_settings.authority_url}/.well-known/openid-configuration'
-)
 
 
 class OIDCTokenResponse(msgspec.Struct):
@@ -65,7 +66,16 @@ async def fetch_openid_config() -> dict:
     """
     Fetch the OpenID configuration (including JWKS URI) from OIDC authority.
     """
-    async with aiohttp.ClientSession() as session, session.get(OIDC_CONFIG_URL) as response:
+    if (authority_url := oidc_settings.authority_url) is None:
+        msg = 'OIDC authority URL is required'
+        raise ValueError(msg)
+
+    if oidc_settings.authority_internal_host:
+        authority_url = replace_origin(authority_url, oidc_settings.authority_internal_host)
+
+    oidc_config_url = f'{authority_url}/.well-known/openid-configuration'
+
+    async with aiohttp.ClientSession() as session, session.get(oidc_config_url) as response:
         if response.status != HTTPStatus.OK:
             _msg = 'Failed to fetch OpenID configuration'
 
@@ -78,10 +88,10 @@ async def fetch_jwks(jwks_uri: str) -> dict:
     """
     Fetch the JSON Web Key Set (JWKS) for validating the token's signature.
     """
-    if oidc_settings.authority_internal_url:
+    if authority_internal_host := oidc_settings.authority_internal_host:
         logger.debug('Received jwks_uri: %s', jwks_uri)
-        logger.debug('Replacing OIDC authority host with: %s', oidc_settings.authority_internal_url)
-        jwks_uri = jwks_uri.replace(str(oidc_settings.authority_url), str(oidc_settings.authority_internal_url))
+        logger.debug('Replacing OIDC authority host with: %s', authority_internal_host)
+        jwks_uri = str(replace_origin(HttpUrl(jwks_uri), authority_internal_host))
         logger.debug('Modified jwks_uri: %s', jwks_uri)
 
     async with aiohttp.ClientSession() as session, session.get(jwks_uri) as response:
