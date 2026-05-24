@@ -77,7 +77,7 @@ class OIDCClient:
         client_secret: str | None = None,
         *,
         timeout: float = 10.0,
-        verify_ssl: bool = True,
+        verify_cert: bool = True,
         connection_limit: int = 100,
         authority_internal_host: HttpUrl | None = None,
     ) -> None:
@@ -92,7 +92,7 @@ class OIDCClient:
         self._connection_limit = connection_limit
         self._session: aiohttp.ClientSession | None = None
         self._timeout = timeout
-        self._verify_ssl = verify_ssl
+        self._verify_cert = verify_cert
 
         self._config: Mapping[str, Any] | None = None
         self._jwks: Mapping[str, Any] | None = None
@@ -105,7 +105,7 @@ class OIDCClient:
             if self._session:
                 return self._session
 
-            connector = aiohttp.TCPConnector(verify_ssl=self._verify_ssl, limit=self._connection_limit)
+            connector = aiohttp.TCPConnector(verify_ssl=self._verify_cert, limit=self._connection_limit)
             timeout = aiohttp.ClientTimeout(total=self._timeout)
             session = aiohttp.ClientSession(connector=connector, timeout=timeout)
             self._session = session

@@ -17,7 +17,7 @@ async def test_get_token_cognito(
             authority_url=authority_url,
             client_id=client_id,
             client_secret=client_secret,
-            verify_ssl=False,
+            verify_cert=False,
             timeout=10,
         ) as client,
     ):

@@ -29,6 +29,9 @@ class OIDCSettings(BaseSettings):
         'email',
     )
     audience: StringSeq | str | None = None
+    verify_cert: bool = True
+    timeout: float = 10
+    connection_limit: int = 100
 
 
 class ValkeySettings(BaseSettings):
@@ -91,7 +94,6 @@ class S3Settings(BaseSettings):
 
 
 settings = CommonSettings()
-oidc_settings = OIDCSettings()
 valkey_settings = ValkeySettings()
 db_settings = DBSettings()
 s3_settings = S3Settings()
