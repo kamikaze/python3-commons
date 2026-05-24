@@ -51,7 +51,7 @@ cache = [
 ]
 database = [
     "asyncpg~=0.31.0",
-    "SQLAlchemy[asyncio]~=2.0.49"
+    "SQLAlchemy[asyncio]~=2.0.50"
 ]
 object-storage = [
     "aiobotocore~=3.7.0",

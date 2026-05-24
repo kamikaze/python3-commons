@@ -16,8 +16,6 @@ except ImportError as e:
 
 import msgspec
 
-from python3_commons.conf import oidc_settings
-
 logger = logging.getLogger(__name__)
 _OIDC_LOCK = threading.Lock()
 
@@ -81,19 +79,23 @@ class OIDCClient:
         timeout: float = 10.0,
         verify_ssl: bool = True,
         connection_limit: int = 100,
+        authority_internal_host: HttpUrl | None = None,
     ) -> None:
-        if oidc_settings.authority_internal_host:
-            authority_url = replace_origin(authority_url, oidc_settings.authority_internal_host)
+        if authority_internal_host:
+            authority_url = replace_origin(authority_url, authority_internal_host)
 
         self._authority_url = authority_url
+        self._authority_internal_host = authority_internal_host
         self._client_id = client_id
         self._client_secret = client_secret
-        self._oidc_config: Mapping[str, Any] | None = None
 
         self._connection_limit = connection_limit
         self._session: aiohttp.ClientSession | None = None
         self._timeout = timeout
         self._verify_ssl = verify_ssl
+
+        self._config: Mapping[str, Any] | None = None
+        self._jwks: Mapping[str, Any] | None = None
 
     def get_session(self) -> aiohttp.ClientSession:
         if self._session:
@@ -119,7 +121,7 @@ class OIDCClient:
         if self._session:
             await self._session.close()
 
-    async def _fetch_openid_config(self) -> dict:
+    async def _fetch_config(self) -> dict:
         """
         Fetch the OpenID configuration (including JWKS URI) from OIDC authority.
         """
@@ -139,7 +141,20 @@ class OIDCClient:
 
             return await response.json()
 
-    async def fetch_jwks(self, jwks_uri: str) -> dict:
+    async def get_config(self) -> Mapping[str, Any]:
+        if self._config:
+            return self._config
+
+        with _OIDC_LOCK:
+            if self._config:
+                return self._config
+
+            config = await self._fetch_config()
+            self._config = config
+
+            return config
+
+    async def _fetch_jwks(self, jwks_uri: str) -> dict:
         """
         Fetch the JSON Web Key Set (JWKS) for validating the token's signature.
         """
@@ -147,7 +162,7 @@ class OIDCClient:
             msg = 'ClientSession not initialized'
             raise RuntimeError(msg)
 
-        if authority_internal_host := oidc_settings.authority_internal_host:
+        if authority_internal_host := self._authority_internal_host:
             logger.debug('Received jwks_uri: %s', jwks_uri)
             logger.debug('Replacing OIDC authority host with: %s', authority_internal_host)
             jwks_uri = str(replace_origin(HttpUrl(jwks_uri), authority_internal_host))
@@ -161,18 +176,20 @@ class OIDCClient:
 
             return await response.json()
 
-    async def get_openid_config(self) -> Mapping[str, Any]:
-        if self._oidc_config:
-            return self._oidc_config
+    async def get_jwks(self) -> Mapping[str, Any]:
+        if self._jwks:
+            return self._jwks
 
         with _OIDC_LOCK:
-            if self._oidc_config:
-                return self._oidc_config
+            if self._jwks:
+                return self._jwks
 
-            oidc_config = await self._fetch_openid_config()
-            self._oidc_config = oidc_config
+            oidc_config = await self.get_config()
 
-            return oidc_config
+            jwks = await self._fetch_jwks(oidc_config['jwks_uri'])
+            self._jwks = jwks
+
+            return jwks
 
     async def fetch_token(
         self,
@@ -196,7 +213,7 @@ class OIDCClient:
         if self._client_secret:
             data['client_secret'] = self._client_secret
 
-        openid_config = await self.get_openid_config()
+        openid_config = await self.get_config()
 
         try:
             async with self._session.post(
