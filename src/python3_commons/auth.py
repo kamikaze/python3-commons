@@ -1,9 +1,8 @@
-from __future__ import annotations
-
 import logging
-from collections.abc import Sequence
+import threading
+from collections.abc import Mapping, Sequence
 from http import HTTPStatus
-from typing import Self, TypeVar
+from typing import Any, Self, TypeVar
 
 from pydantic import HttpUrl
 
@@ -20,6 +19,7 @@ import msgspec
 from python3_commons.conf import oidc_settings
 
 logger = logging.getLogger(__name__)
+_OIDC_LOCK = threading.Lock()
 
 
 class TokenData(msgspec.Struct):
@@ -62,49 +62,6 @@ class OIDCTokenResponse(msgspec.Struct):
     error_description: str | None = None
 
 
-async def fetch_openid_config() -> dict:
-    """
-    Fetch the OpenID configuration (including JWKS URI) from OIDC authority.
-    """
-    if (authority_url := oidc_settings.authority_url) is None:
-        msg = 'OIDC authority URL is required'
-        raise ValueError(msg)
-
-    if oidc_settings.authority_internal_host:
-        authority_url = replace_origin(authority_url, oidc_settings.authority_internal_host)
-
-    oidc_config_url = f'{authority_url}/.well-known/openid-configuration'
-
-    logger.debug('Fetching OpenID configuration from: %s', oidc_config_url)
-
-    async with aiohttp.ClientSession() as session, session.get(oidc_config_url) as response:
-        if response.status != HTTPStatus.OK:
-            _msg = 'Failed to fetch OpenID configuration'
-
-            raise RuntimeError(_msg)
-
-        return await response.json()
-
-
-async def fetch_jwks(jwks_uri: str) -> dict:
-    """
-    Fetch the JSON Web Key Set (JWKS) for validating the token's signature.
-    """
-    if authority_internal_host := oidc_settings.authority_internal_host:
-        logger.debug('Received jwks_uri: %s', jwks_uri)
-        logger.debug('Replacing OIDC authority host with: %s', authority_internal_host)
-        jwks_uri = str(replace_origin(HttpUrl(jwks_uri), authority_internal_host))
-        logger.debug('Modified jwks_uri: %s', jwks_uri)
-
-    async with aiohttp.ClientSession() as session, session.get(jwks_uri) as response:
-        if response.status != HTTPStatus.OK:
-            _msg = 'Failed to fetch JWKS'
-
-            raise RuntimeError(_msg)
-
-        return await response.json()
-
-
 class OIDCError(Exception):
     pass
 
@@ -117,28 +74,105 @@ class OIDCAuthError(OIDCError):
 class OIDCClient:
     def __init__(
         self,
-        authority_url: str,
+        authority_url: HttpUrl,
         client_id: str,
         client_secret: str | None = None,
         *,
         timeout: float = 10.0,
-        session: aiohttp.ClientSession | None = None,
+        verify_ssl: bool = True,
+        connection_limit: int = 100,
     ) -> None:
-        self._token_url = f'{authority_url}/protocol/openid-connect/token'  # TODO: get it from openid-configuration
+        if oidc_settings.authority_internal_host:
+            authority_url = replace_origin(authority_url, oidc_settings.authority_internal_host)
+
+        self._authority_url = authority_url
         self._client_id = client_id
         self._client_secret = client_secret
-        self._timeout = aiohttp.ClientTimeout(total=timeout)
-        self._session = session
-        self._owns_session = session is None
+        self._oidc_config: Mapping[str, Any] | None = None
+
+        self._connection_limit = connection_limit
+        self._session: aiohttp.ClientSession | None = None
+        self._timeout = timeout
+        self._verify_ssl = verify_ssl
+
+    def get_session(self) -> aiohttp.ClientSession:
+        if self._session:
+            return self._session
+
+        with _OIDC_LOCK:
+            if self._session:
+                return self._session
+
+            connector = aiohttp.TCPConnector(verify_ssl=self._verify_ssl, limit=self._connection_limit)
+            timeout = aiohttp.ClientTimeout(total=self._timeout)
+            session = aiohttp.ClientSession(connector=connector, timeout=timeout)
+            self._session = session
+
+            return session
 
     async def __aenter__(self) -> Self:
-        if self._session is None:
-            self._session = aiohttp.ClientSession(timeout=self._timeout)
+        self.get_session()
+
         return self
 
     async def __aexit__(self, *_: object) -> None:
-        if self._owns_session and self._session:
+        if self._session:
             await self._session.close()
+
+    async def _fetch_openid_config(self) -> dict:
+        """
+        Fetch the OpenID configuration (including JWKS URI) from OIDC authority.
+        """
+        if self._session is None:
+            msg = 'ClientSession not initialized'
+            raise RuntimeError(msg)
+
+        oidc_config_url = f'{self._authority_url}/.well-known/openid-configuration'
+
+        logger.debug('Fetching OpenID configuration from: %s', oidc_config_url)
+
+        async with self._session.get(oidc_config_url) as response:
+            if response.status != HTTPStatus.OK:
+                _msg = 'Failed to fetch OpenID configuration'
+
+                raise RuntimeError(_msg)
+
+            return await response.json()
+
+    async def fetch_jwks(self, jwks_uri: str) -> dict:
+        """
+        Fetch the JSON Web Key Set (JWKS) for validating the token's signature.
+        """
+        if self._session is None:
+            msg = 'ClientSession not initialized'
+            raise RuntimeError(msg)
+
+        if authority_internal_host := oidc_settings.authority_internal_host:
+            logger.debug('Received jwks_uri: %s', jwks_uri)
+            logger.debug('Replacing OIDC authority host with: %s', authority_internal_host)
+            jwks_uri = str(replace_origin(HttpUrl(jwks_uri), authority_internal_host))
+            logger.debug('Modified jwks_uri: %s', jwks_uri)
+
+        async with self._session.get(jwks_uri) as response:
+            if response.status != HTTPStatus.OK:
+                _msg = 'Failed to fetch JWKS'
+
+                raise RuntimeError(_msg)
+
+            return await response.json()
+
+    async def get_openid_config(self) -> Mapping[str, Any]:
+        if self._oidc_config:
+            return self._oidc_config
+
+        with _OIDC_LOCK:
+            if self._oidc_config:
+                return self._oidc_config
+
+            oidc_config = await self._fetch_openid_config()
+            self._oidc_config = oidc_config
+
+            return oidc_config
 
     async def fetch_token(
         self,
@@ -149,7 +183,6 @@ class OIDCClient:
     ) -> OIDCTokenResponse:
         if self._session is None:
             msg = 'ClientSession not initialized'
-
             raise RuntimeError(msg)
 
         data = {
@@ -163,36 +196,46 @@ class OIDCClient:
         if self._client_secret:
             data['client_secret'] = self._client_secret
 
+        openid_config = await self.get_openid_config()
+
         try:
             async with self._session.post(
-                self._token_url,
+                openid_config['token_endpoint'],
                 data=data,
                 headers={'Content-Type': 'application/x-www-form-urlencoded'},
-            ) as resp:
-                payload = await resp.read()
-                decoder = msgspec.json.Decoder(type=OIDCTokenResponse)
-                token = decoder.decode(payload)
+            ) as response:
+                payload = await response.read()
+
+                try:
+                    body = msgspec.json.decode(payload)
+                except Exception as e:
+                    msg = f'Non-JSON response from OIDC provider: {payload[:300]!r}'
+                    raise OIDCError(msg) from e
+
+                if response.status >= 400:
+                    error = None
+                    description = None
+
+                    if isinstance(body, dict):
+                        error = body.get('error') or body.get('code')
+                        description = body.get('error_description') or body.get('message') or ''
+
+                    error = error or f'http_{response.status}'
+
+                    if error in {'invalid_grant', 'invalid_client'}:
+                        msg = f'{error}: {description}'
+                        raise OIDCAuthError(msg)
+
+                    msg = f'{error}: {description}'
+                    raise OIDCError(msg)
+
+                decoder = msgspec.json.Decoder(OIDCTokenResponse)
+
+                return decoder.decode(payload)
 
         except TimeoutError as e:
             msg = 'OIDC request timed out'
-
             raise OIDCError(msg) from e
         except aiohttp.ClientError as e:
             msg = 'OIDC transport error'
-
             raise OIDCError(msg) from e
-
-        if not resp.ok:
-            error = token.error
-            description = token.error_description
-
-            if error in {'invalid_grant', 'invalid_client'}:
-                msg = f'{error}: {description}'
-
-                raise OIDCAuthError(msg)
-
-            msg = f'{error}: {description}'
-
-            raise OIDCError(msg)
-
-        return token
