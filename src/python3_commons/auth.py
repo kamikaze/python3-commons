@@ -79,7 +79,10 @@ async def fetch_jwks(jwks_uri: str) -> dict:
     Fetch the JSON Web Key Set (JWKS) for validating the token's signature.
     """
     if oidc_settings.authority_internal_url:
+        logger.debug('Received jwks_uri: %s', jwks_uri)
+        logger.debug('Replacing OIDC authority host with: %s', oidc_settings.authority_internal_url)
         jwks_uri = jwks_uri.replace(str(oidc_settings.authority_url), str(oidc_settings.authority_internal_url))
+        logger.debug('Modified jwks_uri: %s', jwks_uri)
 
     async with aiohttp.ClientSession() as session, session.get(jwks_uri) as response:
         if response.status != HTTPStatus.OK:
