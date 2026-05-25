@@ -70,7 +70,7 @@ class AsyncSessionManager:
         logger.debug('Building engine for %r (dsn=%s)', name, dsn)
 
         configuration = {
-            'url': dsn,
+            'url': str(dsn),
             'echo': db_config.echo,
             'pool_size': db_config.pool_size,
             'max_overflow': db_config.max_overflow,
