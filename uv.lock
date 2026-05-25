@@ -1171,7 +1171,7 @@ requires-dist = [
     { name = "python3-commons", extras = ["database"], marker = "extra == 'authz'" },
     { name = "python3-commons", extras = ["object-storage"], marker = "extra == 'audit'" },
     { name = "requests", marker = "extra == 'soap-client'", specifier = "~=2.34.2" },
-    { name = "sqlalchemy", extras = ["asyncio"], marker = "extra == 'database'", specifier = "~=2.0.50" },
+    { name = "sqlalchemy", extras = ["asyncio"], marker = "extra == 'database'", specifier = "~=2.0.49" },
     { name = "valkey", extras = ["libvalkey"], marker = "extra == 'cache'", specifier = "~=6.1.1" },
     { name = "zeep", extras = ["async"], marker = "extra == 'audit'", specifier = "~=4.3.2" },
     { name = "zeep", extras = ["async"], marker = "extra == 'soap-client'", specifier = "~=4.3.2" },
