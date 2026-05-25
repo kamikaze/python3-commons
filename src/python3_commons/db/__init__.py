@@ -80,11 +80,16 @@ class AsyncSessionManager:
             'pool_recycle': db_config.pool_recycle,
             'pool_pre_ping': db_config.pool_pre_ping,
         }
+        connect_args = {'timeout': _DEFAULT_CONNECT_TIMEOUT}
+        # For asyncpg, command_timeout provides a per-statement timeout.
+        if 'postgresql' in dsn:
+            connect_args['command_timeout'] = float(db_config.statement_timeout)
+
         try:
             engine = async_engine_from_config(
                 configuration,
                 prefix='',
-                connect_args={'timeout': _DEFAULT_CONNECT_TIMEOUT},
+                connect_args=connect_args,
             )
         except Exception as e:
             logger.exception('Failed to create engine for %r', name)
@@ -147,6 +152,7 @@ class AsyncSessionManager:
         """
 
         async def get_session() -> AsyncGenerator[AsyncSession]:
+            session_acquired = False
             session_maker = self.get_session_maker(name)
             t0 = time.monotonic()
             logger.debug('Acquiring session for %r', name)
@@ -154,17 +160,21 @@ class AsyncSessionManager:
             try:
                 async with asyncio.timeout(self.pool_acquire_timeout):
                     async with session_maker() as session:
+                        session_acquired = True
                         elapsed = time.monotonic() - t0
                         logger.debug('Session acquired for %r in %.3fs', name, elapsed)
 
                         try:
                             yield session
                         except Exception:
-                            logger.exception('Exception inside session context for %r; rolling back', name)
+                            logger.exception('Database communication error for %r; rolling back', name)
                             await session.rollback()
 
                             raise
             except TimeoutError as e:
+                if session_acquired:
+                    raise
+
                 elapsed = time.monotonic() - t0
                 logger.exception(
                     'Timed out waiting for a session for %r after %.3fs (limit=%.1fs)',
@@ -176,6 +186,9 @@ class AsyncSessionManager:
                 msg = f'Could not acquire a session for {name!r} within {self.pool_acquire_timeout}s'
                 raise SessionAcquireError(msg) from e
             except (OperationalError, SATimeoutError) as e:
+                if session_acquired:
+                    raise
+
                 elapsed = time.monotonic() - t0
 
                 logger.exception('DB error acquiring session for %r after %.3fs', name, elapsed)
@@ -183,6 +196,9 @@ class AsyncSessionManager:
                 msg = f'DB error for {name!r}: {e}'
                 raise SessionAcquireError(msg) from e
             except SQLAlchemyError as e:
+                if session_acquired:
+                    raise
+
                 logger.exception('Unexpected SQLAlchemy error for %r', name)
 
                 msg = f'SQLAlchemy error for {name!r}'
@@ -200,11 +216,6 @@ class AsyncSessionManager:
                 ...
         """
         return contextlib.asynccontextmanager(self.get_async_session(name))
-
-
-# ---------------------------------------------------------------------------
-# Health check
-# ---------------------------------------------------------------------------
 
 
 async def is_healthy(
