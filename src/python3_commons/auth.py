@@ -17,7 +17,9 @@ except ImportError as e:
 import msgspec
 
 logger = logging.getLogger(__name__)
-_OIDC_LOCK = threading.Lock()
+_OIDC_CONFIG_LOCK = threading.Lock()
+_OIDC_JWKS_LOCK = threading.Lock()
+_OIDC_SESSION_LOCK = threading.Lock()
 
 
 class TokenData(msgspec.Struct):
@@ -101,7 +103,7 @@ class OIDCClient:
         if self._session:
             return self._session
 
-        with _OIDC_LOCK:
+        with _OIDC_SESSION_LOCK:
             if self._session:
                 return self._session
 
@@ -145,7 +147,7 @@ class OIDCClient:
         if self._config:
             return self._config
 
-        with _OIDC_LOCK:
+        with _OIDC_CONFIG_LOCK:
             if self._config:
                 return self._config
 
@@ -180,7 +182,7 @@ class OIDCClient:
         if self._jwks:
             return self._jwks
 
-        with _OIDC_LOCK:
+        with _OIDC_JWKS_LOCK:
             if self._jwks:
                 return self._jwks
 
