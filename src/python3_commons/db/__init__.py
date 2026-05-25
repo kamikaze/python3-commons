@@ -66,11 +66,12 @@ class AsyncSessionManager:
     def _build_engine(self, name: str) -> AsyncEngine:
         db_config = self.get_db_config(name)
         dsn = db_config.dsn
+        str_dsn = str(dsn)
 
         logger.debug('Building engine for %r (dsn=%s)', name, dsn)
 
         configuration = {
-            'url': str(dsn),
+            'url': str_dsn,
             'echo': db_config.echo,
             'pool_size': db_config.pool_size,
             'max_overflow': db_config.max_overflow,
@@ -82,7 +83,7 @@ class AsyncSessionManager:
         }
         connect_args = {'timeout': _DEFAULT_CONNECT_TIMEOUT}
         # For asyncpg, command_timeout provides a per-statement timeout.
-        if 'postgresql' in dsn.scheme:
+        if 'postgresql' in str_dsn:
             connect_args['command_timeout'] = float(db_config.statement_timeout)
 
         try:
