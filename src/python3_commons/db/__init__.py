@@ -43,9 +43,16 @@ class AsyncSessionManager:
             'max_overflow': db_config.max_overflow,
             'pool_timeout': db_config.pool_timeout,
             'pool_recycle': db_config.pool_recycle,
+            'pool_pre_ping': db_config.pool_pre_ping,
         }
 
-        return async_engine_from_config(configuration, prefix='')
+        return async_engine_from_config(
+            configuration,
+            prefix='',
+            connect_args={
+                'timeout': 5,  # asyncpg timeout
+            },
+        )
 
     def get_engine(self, name: str) -> AsyncEngine:
         try:

@@ -58,6 +58,8 @@ class DBSettings(BaseSettings):
     max_overflow: int = 0
     pool_timeout: int = 30
     pool_recycle: int = 1800  # 30 minutes
+    pool_pre_ping: bool = True
+    statement_timeout: int = 30
 
     @model_validator(mode='after')
     def build_dsn_if_missing(self) -> DBSettings:
