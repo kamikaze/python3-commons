@@ -82,7 +82,7 @@ class AsyncSessionManager:
         }
         connect_args = {'timeout': _DEFAULT_CONNECT_TIMEOUT}
         # For asyncpg, command_timeout provides a per-statement timeout.
-        if 'postgresql' in dsn:
+        if 'postgresql' in dsn.scheme:
             connect_args['command_timeout'] = float(db_config.statement_timeout)
 
         try:
