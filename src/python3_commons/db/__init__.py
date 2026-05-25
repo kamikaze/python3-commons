@@ -1,4 +1,3 @@
-import asyncio
 import contextlib
 import logging
 import time
@@ -159,19 +158,18 @@ class AsyncSessionManager:
             logger.debug('Acquiring session for %r', name)
 
             try:
-                async with asyncio.timeout(self.pool_acquire_timeout):
-                    async with session_maker() as session:
-                        session_acquired = True
-                        elapsed = time.monotonic() - t0
-                        logger.debug('Session acquired for %r in %.3fs', name, elapsed)
+                async with session_maker() as session:
+                    session_acquired = True
+                    elapsed = time.monotonic() - t0
+                    logger.debug('Session acquired for %r in %.3fs', name, elapsed)
 
-                        try:
-                            yield session
-                        except Exception:
-                            logger.exception('Database communication error for %r; rolling back', name)
-                            await session.rollback()
+                    try:
+                        yield session
+                    except Exception:
+                        logger.exception('Database communication error for %r; rolling back', name)
+                        await session.rollback()
 
-                            raise
+                        raise
             except TimeoutError as e:
                 if session_acquired:
                     raise
@@ -230,10 +228,9 @@ async def is_healthy(
     t0 = time.monotonic()
 
     try:
-        async with asyncio.timeout(timeout):
-            async with engine.begin() as conn:
-                result = await conn.execute(text('SELECT 1'))
-                healthy = result.scalar() == 1
+        async with engine.begin() as conn:
+            result = await conn.execute(text('SELECT 1'))
+            healthy = result.scalar() == 1
 
         elapsed = time.monotonic() - t0
 
