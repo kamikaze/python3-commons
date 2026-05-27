@@ -50,7 +50,7 @@ async def request(
     method: Literal['get', 'post', 'put', 'patch', 'options', 'head', 'delete'] = 'get',
     headers: Mapping | None = None,
     json: Mapping | Sequence | str | None = None,
-    data: bytes | None = None,
+    data: Mapping | bytes | None = None,
     timeout: ClientTimeout | Enum | None = None,
     audit_name: str | None = None,
 ) -> AsyncGenerator[ClientResponse]:

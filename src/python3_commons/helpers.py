@@ -94,34 +94,35 @@ def request_to_curl(
     headers: Mapping | None = None,
     cookies: BaseCookie[str] | None = None,
     json: Mapping | Sequence | str | None = None,
-    data: bytes | None = None,
+    data: Mapping | bytes | None = None,
 ) -> str:
     if query:
-        url = f'{url}?{urlencode(query)}'
+        url = f'{url}?{urlencode(query, doseq=True)}'
 
-    curl_cmd = ['curl', '-i', '-X', method.upper(), shlex.quote(url)]
+    curl_cmd: list[str] = ['curl', '-i', '-X', method.upper(), url]
 
     if headers:
         for key, value in headers.items():
-            header_line = f'{key}: {value}'
-            curl_cmd.append('-H')
-            curl_cmd.append(shlex.quote(header_line))
+            curl_cmd += ['-H', f'{key}: {value}']
 
     if cookies:
         cookie_str = '; '.join(f'{k}={v.value}' for k, v in cookies.items())
-        curl_cmd.extend(['-b', shlex.quote(cookie_str)])
+        curl_cmd += ['-b', cookie_str]
 
     if json:
-        curl_cmd.append('-H')
-        curl_cmd.append(shlex.quote('Content-Type: application/json'))
-
-        curl_cmd.append('-d')
-        curl_cmd.append(shlex.quote(dumps(json, cls=CustomJSONEncoder)))
+        curl_cmd += ['-H', 'Content-Type: application/json', '-d', dumps(json, cls=CustomJSONEncoder)]
     elif data:
-        curl_cmd.append('-d')
-        curl_cmd.append(shlex.quote(data.decode('utf-8')))
+        body = None
 
-    return ' '.join(curl_cmd)
+        if isinstance(data, dict):
+            body = urlencode(data, doseq=True)
+        elif isinstance(data, bytes):
+            body = data.decode('utf-8')
+
+        if body:
+            curl_cmd += ['-d', body]
+
+    return ' '.join(shlex.quote(part) for part in curl_cmd)
 
 
 def log_execution_time(func):

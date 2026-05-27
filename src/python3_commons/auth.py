@@ -204,7 +204,7 @@ class OIDCClient:
                 openid_config['token_endpoint'],
                 '',
                 method='post',
-                json=data,
+                data=data,
                 headers={'Content-Type': 'application/x-www-form-urlencoded'},
                 audit_name=self._audit_name,
             ) as response:
