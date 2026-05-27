@@ -1,7 +1,6 @@
 import logging
 import threading
 from collections.abc import Mapping, Sequence
-from http import HTTPStatus
 from typing import Any, Self, TypeVar
 
 from pydantic import HttpUrl
@@ -10,8 +9,10 @@ from python3_commons.helpers import replace_origin
 
 try:
     import aiohttp
+
+    from python3_commons import api_client
 except ImportError as e:
-    msg = 'Install python3-commons[authn] to use this feature'
+    msg = 'Install python3-commons[api-client] to use this feature'
     raise RuntimeError(msg) from e
 
 import msgspec
@@ -70,7 +71,6 @@ class OIDCAuthError(OIDCError):
     pass
 
 
-# TODO: use api_client
 class OIDCClient:
     def __init__(
         self,
@@ -82,6 +82,7 @@ class OIDCClient:
         verify_cert: bool = True,
         connection_limit: int = 100,
         authority_internal_host: HttpUrl | None = None,
+        audit_name: str | None = None,
     ) -> None:
         if authority_internal_host:
             authority_url = replace_origin(authority_url, authority_internal_host)
@@ -98,8 +99,9 @@ class OIDCClient:
 
         self._config: Mapping[str, Any] | None = None
         self._jwks: Mapping[str, Any] | None = None
+        self._audit_name: str | None = audit_name
 
-    def get_session(self) -> aiohttp.ClientSession:
+    def _get_session(self) -> aiohttp.ClientSession:
         if self._session:
             return self._session
 
@@ -115,7 +117,7 @@ class OIDCClient:
             return session
 
     async def __aenter__(self) -> Self:
-        self.get_session()
+        self._get_session()
 
         return self
 
@@ -127,20 +129,12 @@ class OIDCClient:
         """
         Fetch the OpenID configuration (including JWKS URI) from OIDC authority.
         """
-        if self._session is None:
-            msg = 'ClientSession not initialized'
-            raise RuntimeError(msg)
-
-        oidc_config_url = f'{self._authority_url}/.well-known/openid-configuration'
-
-        logger.debug('Fetching OpenID configuration from: %s', oidc_config_url)
-
-        async with self._session.get(oidc_config_url) as response:
-            if response.status != HTTPStatus.OK:
-                _msg = 'Failed to fetch OpenID configuration'
-
-                raise RuntimeError(_msg)
-
+        async with api_client.request(
+            self._get_session(),
+            str(self._authority_url),
+            '/.well-known/openid-configuration',
+            audit_name=self._audit_name,
+        ) as response:
             return await response.json()
 
     async def get_config(self) -> Mapping[str, Any]:
@@ -160,22 +154,13 @@ class OIDCClient:
         """
         Fetch the JSON Web Key Set (JWKS) for validating the token's signature.
         """
-        if self._session is None:
-            msg = 'ClientSession not initialized'
-            raise RuntimeError(msg)
-
         if authority_internal_host := self._authority_internal_host:
             logger.debug('Received jwks_uri: %s', jwks_uri)
             logger.debug('Replacing OIDC authority host with: %s', authority_internal_host)
             jwks_uri = str(replace_origin(HttpUrl(jwks_uri), authority_internal_host))
             logger.debug('Modified jwks_uri: %s', jwks_uri)
 
-        async with self._session.get(jwks_uri) as response:
-            if response.status != HTTPStatus.OK:
-                _msg = 'Failed to fetch JWKS'
-
-                raise RuntimeError(_msg)
-
+        async with api_client.request(self._get_session(), jwks_uri, '', audit_name=self._audit_name) as response:
             return await response.json()
 
     async def get_jwks(self) -> Mapping[str, Any]:
@@ -200,10 +185,6 @@ class OIDCClient:
         password: str,
         scope: str = 'openid profile email',
     ) -> OIDCTokenResponse:
-        if self._session is None:
-            msg = 'ClientSession not initialized'
-            raise RuntimeError(msg)
-
         data = {
             'grant_type': 'password',
             'username': username,
@@ -218,9 +199,12 @@ class OIDCClient:
         openid_config = await self.get_config()
 
         try:
-            async with self._session.post(
+            async with api_client.request(
+                self._get_session(),
                 openid_config['token_endpoint'],
-                data=data,
+                '',
+                method='post',
+                json=data,
                 headers={'Content-Type': 'application/x-www-form-urlencoded'},
             ) as response:
                 payload = await response.read()
