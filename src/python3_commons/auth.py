@@ -206,6 +206,7 @@ class OIDCClient:
                 method='post',
                 json=data,
                 headers={'Content-Type': 'application/x-www-form-urlencoded'},
+                audit_name=self._audit_name,
             ) as response:
                 payload = await response.read()
 
