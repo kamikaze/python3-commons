@@ -717,14 +717,14 @@ wheels = [
 
 [[package]]
 name = "object-storage-client"
-version = "0.0.32"
+version = "0.0.34"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/5a/87/b510aeb99d3a691d779d880eb5ad5390555703c711e1efb8a3fae826a5f8/object_storage_client-0.0.32.tar.gz", hash = "sha256:80809c69ac091d4b3a4eb96f2cef2117ada942410ba3130d1de3429acaf91407", size = 54901, upload-time = "2026-05-29T17:14:09.293Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/3f/9f/50fa05da1b42d9514fd19c979ef7bf0491a64ceed8d1baf76e89c3eca781/object_storage_client-0.0.34.tar.gz", hash = "sha256:76ec633e3b7fabf977a984f2287aa5e064598ebe0e61f8f91ba8e683a20c7e42", size = 66560, upload-time = "2026-05-31T17:41:34.446Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b0/87/6cedf83e84e8a2d1afb53a65131b6e5f1ddfb565afa1b67aad784bdaa2e8/object_storage_client-0.0.32-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:f22c2bfe40d3891dc5aaa96366596308f47a120536624d3fbfb0808e98455656", size = 2152879, upload-time = "2026-05-29T17:14:14.744Z" },
-    { url = "https://files.pythonhosted.org/packages/0b/9e/f37e6b3312b047eaf848f221c5530e1bf58ffa4ef2419ac7b78bf40cebfd/object_storage_client-0.0.32-cp314-cp314-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f1803bd864ef480196d85bff3bf8835f833b10e2ca67374b856bcb2f6e8c6c03", size = 2515485, upload-time = "2026-05-29T17:14:08.155Z" },
-    { url = "https://files.pythonhosted.org/packages/5f/90/5573da551de8e2e220aa52aeb76346bcf6aa588725e53d4ef132ee580b27/object_storage_client-0.0.32-cp314-cp314-manylinux_2_28_aarch64.whl", hash = "sha256:87e365d052b96ad635bc33f9265b3e04256576134346d7de11daa1baa3d80ab2", size = 2401737, upload-time = "2026-05-29T17:14:10.283Z" },
-    { url = "https://files.pythonhosted.org/packages/d6/58/fe724140d0858e117fb173cc048511d0470c6a8da81108afedc1803ba223/object_storage_client-0.0.32-cp314-cp314-win_amd64.whl", hash = "sha256:0875c4a619ff7ad386a14936683f270eaeb155bc70863185461e37a12b2b988a", size = 2315103, upload-time = "2026-05-29T17:14:18.112Z" },
+    { url = "https://files.pythonhosted.org/packages/ea/92/88da433009c2800f48ceb21265356b7e24bfbdc874cd3af4a8d7efb043b1/object_storage_client-0.0.34-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:cc0444e2116111c23760a95a56951a43e2cf1d7a197d6e908561dde3b87aac5f", size = 3331698, upload-time = "2026-05-31T17:41:39.616Z" },
+    { url = "https://files.pythonhosted.org/packages/13/30/4d1ef080b226e7114a034bd9a6b291a07fa6e04589a52f4062b0836e06e2/object_storage_client-0.0.34-cp314-cp314-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:bcb5b6a4fd15231b149b5105f431455d547ac95444d12d376abe9344fd77143a", size = 3764377, upload-time = "2026-05-31T17:41:41.26Z" },
+    { url = "https://files.pythonhosted.org/packages/f4/6e/610107a3f2ecf9bbc40bd5d15d0d2ddcf88f8b6dd964eebf0a6268e90a1d/object_storage_client-0.0.34-cp314-cp314-manylinux_2_28_aarch64.whl", hash = "sha256:4a1006aa3b2e6cfe17c2988f41db4daea28dcf7ccd6e90175aebe6f9ff0dc9e0", size = 3502800, upload-time = "2026-05-31T17:41:38.217Z" },
+    { url = "https://files.pythonhosted.org/packages/41/eb/48e9b3a81ece1a16db900200aa3c6362e387a3090b4a9ac4d8e16a832740/object_storage_client-0.0.34-cp314-cp314-win_amd64.whl", hash = "sha256:17be983131db9f2dee1c68ac16f1155754b5ab46ba960344ae4d91378fd63907", size = 3266922, upload-time = "2026-05-31T17:41:43.913Z" },
 ]
 
 [[package]]
@@ -738,11 +738,11 @@ wheels = [
 
 [[package]]
 name = "pip"
-version = "26.1.1"
+version = "26.1.2"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/b6/48/cb9b7a682f6fe01a4221e1728941dd4ac3cd9090a17db3779d6ff490b602/pip-26.1.1.tar.gz", hash = "sha256:d36762751d156a4ee895de8af39aa0abeeeb577f93a2eca6ab62467bbf0f8a78", size = 1840400, upload-time = "2026-05-04T19:02:21.248Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/01/91/47e7d486260f618783899587af63ccf7980fb60245c3e63dd4571c6b57ad/pip-26.1.2.tar.gz", hash = "sha256:f49cd134c61cf2fd75e0ce2676db03e4054504a5a4986d00f8299ae632dc4605", size = 1840799, upload-time = "2026-05-31T17:33:58.56Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3a/eb/fea4d1d51c49832120f7f285d07306db3960f423a2612c6057caf3e8196f/pip-26.1.1-py3-none-any.whl", hash = "sha256:99cb1c2899893b075ff56e4ed0af55669a955b49ad7fb8d8603ecdaf4ed653fb", size = 1812777, upload-time = "2026-05-04T19:02:18.9Z" },
+    { url = "https://files.pythonhosted.org/packages/5d/95/6b5cb3461ea5673ba0995989746db58eb18b91b54dbf331e72f569540946/pip-26.1.2-py3-none-any.whl", hash = "sha256:382ff9f685ee3bc25864f820aa50505825f10f5458ffff07e30a6d96e5715cab", size = 1813144, upload-time = "2026-05-31T17:33:56.772Z" },
 ]
 
 [[package]]
@@ -1162,7 +1162,7 @@ requires-dist = [
     { name = "lxml", marker = "extra == 'soap-client'", specifier = "~=6.1.1" },
     { name = "msgpack", specifier = "~=1.1.2" },
     { name = "msgspec", specifier = "~=0.21.1" },
-    { name = "object-storage-client", marker = "extra == 'object-storage'", specifier = "~=0.0.31" },
+    { name = "object-storage-client", marker = "extra == 'object-storage'", specifier = "~=0.0.34" },
     { name = "pydantic-settings", specifier = "~=2.14.1" },
     { name = "python3-commons", extras = ["api-client"], marker = "extra == 'authn'" },
     { name = "python3-commons", extras = ["api-client"], marker = "extra == 'authz'" },
@@ -1479,7 +1479,7 @@ wheels = [
 
 [[package]]
 name = "virtualenv"
-version = "21.4.1"
+version = "21.4.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "distlib" },
@@ -1487,9 +1487,9 @@ dependencies = [
     { name = "platformdirs" },
     { name = "python-discovery" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/95/f0/b47ecf438211a25a97f8f0e4b23c22bc2496ebfea18dd6ec16210f09cc36/virtualenv-21.4.1.tar.gz", hash = "sha256:2ca543c713b72840ceffd94e9bdedfbd09a661defa1f7f69e5429ad4059442e2", size = 7613344, upload-time = "2026-05-28T04:12:49.905Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e1/0d/4e93c8e6d1001a75763f87d8f5ecda8ebc7f4aa2153dddfaf4ae8892821a/virtualenv-21.4.2.tar.gz", hash = "sha256:38e6ee0a555615c0ea9da2ac7e9998fe8dc3b911dd33ad8eaad2020957653b0c", size = 7613326, upload-time = "2026-05-31T17:01:22.827Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ff/dc/ac4f3a987a87e1a18556896f257c4e15c95ed157b7975347ec6b313b75ce/virtualenv-21.4.1-py3-none-any.whl", hash = "sha256:caf4ff72d1b4039057f41d8e8466e859513d67c0400d9c6b62c02c9d1ebc3e12", size = 7594078, upload-time = "2026-05-28T04:12:47.686Z" },
+    { url = "https://files.pythonhosted.org/packages/bf/c4/557dc082be035381b85fdb2b74e21d3d21b57750b74f2b47a32f3a639ff9/virtualenv-21.4.2-py3-none-any.whl", hash = "sha256:854210ca524a1a4d0d744734f4acbc721c3ffe163b85bbf5d56d14d5ae2f0fae", size = 7594079, upload-time = "2026-05-31T17:01:20.735Z" },
 ]
 
 [[package]]
