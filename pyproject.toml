@@ -28,7 +28,7 @@ all = [
     "python3_commons[api-client,audit,authn,authz,cache,database,object-storage,soap-client]"
 ]
 api-client = [
-    "aiohttp[speedups]>=3.13.5,<3.15.0",
+    "aiohttp[speedups]>=3.14.0,<3.15.0",
     "certifi~=2026.5.20",
     "python3_commons[audit,object-storage]"
 ]
@@ -38,7 +38,7 @@ audit = [
     "python3_commons[object-storage]"
 ]
 authn = [
-    "aiohttp[speedups]>=3.13.5,<3.15.0",
+    "aiohttp[speedups]>=3.14.0,<3.15.0",
     "certifi~=2026.5.20",
     "python3_commons[api-client]"
 ]
@@ -58,7 +58,7 @@ object-storage = [
     "object-storage-client~=0.0.34"
 ]
 soap-client = [
-    "aiohttp[speedups]>=3.13.5,<3.15.0",
+    "aiohttp[speedups]>=3.14.0,<3.15.0",
     "certifi~=2026.5.20",
     "lxml~=6.1.1",
     "requests~=2.34.2",

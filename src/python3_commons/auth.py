@@ -54,13 +54,13 @@ T = TypeVar('T', bound=TokenData)
 
 class OIDCTokenResponse(msgspec.Struct):
     access_token: str
-    token_type: str
     expires_in: int
-    refresh_token: str
-    scope: str
     id_token: str
+    token_type: str
     error: str | None = None
     error_description: str | None = None
+    refresh_token: str | None = None
+    scope: str | None = None
 
 
 class OIDCError(Exception):
