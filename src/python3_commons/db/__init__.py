@@ -1,3 +1,4 @@
+import asyncio
 import contextlib
 import logging
 import time
@@ -69,14 +70,19 @@ class AsyncSessionManager:
 
         logger.debug('Building engine for %r (dsn=%s)', name, dsn)
 
+        # pool_timeout: seconds SQLAlchemy waits for a connection from the pool.
+        # Cap it at the manager's acquire timeout so the pool never blocks
+        # longer than the deadline we advertise to callers; falls back to the
+        # default so the pool never waits forever.
+        config_pool_timeout = getattr(db_config, 'pool_timeout', None) or _DEFAULT_POOL_ACQUIRE_TIMEOUT
+        pool_timeout = min(config_pool_timeout, self.pool_acquire_timeout)
+
         configuration = {
             'url': str_dsn,
             'echo': db_config.echo,
             'pool_size': db_config.pool_size,
             'max_overflow': db_config.max_overflow,
-            # pool_timeout: seconds to wait for a conn from the pool.
-            # Falls back to default so the pool never blocks forever.
-            'pool_timeout': getattr(db_config, 'pool_timeout', _DEFAULT_POOL_ACQUIRE_TIMEOUT),
+            'pool_timeout': pool_timeout,
             'pool_recycle': db_config.pool_recycle,
             'pool_pre_ping': db_config.pool_pre_ping,
         }
@@ -159,6 +165,14 @@ class AsyncSessionManager:
 
             try:
                 async with session_maker() as session:
+                    # SQLAlchemy establishes the connection lazily on first use.
+                    # Force the pool checkout + connect to happen *now*, under a
+                    # hard deadline, so an exhausted pool or an unreachable DB
+                    # fails fast here instead of hanging inside the request
+                    # handler for the duration of pool_timeout.
+                    async with asyncio.timeout(self.pool_acquire_timeout):
+                        await session.connection()
+
                     session_acquired = True
                     elapsed = time.monotonic() - t0
                     logger.debug('Session acquired for %r in %.3fs', name, elapsed)
@@ -228,7 +242,7 @@ async def is_healthy(
     t0 = time.monotonic()
 
     try:
-        async with engine.begin() as conn:
+        async with asyncio.timeout(timeout), engine.begin() as conn:
             result = await conn.execute(text('SELECT 1'))
             healthy = result.scalar() == 1
 
