@@ -172,6 +172,11 @@ class AsyncSessionManager:
                     # handler for the duration of pool_timeout.
                     async with asyncio.timeout(self.pool_acquire_timeout):
                         await session.connection()
+                        # session.connection() autobegins a transaction. Roll it
+                        # back so the session is returned to the caller in a clean
+                        # state; otherwise an explicit session.begin() would fail
+                        # with "a transaction is already begun on this Session".
+                        await session.rollback()
 
                     session_acquired = True
                     elapsed = time.monotonic() - t0
