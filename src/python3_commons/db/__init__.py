@@ -185,7 +185,7 @@ class AsyncSessionManager:
                     try:
                         yield session
                     except Exception:
-                        logger.exception('Database communication error for %r; rolling back', name)
+                        logger.exception('Error occured while db session %r was open; rolling back', name)
                         await session.rollback()
 
                         raise
