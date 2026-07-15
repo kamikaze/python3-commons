@@ -27,12 +27,12 @@ async def test_async_session_manager_timeout(mocker, caplog):
     get_session_ctx_func = manager.get_session_context('default')
 
     # We want to verify that TimeoutError from the driver is caught,
-    # logged as "Database communication error", rolled back, and re-raised.
+    # logged as "Error occurred while db session ... was open", rolled back, and re-raised.
     with pytest.raises(TimeoutError):
         async with get_session_ctx_func() as session:
             await session.execute('SELECT 1')
 
-    assert 'Database communication error' in caplog.text
+    assert 'Error occurred while db session' in caplog.text
 
 
 @pytest.mark.asyncio
@@ -72,4 +72,4 @@ async def test_async_session_manager_logging(mocker, caplog):
         async with get_session_ctx_func() as session:
             await session.execute('SELECT 1')
 
-    assert 'Database communication error' in caplog.text
+    assert 'Error occurred while db session' in caplog.text

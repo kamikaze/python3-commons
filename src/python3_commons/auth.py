@@ -1,5 +1,5 @@
+import asyncio
 import logging
-import threading
 from collections.abc import Sequence
 from time import monotonic
 from typing import Any, Self, TypeVar
@@ -98,20 +98,20 @@ class OIDCClient:
         self._timeout = timeout
         self._verify_cert = verify_cert
 
-        self._session_lock = threading.Lock()
+        self._session_lock = asyncio.Lock()
         self._config: dict[str, Any] | None = None
-        self._config_lock = threading.Lock()
+        self._config_lock = asyncio.Lock()
         self._jwks: dict[str, Any] | None = None
-        self._jwks_lock = threading.Lock()
+        self._jwks_lock = asyncio.Lock()
         self._jwks_cache_ttl = jwks_cache_ttl
         self._jwks_fetched_at: float | None = None
         self._audit_name: str | None = audit_name
 
-    def _get_session(self) -> aiohttp.ClientSession:
+    async def _get_session(self) -> aiohttp.ClientSession:
         if (session := self._session) and not session.closed:
             return session
 
-        with self._session_lock:
+        async with self._session_lock:
             if (session := self._session) and not session.closed:
                 return session
 
@@ -123,7 +123,7 @@ class OIDCClient:
             return session
 
     async def __aenter__(self) -> Self:
-        self._get_session()
+        await self._get_session()
 
         return self
 
@@ -136,7 +136,7 @@ class OIDCClient:
         Fetch the OpenID configuration (including JWKS URI) from OIDC authority.
         """
         async with api_client.request(
-            self._get_session(),
+            await self._get_session(),
             str(self._authority_url),
             '/.well-known/openid-configuration',
             audit_name=self._audit_name,
@@ -147,7 +147,7 @@ class OIDCClient:
         if config := self._config:
             return config
 
-        with self._config_lock:
+        async with self._config_lock:
             if config := self._config:
                 return config
 
@@ -166,7 +166,7 @@ class OIDCClient:
             jwks_uri = str(replace_origin(HttpUrl(jwks_uri), authority_internal_host))
             logger.debug('Modified jwks_uri: %s', jwks_uri)
 
-        async with api_client.request(self._get_session(), jwks_uri, '', audit_name=self._audit_name) as response:
+        async with api_client.request(await self._get_session(), jwks_uri, '', audit_name=self._audit_name) as response:
             return await response.json()
 
     def _is_fresh_jwks(self) -> bool:
@@ -183,7 +183,7 @@ class OIDCClient:
 
         fetched_at = self._jwks_fetched_at
 
-        with self._jwks_lock:
+        async with self._jwks_lock:
             if (jwks := self._jwks) and self._jwks_fetched_at != fetched_at:
                 return jwks
 
@@ -220,7 +220,7 @@ class OIDCClient:
 
         try:
             async with api_client.request(
-                self._get_session(),
+                await self._get_session(),
                 openid_config['token_endpoint'],
                 '',
                 method='post',

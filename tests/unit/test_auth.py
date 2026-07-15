@@ -100,12 +100,12 @@ async def test_get_jwks_coalesces_concurrent_refreshes(client: OIDCClient, mocke
 async def test_get_session_recreates_a_closed_session(client: OIDCClient) -> None:
     """A cache refresh after the context manager closed the session must get a live one."""
     async with client:
-        first = client._get_session()  # noqa: SLF001
+        first = await client._get_session()  # noqa: SLF001
 
     assert first.closed
 
     async with client:
-        second = client._get_session()  # noqa: SLF001
+        second = await client._get_session()  # noqa: SLF001
 
         assert not second.closed
         assert second is not first
