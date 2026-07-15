@@ -1,6 +1,7 @@
 import logging
 import threading
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
+from time import monotonic
 from typing import Any, Self, TypeVar
 
 from pydantic import HttpUrl
@@ -18,9 +19,8 @@ except ImportError as e:
 import msgspec
 
 logger = logging.getLogger(__name__)
-_OIDC_CONFIG_LOCK = threading.Lock()
-_OIDC_JWKS_LOCK = threading.Lock()
-_OIDC_SESSION_LOCK = threading.Lock()
+
+DEFAULT_JWKS_CACHE_TTL = 300.0
 
 
 class TokenData(msgspec.Struct):
@@ -81,6 +81,7 @@ class OIDCClient:
         timeout: float = 10.0,
         verify_cert: bool = True,
         connection_limit: int = 100,
+        jwks_cache_ttl: float = DEFAULT_JWKS_CACHE_TTL,
         authority_internal_host: HttpUrl | None = None,
         audit_name: str | None = None,
     ) -> None:
@@ -97,17 +98,22 @@ class OIDCClient:
         self._timeout = timeout
         self._verify_cert = verify_cert
 
-        self._config: Mapping[str, Any] | None = None
-        self._jwks: Mapping[str, Any] | None = None
+        self._session_lock = threading.Lock()
+        self._config: dict[str, Any] | None = None
+        self._config_lock = threading.Lock()
+        self._jwks: dict[str, Any] | None = None
+        self._jwks_lock = threading.Lock()
+        self._jwks_cache_ttl = jwks_cache_ttl
+        self._jwks_fetched_at: float | None = None
         self._audit_name: str | None = audit_name
 
     def _get_session(self) -> aiohttp.ClientSession:
-        if self._session:
-            return self._session
+        if (session := self._session) and not session.closed:
+            return session
 
-        with _OIDC_SESSION_LOCK:
-            if self._session:
-                return self._session
+        with self._session_lock:
+            if (session := self._session) and not session.closed:
+                return session
 
             connector = aiohttp.TCPConnector(verify_ssl=self._verify_cert, limit=self._connection_limit)
             timeout = aiohttp.ClientTimeout(total=self._timeout)
@@ -137,20 +143,20 @@ class OIDCClient:
         ) as response:
             return await response.json()
 
-    async def get_config(self) -> Mapping[str, Any]:
-        if self._config:
-            return self._config
+    async def get_config(self) -> dict[str, Any]:
+        if config := self._config:
+            return config
 
-        with _OIDC_CONFIG_LOCK:
-            if self._config:
-                return self._config
+        with self._config_lock:
+            if config := self._config:
+                return config
 
             config = await self._fetch_config()
             self._config = config
 
             return config
 
-    async def _fetch_jwks(self, jwks_uri: str) -> dict:
+    async def _fetch_jwks(self, jwks_uri: str) -> dict[str, Any]:
         """
         Fetch the JSON Web Key Set (JWKS) for validating the token's signature.
         """
@@ -163,18 +169,32 @@ class OIDCClient:
         async with api_client.request(self._get_session(), jwks_uri, '', audit_name=self._audit_name) as response:
             return await response.json()
 
-    async def get_jwks(self) -> Mapping[str, Any]:
-        if self._jwks:
-            return self._jwks
+    def _is_fresh_jwks(self) -> bool:
+        fetched_at = self._jwks_fetched_at
 
-        with _OIDC_JWKS_LOCK:
-            if self._jwks:
-                return self._jwks
+        if self._jwks is None or fetched_at is None:
+            return False
+
+        return (monotonic() - fetched_at) < self._jwks_cache_ttl
+
+    async def get_jwks(self, *, force_refresh: bool = False) -> dict[str, Any]:
+        if not force_refresh and (jwks := self._jwks) and self._is_fresh_jwks():
+            return jwks
+
+        fetched_at = self._jwks_fetched_at
+
+        with self._jwks_lock:
+            if (jwks := self._jwks) and self._jwks_fetched_at != fetched_at:
+                return jwks
+
+            if not force_refresh and jwks and self._is_fresh_jwks():
+                return jwks
 
             oidc_config = await self.get_config()
 
             jwks = await self._fetch_jwks(oidc_config['jwks_uri'])
             self._jwks = jwks
+            self._jwks_fetched_at = monotonic()
 
             return jwks
 
