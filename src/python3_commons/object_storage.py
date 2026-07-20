@@ -45,16 +45,16 @@ class ObjectStorage(metaclass=SingletonMeta):
         self._session = aiobotocore.session.get_session()
         config = {
             'region_name': settings.s3_region,
-            'use_ssl': settings.s3_allow_http,
+            'use_ssl': not settings.s3_allow_http,
             'verify': settings.s3_cert_verify,
             'config': Config(s3={'addressing_style': settings.s3_addressing_style}, signature_version='s3v4'),
         }
 
-        if aws_access_key_id := settings.s3_access_key_id:
-            config['aws_access_key_id'] = aws_access_key_id.get_secret_value()
+        if s3_access_key_id := settings.s3_access_key_id:
+            config['aws_access_key_id'] = s3_access_key_id.get_secret_value()
 
-        if aws_secret_access_key := settings.s3_secret_access_key:
-            config['aws_secret_access_key'] = aws_secret_access_key.get_secret_value()
+        if s3_secret_access_key := settings.s3_secret_access_key:
+            config['aws_secret_access_key'] = s3_secret_access_key.get_secret_value()
 
         self._config = config
 
