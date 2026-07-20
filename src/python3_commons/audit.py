@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 async def write_audit_data(settings: S3Settings, key: str, data: bytes) -> None:
-    if settings.aws_secret_access_key:
+    if settings.s3_secret_access_key:
         try:
             await object_storage.put_object(settings.s3_bucket, f'audit/{key}', io.BytesIO(data), len(data))
         except Exception:
