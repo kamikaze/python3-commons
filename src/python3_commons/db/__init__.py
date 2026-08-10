@@ -184,8 +184,8 @@ class AsyncSessionManager:
 
                     try:
                         yield session
-                    except Exception:
-                        logger.exception('Error occurred while db session %r was open; rolling back', name)
+                    except Exception as e:
+                        logger.debug('Error occurred while db session %r was open; rolling back: %r', name, e)
                         await session.rollback()
 
                         raise

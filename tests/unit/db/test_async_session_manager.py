@@ -8,6 +8,7 @@ from python3_commons.db import AsyncSessionManager
 
 @pytest.mark.asyncio
 async def test_async_session_manager_timeout(mocker, caplog):
+    caplog.set_level('DEBUG')
     # Mock DBSettings
     db_config = DBSettings(dsn='postgresql+asyncpg://user:pass@localhost/db', statement_timeout=1)
 
@@ -51,6 +52,7 @@ async def test_async_session_manager_engine_config(mocker):
 
 @pytest.mark.asyncio
 async def test_async_session_manager_logging(mocker, caplog):
+    caplog.set_level('DEBUG')
     # Mock DBSettings
     db_config = DBSettings(dsn='postgresql+asyncpg://user:pass@localhost/db', statement_timeout=1)
 
