@@ -61,6 +61,8 @@ class DBSettings(BaseSettings):
     pool_pre_ping: bool = True
     statement_timeout: int = 30
 
+    migration_role: str | None = None
+
     @model_validator(mode='after')
     def build_dsn_if_missing(self) -> DBSettings:
         if self.dsn is None and all(
