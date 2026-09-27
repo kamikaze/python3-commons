@@ -9,7 +9,7 @@ description = "Re-usable Python3 code"
 authors = [
     { name = "Oleg Korsak", email = "kamikaze.is.waiting.you@gmail.com" }
 ]
-license = "GPL-3.0"
+license = "GPL-3.0-only"
 readme = { file = "README.rst", content-type = "text/x-rst" }
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -18,7 +18,7 @@ classifiers = [
 keywords = []
 requires-python = ">=3.14.0,<3.15.0"
 dependencies = [
-    "msgpack~=1.2.1",
+    "msgpack~=1.2.2",
     "msgspec~=0.21.1",
     "pydantic-settings~=2.15.0"
 ]
@@ -33,7 +33,7 @@ api-client = [
     "python3_commons[audit,object-storage]"
 ]
 audit = [
-    "lxml~=6.1.2",
+    "lxml~=6.1.3",
     "zeep[async]~=4.3.3",
     "python3_commons[object-storage]"
 ]
@@ -51,11 +51,11 @@ cache = [
 ]
 database = [
     "asyncpg~=0.31.0",
-    "SQLAlchemy[asyncio]~=2.0.52",
+    "SQLAlchemy[asyncio]~=2.1.1",
 ]
 object-storage = [
     "aiobotocore==3.9.0",
-    "object-storage-client~=0.1.8",
+    "object-storage-client~=0.1.11",
 ]
 soap-client = [
     "aiohttp[speedups]>=3.14.3,<3.15.0",
