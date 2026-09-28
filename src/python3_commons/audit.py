@@ -14,7 +14,7 @@ except ImportError as e:
     raise RuntimeError(msg) from e
 
 from python3_commons import object_storage
-from python3_commons.conf import s3_settings
+from python3_commons.conf import api_client_settings, object_storage_settings, s3_settings
 
 if TYPE_CHECKING:
     from zeep import AsyncClient
@@ -25,16 +25,28 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-async def write_audit_data(settings: S3Settings, key: str, data: bytes) -> None:
-    if settings.s3_secret_access_key:
+async def write_audit_data(settings: S3Settings = s3_settings, key: str = '', data: bytes = b'') -> None:
+    if settings.secret_access_key or api_client_settings.audit_path or object_storage_settings.work_path:
         try:
-            await object_storage.put_object(settings.s3_bucket, f'audit/{key}', io.BytesIO(data), len(data))
+            if api_client_settings.audit_path and key.startswith(api_client_settings.audit_path.strip('/')):
+                work_path = api_client_settings.audit_path
+                path = key
+            elif api_client_settings.audit_path:
+                work_path = api_client_settings.audit_path
+                path = key.lstrip('/')
+            elif object_storage_settings.work_path:
+                work_path = object_storage_settings.work_path
+                path = f'audit/{key.lstrip("/")}'
+            else:
+                work_path = 'audit'
+                path = key.lstrip('/')
+            await object_storage.put_object(work_path=work_path, path=path, data=io.BytesIO(data), length=len(data))
         except Exception:
             logger.exception('Failed storing object in storage.')
         else:
             logger.debug('Stored object in storage: %s', key)
     else:
-        logger.debug('S3 is not configured, not storing object in storage: %s', key)
+        logger.debug('Storage is not configured, not storing object in storage: %s', key)
 
 
 class ZeepAuditPlugin(Plugin):

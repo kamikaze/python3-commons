@@ -10,7 +10,7 @@ authors = [
     { name = "Oleg Korsak", email = "kamikaze.is.waiting.you@gmail.com" }
 ]
 license = "GPL-3.0-only"
-readme = { file = "README.rst", content-type = "text/x-rst" }
+readme = "README.md"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Programming Language :: Python"
@@ -54,8 +54,7 @@ database = [
     "SQLAlchemy[asyncio]~=2.1.1",
 ]
 object-storage = [
-    "aiobotocore==3.9.0",
-    "object-storage-client~=0.1.11",
+    "object-storage-client~=0.1.12",
 ]
 soap-client = [
     "aiohttp[speedups]>=3.14.3,<3.15.0",
@@ -69,7 +68,6 @@ soap-client = [
 [dependency-groups]
 dev = [
     "build",
-    "pip",
     "pre-commit",
     "pyright",
     "ruff",

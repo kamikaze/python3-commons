@@ -17,7 +17,7 @@ except ImportError as e:
     raise RuntimeError(msg) from e
 
 from python3_commons import audit
-from python3_commons.conf import s3_settings
+from python3_commons.conf import api_client_settings, s3_settings
 from python3_commons.helpers import request_to_curl
 from python3_commons.serializers.json import CustomJSONEncoder
 
@@ -34,9 +34,15 @@ async def _store_response_for_audit(
         date_path = now.strftime('%Y/%m/%d')
         timestamp = now.strftime('%H%M%S_%f')
 
+        if api_client_settings.audit_path:
+            audit_root = api_client_settings.audit_path.strip('/')
+            path = f'{audit_root}/{date_path}/{audit_name}/{uri_path}/{method}_{timestamp}_{request_id}_response.txt'
+        else:
+            path = f'{date_path}/{audit_name}/{uri_path}/{method}_{timestamp}_{request_id}_response.txt'
+
         await audit.write_audit_data(
             s3_settings,
-            f'{date_path}/{audit_name}/{uri_path}/{method}_{timestamp}_{request_id}_response.txt',
+            path,
             response_text.encode('utf-8'),
         )
 
@@ -75,9 +81,15 @@ async def request(
             )
 
         if curl_request:
+            if api_client_settings.audit_path:
+                audit_root = api_client_settings.audit_path.strip('/')
+                path = f'{audit_root}/{date_path}/{audit_name}/{uri_path}/{method}_{timestamp}_{request_id}_request.txt'
+            else:
+                path = f'{date_path}/{audit_name}/{uri_path}/{method}_{timestamp}_{request_id}_request.txt'
+
             await audit.write_audit_data(
                 s3_settings,
-                f'{date_path}/{audit_name}/{uri_path}/{method}_{timestamp}_{request_id}_request.txt',
+                path,
                 curl_request.encode('utf-8'),
             )
 

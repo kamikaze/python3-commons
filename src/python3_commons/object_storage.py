@@ -1,28 +1,22 @@
 from __future__ import annotations
 
+import io
 import logging
 import threading
 from contextlib import asynccontextmanager
+from datetime import datetime
 from typing import TYPE_CHECKING
+from urllib.parse import urlparse
 
 try:
-    import aiobotocore.session
-    from botocore.config import Config
-    from object_storage_client import ObjectStorageClient
+    from object_storage_client import ByteStream, ObjectStorageClient
 except ImportError as e:
     msg = 'Install python3-commons[object-storage] to use this feature'
     raise RuntimeError(msg) from e
 
 if TYPE_CHECKING:
-    import io
-    from collections.abc import AsyncGenerator, Iterable, Mapping, Sequence
-    from datetime import datetime
+    from collections.abc import AsyncGenerator, AsyncIterator, Iterable, Mapping, Sequence
 
-    from aiobotocore.response import StreamingBody
-    from types_aiobotocore_s3.client import S3Client
-
-from python3_commons.conf import S3Settings, s3_settings
-from python3_commons.helpers import SingletonMeta
 
 logger = logging.getLogger(__name__)
 _CLIENT: ObjectStorageClient | None = None
@@ -40,174 +34,214 @@ def get_client() -> ObjectStorageClient:
     return _CLIENT
 
 
-class ObjectStorage(metaclass=SingletonMeta):
-    def __init__(self, settings: S3Settings) -> None:
-        self._session = aiobotocore.session.get_session()
-        config = {
-            'region_name': settings.s3_region,
-            'use_ssl': not settings.s3_allow_http,
-            'verify': settings.s3_cert_verify,
-            'config': Config(s3={'addressing_style': settings.s3_addressing_style}, signature_version='s3v4'),
-        }
+class ObjectStorageStream:
+    def __init__(self, stream: ByteStream) -> None:
+        self._stream = stream
 
-        if s3_access_key_id := settings.s3_access_key_id:
-            config['aws_access_key_id'] = s3_access_key_id.get_secret_value()
+    async def read(self) -> bytes:
+        chunks = []
 
-        if s3_secret_access_key := settings.s3_secret_access_key:
-            config['aws_secret_access_key'] = s3_secret_access_key.get_secret_value()
+        while chunk := await self._stream.next():
+            chunks.append(chunk)
 
-        self._config = config
+        return b''.join(chunks)
 
-    @asynccontextmanager
-    async def get_client(self) -> AsyncGenerator[S3Client]:
-        async with self._session.create_client('s3', **self._config) as client:
-            yield client
+    async def next(self) -> bytes:
+        return await self._stream.next()
 
+    def __aiter__(self) -> AsyncIterator[bytes]:
+        return self
 
-def get_absolute_path(path: str) -> str:
-    path = path.removeprefix('/')
+    async def __anext__(self) -> bytes:
+        chunk = await self._stream.next()
 
-    if bucket_root := s3_settings.s3_bucket_root:
-        path = f'{bucket_root[:1] if bucket_root.startswith("/") else bucket_root}/{path}'
+        if not chunk:
+            raise StopAsyncIteration
 
-    return path
+        return chunk
 
 
-async def put_object(bucket_name: str, path: str, data: io.BytesIO, length: int, part_size: int = 0) -> str | None:
+def build_url(work_path: str, path: str = '') -> str:
+    path = path.lstrip('/')
+
+    if path.startswith(('s3://', 'file://', 'gs://', 'az://')):
+        return path
+
+    base = work_path.rstrip('/')
+
+    if not base.startswith(('s3://', 'file://', 'gs://', 'az://', '/')):
+        base = f's3://{base}'
+
+    if not path:
+        return base
+
+    base_no_scheme = base.split('://', 1)[-1].lstrip('/')
+
+    if path.startswith(f'{base_no_scheme}/') or path == base_no_scheme:
+        scheme = base.split('://', 1)[0] + '://' if '://' in base else ''
+
+        return f'{scheme}{path}'
+
+    parsed = urlparse(base)
+    base_path = parsed.path.lstrip('/')
+
+    if base_path and (path.startswith(f'{base_path}/') or path == base_path):
+        prefix_url = f'{parsed.scheme}://{parsed.netloc}' if parsed.scheme else ''
+
+        return f'{prefix_url}/{path}'
+
+    return f'{base}/{path}'
+
+
+async def put_object(
+    work_path: str,
+    path: str = '',
+    data: io.BytesIO | bytes | None = None,
+    length: int = 0,
+    part_size: int = 0,
+) -> str | None:
     try:
         client = get_client()
-        data.seek(0)
-        absolute_path = get_absolute_path(path)
-        url = f's3://{bucket_name}/{absolute_path}'
 
-        await client.put_object(url, data.getvalue())
+        if isinstance(data, io.BytesIO):
+            content = data.getvalue()
+            data.seek(0)
+        elif isinstance(data, bytes):
+            content = data
+        elif data is None:
+            content = b''
+        else:
+            content = bytes(data)
 
-        logger.debug('Stored object into object storage: %s:%s', bucket_name, path)
+        url = build_url(work_path, path)
+        await client.put_object(url, content)
+        logger.debug('Stored object into object storage: %s', url)
     except Exception as e:
-        logger.exception('Failed to put object to object storage: %s:%s', bucket_name, path, exc_info=e)
-
+        logger.exception('Failed to put object to object storage: %s:%s', work_path, path, exc_info=e)
         raise
 
-    return f's3://{bucket_name}/{path}'
+    return url
 
 
 @asynccontextmanager
-async def get_object_stream(bucket_name: str, path: str) -> AsyncGenerator[StreamingBody]:
-    storage = ObjectStorage(s3_settings)
-
-    async with storage.get_client() as s3_client:
-        logger.debug('Getting object from object storage: %s:%s', bucket_name, path)
-
-        try:
-            response = await s3_client.get_object(Bucket=bucket_name, Key=path)
-
-            async with response['Body'] as stream:
-                yield stream
-        except Exception as e:
-            logger.exception('Failed getting object from object storage: %s:%s', bucket_name, path, exc_info=e)
-
-            raise
-
-
-async def get_object(bucket_name: str, path: str) -> bytes:
-    logger.debug('Getting object from object storage: %s:%s', bucket_name, path)
+async def get_object_stream(work_path: str, path: str = '') -> AsyncGenerator[ObjectStorageStream]:
+    logger.debug('Getting object stream from object storage: %s:%s', work_path, path)
 
     try:
         client = get_client()
-        absolute_path = get_absolute_path(path)
-        url = f's3://{bucket_name}/{absolute_path}'
+        url = build_url(work_path, path)
+        stream = await client.get_object_stream(url)
+        yield ObjectStorageStream(stream)
+    except Exception as e:
+        logger.exception('Failed getting object from object storage: %s:%s', work_path, path, exc_info=e)
+        raise
+
+
+async def get_object(work_path: str, path: str = '') -> bytes:
+    logger.debug('Getting object from object storage: %s:%s', work_path, path)
+
+    try:
+        client = get_client()
+        url = build_url(work_path, path)
         body = await client.get_object(url)
     except Exception as e:
-        logger.exception('Failed getting object from object storage: %s:%s', bucket_name, path, exc_info=e)
-
+        logger.exception('Failed getting object from object storage: %s:%s', work_path, path, exc_info=e)
         raise
 
     return body
 
 
-async def list_objects(bucket_name: str, prefix: str, *, recursive: bool = True) -> AsyncGenerator[Mapping]:
-    storage = ObjectStorage(s3_settings)
+async def list_objects(work_path: str, prefix: str = '', *, recursive: bool = True) -> AsyncGenerator[Mapping]:
+    client = get_client()
+    url = build_url(work_path, prefix)
+    items = await client.list_objects(url)
+    prefix_clean = prefix.strip('/')
 
-    async with storage.get_client() as s3_client:
-        paginator = s3_client.get_paginator('list_objects_v2')
+    for item in items:
+        if not recursive and '/' in item:
+            continue
 
-        page_iterator = paginator.paginate(Bucket=bucket_name, Prefix=prefix, Delimiter='' if recursive else '/')
+        rel_key = f'{prefix_clean}/{item}' if prefix_clean else item
+        obj_url = build_url(work_path, rel_key)
 
-        async for page in page_iterator:
-            if 'Contents' in page:
-                for obj in page['Contents']:
-                    yield dict(obj)
+        try:
+            meta = await client.get_object_metadata(obj_url)
+            last_modified = (
+                datetime.fromisoformat(meta['last_modified']) if meta.get('last_modified') else datetime.now()
+            )
+            size = meta.get('size_bytes', 0)
+            etag = meta.get('e_tag')
+        except Exception:
+            last_modified = datetime.now()
+            size = 0
+            etag = None
+
+        yield {
+            'Key': rel_key,
+            'LastModified': last_modified,
+            'Size': size,
+            'ETag': etag,
+        }
 
 
 async def get_object_streams(
-    bucket_name: str, path: str, *, recursive: bool = True
-) -> AsyncGenerator[tuple[str, datetime, StreamingBody]]:
-    async for obj in list_objects(bucket_name, path, recursive=recursive):
+    work_path: str, path: str = '', *, recursive: bool = True
+) -> AsyncGenerator[tuple[str, datetime, ObjectStorageStream]]:
+    async for obj in list_objects(work_path, path, recursive=recursive):
         object_name = obj['Key']
         last_modified = obj['LastModified']
 
-        async with get_object_stream(bucket_name, path) as stream:
+        async with get_object_stream(work_path, object_name) as stream:
             yield object_name, last_modified, stream
 
 
 async def get_objects(
-    bucket_name: str, path: str, *, recursive: bool = True
+    work_path: str, path: str = '', *, recursive: bool = True
 ) -> AsyncGenerator[tuple[str, datetime, bytes]]:
-    async for object_name, last_modified, stream in get_object_streams(bucket_name, path, recursive=recursive):
+    async for object_name, last_modified, stream in get_object_streams(work_path, path, recursive=recursive):
         data = await stream.read()
 
         yield object_name, last_modified, data
 
 
-async def remove_object(bucket_name: str, path: str) -> None:
-    logger.debug('Removing object from object storage: %s:%s', bucket_name, path)
+async def remove_object(work_path: str, path: str = '') -> None:
+    logger.debug('Removing object from object storage: %s:%s', work_path, path)
 
     try:
         client = get_client()
-        absolute_path = get_absolute_path(path)
-        url = f's3://{bucket_name}/{absolute_path}'
+        url = build_url(work_path, path)
         await client.delete_object(url)
     except Exception as e:
-        logger.exception('Failed to remove object from object storage: %s:%s', bucket_name, path, exc_info=e)
-
+        logger.exception('Failed to remove object from object storage: %s:%s', work_path, path, exc_info=e)
         raise
 
 
 async def remove_objects(
-    bucket_name: str, prefix: str | None = None, object_names: Iterable[str] | None = None
+    work_path: str, prefix: str | None = None, object_names: Iterable[str] | None = None
 ) -> Sequence[Mapping] | None:
-    storage = ObjectStorage(s3_settings)
+    if not prefix and not object_names:
+        return None
 
-    async with storage.get_client() as s3_client:
-        if prefix:
-            objects_to_delete = tuple(
-                {'Key': obj['Key']} async for obj in list_objects(bucket_name, prefix, recursive=True)
-            )
-        elif object_names:
-            objects_to_delete = tuple({'Key': name} for name in object_names)
-        else:
-            return None
+    client = get_client()
+    errors: list[Mapping] = []
 
-        if not objects_to_delete:
-            return None
+    if prefix:
+        url = build_url(work_path, prefix)
 
         try:
-            errors = []
-            # S3 delete_objects can handle up to 1000 objects at once
-            chunk_size = 1000
-
-            for i in range(0, len(objects_to_delete), chunk_size):
-                chunk = objects_to_delete[i : i + chunk_size]
-
-                response = await s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': chunk})
-
-                if 'Errors' in response:
-                    errors.extend(response['Errors'])
-
-            logger.debug('Removed %d objects from object storage: %s', len(objects_to_delete), bucket_name)
+            await client.delete_objects_by_prefix(url)
+            logger.debug('Removed objects by prefix from object storage: %s', url)
         except Exception as e:
-            logger.exception('Failed to remove objects from object storage: %s', bucket_name, exc_info=e)
-
+            logger.exception('Failed to remove objects by prefix: %s', url, exc_info=e)
             raise
+    elif object_names:
+        for name in object_names:
+            url = build_url(work_path, name)
 
-        return errors or None
+            try:
+                await client.delete_object(url)
+            except Exception as e:
+                logger.exception('Failed to remove object: %s', url, exc_info=e)
+                errors.append({'Key': name, 'Error': str(e)})
+
+    return errors or None

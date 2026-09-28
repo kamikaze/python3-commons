@@ -86,17 +86,31 @@ class DBSettings(BaseSettings):
 
 
 class S3Settings(BaseSettings):
-    s3_access_key_id: SecretStr | None = None
-    s3_addressing_style: Literal['path', 'virtual'] = 'virtual'
-    s3_allow_http: bool = False
-    s3_bucket: str | None = None
-    s3_bucket_root: str | None = None
-    s3_cert_verify: bool = True
-    s3_region: str | None = None
-    s3_secret_access_key: SecretStr | None = None
+    model_config = SettingsConfigDict(env_prefix='S3_')
+
+    access_key_id: SecretStr | None = None
+    addressing_style: Literal['path', 'virtual'] = 'virtual'
+    allow_http: bool = False
+    cert_verify: bool = True
+    region: str | None = None
+    secret_access_key: SecretStr | None = None
+
+
+class ObjectStorageSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix='OBJECT_STORAGE_')
+
+    work_path: str | None = None
+
+
+class ApiClientSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix='API_CLIENT_')
+
+    audit_path: str | None = None
 
 
 settings = CommonSettings()
 valkey_settings = ValkeySettings()
 db_settings = DBSettings()
+api_client_settings = ApiClientSettings()
 s3_settings = S3Settings()
+object_storage_settings = ObjectStorageSettings()
