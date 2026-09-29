@@ -11,13 +11,18 @@ from python3_commons.api_client import request
 from python3_commons.conf import ApiClientSettings, api_client_settings
 
 
-def test_api_client_settings():
+def test_api_client_settings(monkeypatch):
+    monkeypatch.delenv('API_CLIENT_AUDIT_PATH', raising=False)
     settings = ApiClientSettings()
     assert settings.audit_path is None
 
     custom = ApiClientSettings(audit_path='custom-audit-path')
     assert custom.audit_path == 'custom-audit-path'
     assert hasattr(api_client_settings, 'audit_path')
+
+    monkeypatch.setenv('API_CLIENT_AUDIT_PATH', 'env-audit-path')
+    env_settings = ApiClientSettings()
+    assert env_settings.audit_path == 'env-audit-path'
 
 
 @pytest.mark.asyncio
@@ -126,6 +131,50 @@ async def test_api_client_audit_logging_with_audit_path(mocker, monkeypatch):
     assert resp_call[0][1].startswith('custom_audit_root/')
     assert not resp_call[0][1].startswith('audit/')
     assert '/audit/' not in resp_call[0][1]
+    assert 'test_service/data/get_' in resp_call[0][1]
+    assert resp_call[0][1].endswith('_response.txt')
+
+
+@pytest.mark.asyncio
+async def test_api_client_audit_logging_with_s3_audit_path(mocker, monkeypatch):
+    monkeypatch.setattr('python3_commons.api_client.api_client_settings.audit_path', 's3://bucket/audit')
+
+    mock_response = mocker.MagicMock(spec=ClientResponse)
+    mock_response.ok = True
+    mock_response.status = HTTPStatus.OK
+    mock_response.text = AsyncMock(return_value='{"result": "success"}')
+
+    mock_ctx = AsyncMock()
+    mock_ctx.__aenter__.return_value = mock_response
+    mock_ctx.__aexit__.return_value = None
+
+    session = mocker.MagicMock(spec=ClientSession)
+    session.get.return_value = mock_ctx
+    session.cookie_jar.filter_cookies.return_value = {}
+
+    mock_write_audit = mocker.patch('python3_commons.api_client.audit.write_audit_data', new_callable=AsyncMock)
+
+    async with request(
+        session,
+        base_url='https://api.example.com',
+        uri='/data',
+        method='get',
+        headers={'Authorization': 'Bearer token'},
+        audit_name='test_service',
+    ) as resp:
+        assert resp == mock_response
+
+    assert mock_write_audit.call_count == 2
+
+    req_call = mock_write_audit.call_args_list[0]
+    assert req_call[0][1].startswith('s3://bucket/audit/')
+    assert not req_call[0][1].startswith('audit/')
+    assert 'test_service/data/get_' in req_call[0][1]
+    assert req_call[0][1].endswith('_request.txt')
+
+    resp_call = mock_write_audit.call_args_list[1]
+    assert resp_call[0][1].startswith('s3://bucket/audit/')
+    assert not resp_call[0][1].startswith('audit/')
     assert 'test_service/data/get_' in resp_call[0][1]
     assert resp_call[0][1].endswith('_response.txt')
 

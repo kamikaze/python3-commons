@@ -28,6 +28,8 @@ def test_build_url():
     # Local paths
     assert object_storage.build_url('file:///var/data', 'file.txt') == 'file:///var/data/file.txt'
     assert object_storage.build_url('/var/data', 'file.txt') == '/var/data/file.txt'
+    assert object_storage.build_url('/var/data', 'var/data/file.txt') == '/var/data/file.txt'
+    assert object_storage.build_url('file:///var/data', 'var/data/file.txt') == 'file:///var/data/file.txt'
     # Empty path
     assert object_storage.build_url('s3://my-bucket', '') == 's3://my-bucket'
 

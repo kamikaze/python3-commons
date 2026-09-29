@@ -34,10 +34,14 @@ def test_object_storage_settings_fields():
     assert not hasattr(object_storage_settings, 'audit_path')
 
 
-def test_api_client_settings_fields():
+def test_api_client_settings_fields(monkeypatch):
     settings = ApiClientSettings(audit_path='audit-dir')
     assert settings.audit_path == 'audit-dir'
     assert hasattr(api_client_settings, 'audit_path')
+
+    monkeypatch.setenv('API_CLIENT_AUDIT_PATH', 'env-audit-dir')
+    env_settings = ApiClientSettings()
+    assert env_settings.audit_path == 'env-audit-dir'
 
 
 @pytest.mark.asyncio
@@ -86,6 +90,21 @@ async def test_write_audit_data_key_starts_with_audit_path(mocker, monkeypatch):
     call_kwargs = mock_put.call_args[1]
     assert call_kwargs['work_path'] == 'my-audit-root'
     assert call_kwargs['path'] == 'my-audit-root/2026/01/01/request.txt'
+
+
+@pytest.mark.asyncio
+async def test_write_audit_data_with_full_s3_audit_path(mocker, monkeypatch):
+    monkeypatch.setattr(object_storage_settings, 'work_path', None)
+    monkeypatch.setattr(api_client_settings, 'audit_path', 's3://bucket/audit')
+    mock_put = mocker.patch('python3_commons.audit.object_storage.put_object', new_callable=AsyncMock)
+
+    settings = S3Settings(secret_access_key=SecretStr('secret'))
+    await audit.write_audit_data(settings, 's3://bucket/audit/2026/01/01/request.txt', b'test-data')
+
+    assert mock_put.call_count == 1
+    call_kwargs = mock_put.call_args[1]
+    assert call_kwargs['work_path'] == 's3://bucket/audit'
+    assert call_kwargs['path'] == 's3://bucket/audit/2026/01/01/request.txt'
 
 
 @pytest.mark.asyncio

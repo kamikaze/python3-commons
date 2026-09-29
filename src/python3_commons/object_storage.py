@@ -78,9 +78,9 @@ def build_url(work_path: str, path: str = '') -> str:
     base_no_scheme = base.split('://', 1)[-1].lstrip('/')
 
     if path.startswith(f'{base_no_scheme}/') or path == base_no_scheme:
-        scheme = base.split('://', 1)[0] + '://' if '://' in base else ''
+        prefix = base[: len(base) - len(base_no_scheme)]
 
-        return f'{scheme}{path}'
+        return f'{prefix}{path}'
 
     parsed = urlparse(base)
     base_path = parsed.path.lstrip('/')

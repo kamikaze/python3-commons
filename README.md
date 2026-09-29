@@ -64,7 +64,7 @@ HTTP error status codes and network failures are mapped to built-in Python excep
 Audit logging captures the outgoing request (formatted as an executable `curl` command) and the incoming response body, writing them asynchronously to Object Storage.
 
 The destination path is resolved as follows:
-- If `ApiClientSettings.audit_path` is configured (via `API_CLIENT_AUDIT_PATH`), it is used directly as the audit root for `api_client` (without prepending `"audit/"`):
+- If `ApiClientSettings.audit_path` is configured (via `API_CLIENT_AUDIT_PATH`), it is used directly as the audit root for `api_client` (without prepending `"audit/"`). Note that `API_CLIENT_AUDIT_PATH` is a full object storage path like `s3://bucket/audit`:
   `<audit_path>/<YYYY/MM/DD>/<audit_name>/<uri>/<method>_<timestamp>_<request_id>_{request,response}.txt`
 - Otherwise, if `ObjectStorageSettings.work_path` is configured (via `OBJECT_STORAGE_WORK_PATH`), it is used as the root with `"audit/"` prepended:
   `<work_path>/audit/<YYYY/MM/DD>/<audit_name>/<uri>/<method>_<timestamp>_<request_id>_{request,response}.txt`
@@ -74,8 +74,8 @@ The destination path is resolved as follows:
 To enable audit logging:
 1. **Configure Object Storage & S3 credentials**:
    ```bash
-   # API client audit path or Object storage root
-   export API_CLIENT_AUDIT_PATH="my-audit-bucket/audit-logs"
+   # API client audit path (full object storage path) or Object storage root
+   export API_CLIENT_AUDIT_PATH="s3://bucket/audit"
    # or export OBJECT_STORAGE_WORK_PATH="my-audit-bucket"
 
    # S3 credentials
@@ -92,7 +92,7 @@ To enable audit logging:
    from python3_commons.conf import api_client_settings, object_storage_settings, s3_settings
    from pydantic import SecretStr
 
-   api_client_settings.audit_path = "my-audit-bucket/audit-logs"
+   api_client_settings.audit_path = "s3://bucket/audit"
    # or object_storage_settings.work_path = "my-audit-bucket"
 
    s3_settings.access_key_id = SecretStr("your-access-key-id")
@@ -324,7 +324,7 @@ Typed application settings powered by Pydantic Settings:
 - `DBSettings` / `db_settings`: PostgreSQL database settings (`DB_` environment prefix, with `DB_PASS` alias for password).
 - `S3Settings` / `s3_settings`: S3 credentials and connection configuration (`S3_` environment prefix: `ACCESS_KEY_ID`, `SECRET_ACCESS_KEY`, `REGION`).
 - `ObjectStorageSettings` / `object_storage_settings`: Object storage root configuration (`OBJECT_STORAGE_` environment prefix: `WORK_PATH`).
-- `ApiClientSettings` / `api_client_settings`: API client configuration (`API_CLIENT_` environment prefix: `AUDIT_PATH`).
+- `ApiClientSettings` / `api_client_settings`: API client configuration (`API_CLIENT_` environment prefix: `AUDIT_PATH` full object storage path like `s3://bucket/audit`).
 - `OIDCSettings`: OpenID Connect configuration (`OIDC_` environment prefix).
 - `ValkeySettings` / `valkey_settings`: Valkey/Redis cache configuration (`VALKEY_` environment prefix).
 
