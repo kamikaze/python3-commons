@@ -100,7 +100,7 @@ universal = true
 [tool.ruff]
 line-length = 120
 indent-width = 4
-target-version = "py314"
+target-version = "py315"
 
 [tool.ruff.analyze]
 detect-string-imports = true
@@ -175,7 +175,7 @@ indent-style = "space"
 quote-style = "single"
 
 [tool.pyright]
-pythonVersion = "3.14"
+pythonVersion = "3.15"
 venvPath = "."
 venv = ".venv"
 reportMatchNotExhaustive = "error"
