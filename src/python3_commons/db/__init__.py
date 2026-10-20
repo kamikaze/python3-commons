@@ -74,8 +74,7 @@ class AsyncSessionManager:
         # Cap it at the manager's acquire timeout so the pool never blocks
         # longer than the deadline we advertise to callers; falls back to the
         # default so the pool never waits forever.
-        config_pool_timeout = getattr(db_config, 'pool_timeout', None) or _DEFAULT_POOL_ACQUIRE_TIMEOUT
-        pool_timeout = min(config_pool_timeout, self.pool_acquire_timeout)
+        pool_timeout = min(db_config.pool_timeout or _DEFAULT_POOL_ACQUIRE_TIMEOUT, self.pool_acquire_timeout)
 
         configuration = {
             'url': str_dsn,
@@ -158,72 +157,64 @@ class AsyncSessionManager:
         """
 
         async def get_session() -> AsyncGenerator[AsyncSession]:
-            session_acquired = False
             session_maker = self.get_session_maker(name)
-            t0 = time.monotonic()
-            logger.debug('Acquiring session for %r', name)
 
-            try:
-                async with session_maker() as session:
-                    # SQLAlchemy establishes the connection lazily on first use.
-                    # Force the pool checkout + connect to happen *now*, under a
-                    # hard deadline, so an exhausted pool or an unreachable DB
-                    # fails fast here instead of hanging inside the request
-                    # handler for the duration of pool_timeout.
-                    async with asyncio.timeout(self.pool_acquire_timeout):
-                        await session.connection()
-                        # session.connection() autobegins a transaction. Roll it
-                        # back so the session is returned to the caller in a clean
-                        # state; otherwise an explicit session.begin() would fail
-                        # with "a transaction is already begun on this Session".
-                        await session.rollback()
+            async with session_maker() as session:
+                await self._acquire_connection(name, session)
 
-                    session_acquired = True
-                    elapsed = time.monotonic() - t0
-                    logger.debug('Session acquired for %r in %.3fs', name, elapsed)
+                try:
+                    yield session
+                except Exception as e:
+                    logger.debug('Error occurred while db session %r was open; rolling back: %r', name, e)
+                    await session.rollback()
 
-                    try:
-                        yield session
-                    except Exception as e:
-                        logger.debug('Error occurred while db session %r was open; rolling back: %r', name, e)
-                        await session.rollback()
-
-                        raise
-            except TimeoutError as e:
-                if session_acquired:
                     raise
-
-                elapsed = time.monotonic() - t0
-                logger.exception(
-                    'Timed out waiting for a session for %r after %.3fs (limit=%.1fs)',
-                    name,
-                    elapsed,
-                    self.pool_acquire_timeout,
-                )
-
-                msg = f'Could not acquire a session for {name!r} within {self.pool_acquire_timeout}s'
-                raise SessionAcquireError(msg) from e
-            except (OperationalError, SATimeoutError) as e:
-                if session_acquired:
-                    raise
-
-                elapsed = time.monotonic() - t0
-
-                logger.exception('DB error acquiring session for %r after %.3fs', name, elapsed)
-
-                msg = f'DB error for {name!r}: {e}'
-                raise SessionAcquireError(msg) from e
-            except SQLAlchemyError as e:
-                if session_acquired:
-                    raise
-
-                logger.exception('Unexpected SQLAlchemy error for %r', name)
-
-                msg = f'SQLAlchemy error for {name!r}'
-
-                raise SessionAcquireError(msg) from e
 
         return get_session
+
+    async def _acquire_connection(self, name: str, session: AsyncSession) -> None:
+        t0 = time.monotonic()
+        logger.debug('Acquiring session for %r', name)
+
+        try:
+            # SQLAlchemy establishes the connection lazily on first use.
+            # Force the pool checkout + connect to happen *now*, under a
+            # hard deadline, so an exhausted pool or an unreachable DB
+            # fails fast here instead of hanging inside the request
+            # handler for the duration of pool_timeout.
+            async with asyncio.timeout(self.pool_acquire_timeout):
+                await session.connection()
+                # session.connection() autobegins a transaction. Roll it
+                # back so the session is returned to the caller in a clean
+                # state; otherwise an explicit session.begin() would fail
+                # with "a transaction is already begun on this Session".
+                await session.rollback()
+        except TimeoutError as e:
+            elapsed = time.monotonic() - t0
+            logger.exception(
+                'Timed out waiting for a session for %r after %.3fs (limit=%.1fs)',
+                name,
+                elapsed,
+                self.pool_acquire_timeout,
+            )
+
+            msg = f'Could not acquire a session for {name!r} within {self.pool_acquire_timeout}s'
+            raise SessionAcquireError(msg) from e
+        except (OperationalError, SATimeoutError) as e:
+            elapsed = time.monotonic() - t0
+
+            logger.exception('DB error acquiring session for %r after %.3fs', name, elapsed)
+
+            msg = f'DB error for {name!r}: {e}'
+            raise SessionAcquireError(msg) from e
+        except SQLAlchemyError as e:
+            logger.exception('Unexpected SQLAlchemy error for %r', name)
+
+            msg = f'SQLAlchemy error for {name!r}'
+
+            raise SessionAcquireError(msg) from e
+
+        logger.debug('Session acquired for %r in %.3fs', name, time.monotonic() - t0)
 
     def get_session_context(self, name: str):
         """
@@ -262,17 +253,8 @@ async def is_healthy(
         logger.exception('Health check timed out after %.3fs (limit=%.1fs)', elapsed, timeout)
 
         return False
-    except OperationalError as e:
-        msg = f'Health check failed: DB not reachable: {e}'
-        logger.exception(msg)
-
-        return False
-    except SQLAlchemyError:
-        logger.exception('Health check failed: SQLAlchemy error')
-
-        return False
     except Exception:
-        logger.exception('Health check failed: unexpected error')
+        logger.exception('Health check failed')
 
         return False
 

@@ -2,11 +2,9 @@ from __future__ import annotations
 
 import dataclasses
 import json
-import logging
-import struct
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, TypeVar
+from typing import Any
 
 from msgspec import msgpack
 from msgspec.msgpack import Ext, encode
@@ -15,21 +13,18 @@ from pydantic import BaseModel
 from python3_commons.serializers.common import ExtendedType
 from python3_commons.serializers.json import CustomJSONEncoder
 
-logger = logging.getLogger(__name__)
-T = TypeVar('T')
-
 
 def enc_hook(obj: Any) -> Any:
     if isinstance(obj, Decimal):
-        return Ext(ExtendedType.DECIMAL, struct.pack('b', str(obj).encode()))
+        return Ext(int(ExtendedType.DECIMAL), str(obj).encode())
     if isinstance(obj, datetime):
-        return Ext(ExtendedType.DATETIME, struct.pack('b', obj.isoformat().encode()))
+        return Ext(int(ExtendedType.DATETIME), obj.isoformat().encode())
     if isinstance(obj, date):
-        return Ext(ExtendedType.DATE, struct.pack('b', obj.isoformat().encode()))
+        return Ext(int(ExtendedType.DATE), obj.isoformat().encode())
     if dataclasses.is_dataclass(obj):
         return Ext(
-            ExtendedType.DATACLASS,
-            struct.pack('b', json.dumps(dataclasses.asdict(obj), cls=CustomJSONEncoder).encode()),
+            int(ExtendedType.DATACLASS),
+            json.dumps(dataclasses.asdict(obj), cls=CustomJSONEncoder).encode(),
         )
 
     msg = f'Objects of type {type(obj)} are not supported'
@@ -58,6 +53,16 @@ MSGPACK_DECODER = msgpack.Decoder(ext_hook=ext_hook)
 MSGPACK_DECODER_NATIVE = msgpack.Decoder()
 
 
+def _decode[T](decoder: msgpack.Decoder, data: bytes, data_type: type[T] | None) -> T | Any:
+    if data_type is None:
+        return decoder.decode(data)
+
+    if issubclass(data_type, BaseModel):
+        return data_type.model_validate(decoder.decode(data))
+
+    return msgpack.decode(data, type=data_type, ext_hook=decoder.ext_hook)
+
+
 def serialize_msgpack_native(data: Any) -> bytes:
     if isinstance(data, BaseModel):
         data = data.model_dump()
@@ -66,16 +71,7 @@ def serialize_msgpack_native(data: Any) -> bytes:
 
 
 def deserialize_msgpack_native[T](data: bytes, data_type: type[T] | None = None) -> T | Any:
-    if data_type:
-        if issubclass(data_type, BaseModel):
-            decoded = MSGPACK_DECODER_NATIVE.decode(data)
-            result = data_type.model_validate(decoded)
-        else:
-            result = msgpack.decode(data, type=data_type)
-    else:
-        result = MSGPACK_DECODER_NATIVE.decode(data)
-
-    return result
+    return _decode(MSGPACK_DECODER_NATIVE, data, data_type)
 
 
 def serialize_msgpack(data: Any) -> bytes:
@@ -86,13 +82,4 @@ def serialize_msgpack(data: Any) -> bytes:
 
 
 def deserialize_msgpack[T](data: bytes, data_type: type[T] | None = None) -> T | Any:
-    if data_type:
-        if issubclass(data_type, BaseModel):
-            decoded = MSGPACK_DECODER.decode(data)
-            result = data_type.model_validate(decoded)
-        else:
-            result = msgpack.decode(data, type=data_type)
-    else:
-        result = MSGPACK_DECODER.decode(data)
-
-    return result
+    return _decode(MSGPACK_DECODER, data, data_type)

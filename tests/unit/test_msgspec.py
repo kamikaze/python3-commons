@@ -1,8 +1,11 @@
+from datetime import date, datetime
 from decimal import Decimal
 
 import msgspec.json as msgspec_json
+import pytest
 
 from python3_commons.serializers import msgspec
+from python3_commons.serializers.common import ExtendedType
 
 
 def test_encode_decode_dict_to_msgpack(data_dict) -> None:
@@ -78,3 +81,38 @@ def test_encode_decode_struct_to_json(msgspec_struct) -> None:
     struct = msgspec_json.decode(data, type=msgspec_struct.__class__)
 
     assert struct == msgspec_struct
+
+
+def test_enc_hook_and_ext_hook(data_dataclass) -> None:
+    # Decimal
+    dec = Decimal('123.456')
+    ext_dec = msgspec.enc_hook(dec)
+    assert ext_dec.code == ExtendedType.DECIMAL
+    assert msgspec.ext_hook(ext_dec.code, memoryview(ext_dec.data)) == dec
+
+    # Datetime
+    dt = datetime(2026, 9, 30, 12, 0, 0)
+    ext_dt = msgspec.enc_hook(dt)
+    assert ext_dt.code == ExtendedType.DATETIME
+    assert msgspec.ext_hook(ext_dt.code, memoryview(ext_dt.data)) == dt
+
+    # Date
+    d = date(2026, 9, 30)
+    ext_d = msgspec.enc_hook(d)
+    assert ext_d.code == ExtendedType.DATE
+    assert msgspec.ext_hook(ext_d.code, memoryview(ext_d.data)) == d
+
+    # Dataclass
+    ext_dc = msgspec.enc_hook(data_dataclass)
+    assert ext_dc.code == ExtendedType.DATACLASS
+    decoded_dc = msgspec.ext_hook(ext_dc.code, memoryview(ext_dc.data))
+    assert decoded_dc['a'] == data_dataclass.a
+    assert decoded_dc['b'] == data_dataclass.b
+
+    # Unsupported type raises NotImplementedError
+    with pytest.raises(NotImplementedError, match='not supported'):
+        msgspec.enc_hook(object())
+
+    # Unsupported extension code raises NotImplementedError
+    with pytest.raises(NotImplementedError, match='Extension type code'):
+        msgspec.ext_hook(999, memoryview(b'test'))

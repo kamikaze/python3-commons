@@ -115,3 +115,23 @@ def s3_file_objects() -> tuple:
             b'PQRST',
         ),
     )
+
+
+@pytest.fixture(scope='session')
+def valkey_cache():
+    from testcontainers.community.valkey import ValkeyContainer  # noqa: PLC0415
+
+    from python3_commons.cache import AsyncValkeyClient  # noqa: PLC0415
+    from python3_commons.conf import valkey_settings  # noqa: PLC0415
+
+    try:
+        container = ValkeyContainer().start()
+    except Exception as exc:
+        pytest.skip(f'Valkey container is not available: {exc}')
+
+    try:
+        valkey_settings.dsn = f'redis://{container.get_container_host_ip()}:{container.get_exposed_port(6379)}'
+        AsyncValkeyClient._instances.pop(AsyncValkeyClient, None)  # noqa: SLF001
+        yield
+    finally:
+        container.stop()

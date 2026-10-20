@@ -108,6 +108,51 @@ async def test_write_audit_data_with_full_s3_audit_path(mocker, monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_write_audit_data_work_path_ending_with_audit_does_not_duplicate(mocker, monkeypatch):
+    monkeypatch.setattr(object_storage_settings, 'work_path', '/var/log/audit')
+    monkeypatch.setattr(api_client_settings, 'audit_path', None)
+    mock_put = mocker.patch('python3_commons.audit.object_storage.put_object', new_callable=AsyncMock)
+
+    settings = S3Settings(secret_access_key=SecretStr('secret'))
+    await audit.write_audit_data(settings, '2026/01/01/request.txt', b'test-data')
+
+    assert mock_put.call_count == 1
+    call_kwargs = mock_put.call_args[1]
+    assert call_kwargs['work_path'] == '/var/log/audit'
+    assert call_kwargs['path'] == '2026/01/01/request.txt'
+
+
+@pytest.mark.asyncio
+async def test_write_audit_data_key_starts_with_audit_does_not_duplicate(mocker, monkeypatch):
+    monkeypatch.setattr(object_storage_settings, 'work_path', 's3://my-bucket')
+    monkeypatch.setattr(api_client_settings, 'audit_path', None)
+    mock_put = mocker.patch('python3_commons.audit.object_storage.put_object', new_callable=AsyncMock)
+
+    settings = S3Settings(secret_access_key=SecretStr('secret'))
+    await audit.write_audit_data(settings, 'audit/2026/01/01/request.txt', b'test-data')
+
+    assert mock_put.call_count == 1
+    call_kwargs = mock_put.call_args[1]
+    assert call_kwargs['work_path'] == 's3://my-bucket'
+    assert call_kwargs['path'] == 'audit/2026/01/01/request.txt'
+
+
+@pytest.mark.asyncio
+async def test_write_audit_data_key_starts_with_work_path_does_not_duplicate(mocker, monkeypatch):
+    monkeypatch.setattr(object_storage_settings, 'work_path', 'my-work-root')
+    monkeypatch.setattr(api_client_settings, 'audit_path', None)
+    mock_put = mocker.patch('python3_commons.audit.object_storage.put_object', new_callable=AsyncMock)
+
+    settings = S3Settings(secret_access_key=SecretStr('secret'))
+    await audit.write_audit_data(settings, 'my-work-root/2026/01/01/request.txt', b'test-data')
+
+    assert mock_put.call_count == 1
+    call_kwargs = mock_put.call_args[1]
+    assert call_kwargs['work_path'] == 'my-work-root'
+    assert call_kwargs['path'] == 'my-work-root/2026/01/01/request.txt'
+
+
+@pytest.mark.asyncio
 async def test_write_audit_data_default_work_path_audit(mocker, monkeypatch):
     monkeypatch.setattr(object_storage_settings, 'work_path', None)
     monkeypatch.setattr(api_client_settings, 'audit_path', None)
@@ -183,6 +228,33 @@ async def test_zeep_audit_plugin_store_audit_in_s3_with_running_loop(mocker):
     assert b'<Envelope' in call_args[2]
 
 
+@pytest.mark.asyncio
+async def test_zeep_audit_plugin_strong_reference_in_background_tasks(mocker):
+    plugin = ZeepAuditPlugin(audit_name='ref_svc')
+    started = asyncio.Event()
+    finish = asyncio.Event()
+
+    async def slow_write(*args, **kwargs):
+        started.set()
+        await finish.wait()
+
+    mocker.patch('python3_commons.audit.write_audit_data', side_effect=slow_write)
+    operation = mocker.MagicMock()
+    operation.name = 'SlowOp'
+    envelope = etree.Element('Envelope')
+
+    plugin.store_audit_in_s3(envelope, operation, 'ingress')
+    await started.wait()
+
+    # The background task must be strongly referenced
+    assert len(audit._background_tasks) >= 1  # noqa: SLF001
+
+    finish.set()
+    await asyncio.sleep(0.01)  # let completion callback run
+    # Once finished, background task is discarded
+    assert len(audit._background_tasks) == 0  # noqa: SLF001
+
+
 def test_zeep_audit_plugin_store_audit_in_s3_without_running_loop(mocker):
     plugin = ZeepAuditPlugin(audit_name='sync_svc')
     mock_write = mocker.patch('python3_commons.audit.write_audit_data', new_callable=AsyncMock)
@@ -197,20 +269,6 @@ def test_zeep_audit_plugin_store_audit_in_s3_without_running_loop(mocker):
     assert 'sync_svc/SyncOp/' in call_args[1]
     assert call_args[1].endswith('_egress.xml')
     assert b'<Envelope' in call_args[2]
-
-
-def test_zeep_audit_plugin_store_audit_in_s3_loop_not_running(mocker):
-    plugin = ZeepAuditPlugin(audit_name='not_running_svc')
-    mock_write = mocker.patch('python3_commons.audit.write_audit_data', new_callable=AsyncMock)
-    mock_loop = mocker.MagicMock()
-    mock_loop.is_running.return_value = False
-    mocker.patch('asyncio.get_running_loop', return_value=mock_loop)
-    operation = mocker.MagicMock()
-    operation.name = 'Op'
-    envelope = etree.Element('Envelope')
-
-    plugin.store_audit_in_s3(envelope, operation, 'ingress')
-    assert mock_write.call_count == 1
 
 
 def test_get_history_plugin(mocker):

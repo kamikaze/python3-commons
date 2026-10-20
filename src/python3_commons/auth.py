@@ -2,7 +2,7 @@ import asyncio
 import logging
 from collections.abc import Sequence
 from time import monotonic
-from typing import Any, Self, TypeVar
+from typing import Any, Self
 
 from pydantic import HttpUrl
 
@@ -37,19 +37,12 @@ class TokenData(msgspec.Struct):
 
     @property
     def roles(self) -> list[str]:
-        roles_list = []
+        roles = set((self.realm_access or {}).get('roles', ()))
 
-        if self.realm_access:
-            roles_list.extend(self.realm_access.get('roles', []))
+        for client in (self.resource_access or {}).values():
+            roles.update(client.get('roles', ()))
 
-        if self.resource_access:
-            for client in self.resource_access.values():
-                roles_list.extend(client.get('roles', []))
-
-        return list(set(roles_list))
-
-
-T = TypeVar('T', bound=TokenData)
+        return list(roles)
 
 
 class OIDCTokenResponse(msgspec.Struct):
@@ -115,7 +108,7 @@ class OIDCClient:
             if (session := self._session) and not session.closed:
                 return session
 
-            connector = aiohttp.TCPConnector(verify_ssl=self._verify_cert, limit=self._connection_limit)
+            connector = aiohttp.TCPConnector(ssl=self._verify_cert, limit=self._connection_limit)
             timeout = aiohttp.ClientTimeout(total=self._timeout)
             session = aiohttp.ClientSession(connector=connector, timeout=timeout)
             self._session = session
@@ -245,17 +238,12 @@ class OIDCClient:
                         description = body.get('error_description') or body.get('message') or ''
 
                     error = error or f'http_{response.status}'
-
-                    if error in {'invalid_grant', 'invalid_client'}:
-                        msg = f'{error}: {description}'
-                        raise OIDCAuthError(msg)
-
+                    exc_type = OIDCAuthError if error in {'invalid_grant', 'invalid_client'} else OIDCError
                     msg = f'{error}: {description}'
-                    raise OIDCError(msg)
 
-                decoder = msgspec.json.Decoder(OIDCTokenResponse)
+                    raise exc_type(msg)
 
-                return decoder.decode(payload)
+                return msgspec.convert(body, OIDCTokenResponse)
 
         except TimeoutError as e:
             msg = 'OIDC request timed out'

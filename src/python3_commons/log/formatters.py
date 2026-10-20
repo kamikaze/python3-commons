@@ -41,18 +41,13 @@ def _normalize(v: Any) -> Any:
     if isinstance(v, bytes):
         return v.decode('utf-8', errors='replace')
 
-    if isinstance(v, Decimal):
-        return str(v)
-
-    if isinstance(v, Exception):
+    if isinstance(v, Decimal | Exception):
         return str(v)
 
     return v
 
 
 class JSONFormatter(logging.Formatter):
-    __slots__ = ('_encoder', '_max_tb_chars')
-
     def __init__(
         self,
         *,
@@ -62,7 +57,7 @@ class JSONFormatter(logging.Formatter):
         super().__init__(**kwargs)
 
         self._max_tb_chars = max_exc_tb_chars
-        self._encoder = msgspec.json.Encoder()
+        self._encoder = msgspec.json.Encoder(enc_hook=repr)
 
     def format(self, record: logging.LogRecord) -> str:
         try:
@@ -92,17 +87,8 @@ class JSONFormatter(logging.Formatter):
 
             log_dict['exc_traceback'] = tb
 
-        record_dict = record.__dict__
-        std_log_fields = _STD_LOG_FIELDS
-
-        if len(record_dict) > len(std_log_fields):
-            normalize = _normalize
-            log_dict_set = log_dict.__setitem__
-
-            for k, v in record_dict.items():
-                if k[0] == '_' or k in std_log_fields:
-                    continue
-
-                log_dict_set(k, normalize(v))
+        log_dict.update(
+            (k, _normalize(v)) for k, v in record.__dict__.items() if k[0] != '_' and k not in _STD_LOG_FIELDS
+        )
 
         return self._encoder.encode(log_dict).decode('utf-8')

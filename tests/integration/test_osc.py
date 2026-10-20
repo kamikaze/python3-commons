@@ -10,7 +10,8 @@ from python3_commons.conf import object_storage_settings
 @pytest.mark.asyncio
 async def test_s3_object_lifecycle():
     work_path = object_storage_settings.work_path or os.environ.get('OBJECT_STORAGE_WORK_PATH')
-    assert work_path is not None, 'OBJECT_STORAGE_WORK_PATH environment variable must be set to run this test'
+    if not work_path:
+        pytest.skip('OBJECT_STORAGE_WORK_PATH environment variable must be set to run this test')
 
     # Ensure work_path doesn't end with a slash for consistent joining
     work_path = work_path.rstrip('/')

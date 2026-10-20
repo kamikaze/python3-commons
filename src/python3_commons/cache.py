@@ -1,26 +1,23 @@
+import functools
 import logging
 import socket
-from collections.abc import Mapping, Sequence
-from platform import platform
+import sys
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
 try:
-    import valkey
     from valkey.asyncio import ConnectionPool, Sentinel, StrictValkey, Valkey
     from valkey.asyncio.retry import Retry
     from valkey.backoff import FullJitterBackoff
+    from valkey.exceptions import ConnectionError as ValkeyConnectionError
+    from valkey.exceptions import TimeoutError as ValkeyTimeoutError
 except ImportError as e:
     msg = 'Install python3-commons[cache] to use this feature'
     raise RuntimeError(msg) from e
 
 from python3_commons.conf import valkey_settings
 from python3_commons.helpers import SingletonMeta
-from python3_commons.serializers.msgspec import (
-    deserialize_msgpack,
-    deserialize_msgpack_native,
-    serialize_msgpack,
-    serialize_msgpack_native,
-)
+from python3_commons.serializers.msgspec import deserialize_msgpack_native, serialize_msgpack_native
 
 if TYPE_CHECKING:
     from pydantic import RedisDsn
@@ -41,12 +38,12 @@ class AsyncValkeyClient(metaclass=SingletonMeta):
 
     @staticmethod
     def _get_keepalive_options():
-        if platform in {'linux', 'darwin'}:
+        if sys.platform == 'linux':
             return {socket.TCP_KEEPIDLE: 10, socket.TCP_KEEPINTVL: 5, socket.TCP_KEEPCNT: 5}
         return {}
 
     def _initialize_sentinel(self, dsn: RedisDsn) -> None:
-        sentinel = Sentinel(
+        sentinel_client = Sentinel(
             [(dsn.host, dsn.port)],
             socket_connect_timeout=10,
             socket_timeout=60,
@@ -56,7 +53,7 @@ class AsyncValkeyClient(metaclass=SingletonMeta):
 
         ka_options = self._get_keepalive_options()
 
-        self._valkey = sentinel.master_for(
+        self._valkey = sentinel_client.master_for(
             'myprimary',
             valkey_class=StrictValkey,
             socket_connect_timeout=10,
@@ -80,6 +77,25 @@ def get_valkey_client() -> Valkey:
     return AsyncValkeyClient(valkey_settings.dsn, valkey_settings.sentinel_dsn).get_client()
 
 
+def _graceful[**P, R](default: Any = None) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
+    """Log Valkey connection failures and return *default* instead of raising."""
+
+    def decorator(func: Callable[P, Awaitable[R]]) -> Callable[P, Awaitable[R]]:
+        @functools.wraps(func)
+        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+            try:
+                return await func(*args, **kwargs)
+            except ValkeyConnectionError, ValkeyTimeoutError:
+                logger.exception('Cache operation %s failed.', func.__name__)
+
+                return default
+
+        return wrapper
+
+    return decorator
+
+
+@_graceful(default=(0, ()))
 async def scan(
     cursor: int = 0,
     match: bytes | str | memoryview | None = None,
@@ -90,20 +106,24 @@ async def scan(
     return await get_valkey_client().scan(cursor, match, count, _type, **kwargs)
 
 
+@_graceful()
 async def delete(*names: str | bytes | memoryview) -> None:
     await get_valkey_client().delete(*names)
 
 
+@_graceful(default=False)
+async def exists(name: str) -> bool:
+    return await get_valkey_client().exists(name) == 1
+
+
+@_graceful()
 async def store_bytes(name: str, data: bytes, ttl: int | None = None, *, if_not_set: bool = False):
-    r = get_valkey_client()
-
-    return await r.set(name, data, ex=ttl, nx=if_not_set)
+    return await get_valkey_client().set(name, data, ex=ttl, nx=if_not_set)
 
 
+@_graceful()
 async def get_bytes(name: str) -> bytes | None:
-    r = get_valkey_client()
-
-    return await r.get(name)
+    return await get_valkey_client().get(name)
 
 
 async def store(name: str, obj: Any, ttl: int | None = None, *, if_not_set: bool = False):
@@ -128,138 +148,90 @@ async def get_string(name: str) -> str | None:
     return None
 
 
+@_graceful()
 async def store_sequence(name: str, data: Sequence, ttl: int | None = None) -> None:
     if data:
-        try:
-            r = get_valkey_client()
-            await r.rpush(name, *map(serialize_msgpack_native, data))
+        r = get_valkey_client()
+        await r.rpush(name, *map(serialize_msgpack_native, data))
 
-            if ttl:
-                await r.expire(name, ttl)
-        except valkey.exceptions.ConnectionError:
-            logger.exception('Failed to store sequence in cache.')
+        if ttl:
+            await r.expire(name, ttl)
+
+
+@_graceful(default=())
+async def _lrange(name: str) -> Sequence[bytes]:
+    return await get_valkey_client().lrange(name, 0, -1)
 
 
 async def get_sequence(name: str, _type: type = list) -> Sequence:
-    r = get_valkey_client()
-    lrange = await r.lrange(name, 0, -1)
-
-    return _type(map(deserialize_msgpack_native, lrange))
+    return _type(map(deserialize_msgpack_native, await _lrange(name)))
 
 
+@_graceful()
 async def store_dict(name: str, data: Mapping, ttl: int | None = None) -> None:
     if data:
-        try:
-            r = get_valkey_client()
-            data = {k: serialize_msgpack_native(v) for k, v in data.items()}
-            await r.hset(name, mapping=data)
+        r = get_valkey_client()
+        await r.hset(name, mapping={str(k): serialize_msgpack_native(v) for k, v in data.items()})
 
-            if ttl:
-                await r.expire(name, ttl)
-        except valkey.exceptions.ConnectionError:
-            logger.exception('Failed to store dict in cache.')
+        if ttl:
+            await r.expire(name, ttl)
 
 
+@_graceful()
 async def get_dict(name: str, value_data_type=None) -> dict | None:
-    r = get_valkey_client()
-
-    if data := await r.hgetall(name):
-        return {k.decode(): deserialize_msgpack(v, value_data_type) for k, v in data.items()}
+    if data := await get_valkey_client().hgetall(name):
+        return {k.decode(): deserialize_msgpack_native(v, value_data_type) for k, v in data.items()}
 
     return None
 
 
-async def set_dict(name: str, mapping: dict, ttl: int | None = None) -> None:
-    if mapping:
-        try:
-            r = get_valkey_client()
-            mapping = {str(k): serialize_msgpack(v) for k, v in mapping.items()}
-            await r.hset(name, mapping=mapping)
-
-            if ttl:
-                await r.expire(name, ttl)
-        except valkey.exceptions.ConnectionError:
-            logger.exception('Failed to set dict in cache.')
+@_graceful()
+async def _hget(name: str, key: str) -> bytes | None:
+    return await get_valkey_client().hget(name, key)
 
 
 async def get_dict_item(name: str, key: str, data_type=None, default=None):
-    try:
-        r = get_valkey_client()
-
-        if data := await r.hget(name, key):
-            return deserialize_msgpack_native(data, data_type)
-    except valkey.exceptions.ConnectionError:
-        logger.exception('Failed to get dict item from cache.')
-
-        return None
+    if data := await _hget(name, key):
+        return deserialize_msgpack_native(data, data_type)
 
     return default
 
 
+@_graceful()
 async def set_dict_item(name: str, key: str, obj: Any) -> None:
-    try:
-        r = get_valkey_client()
-        await r.hset(name, key, serialize_msgpack_native(obj))
-    except valkey.exceptions.ConnectionError:
-        logger.exception('Failed to set dict item in cache.')
+    await get_valkey_client().hset(name, key, serialize_msgpack_native(obj))
 
 
+@_graceful()
 async def delete_dict_item(name: str, *keys) -> None:
-    try:
-        r = get_valkey_client()
-        await r.hdel(name, *keys)
-    except valkey.exceptions.ConnectionError:
-        logger.exception('Failed to delete dict item from cache.')
+    await get_valkey_client().hdel(name, *keys)
 
 
+@_graceful()
 async def store_set(name: str, value: set, ttl: int | None = None) -> None:
-    try:
+    if value:
         r = get_valkey_client()
         await r.sadd(name, *map(serialize_msgpack_native, value))
 
         if ttl:
             await r.expire(name, ttl)
-    except valkey.exceptions.ConnectionError:
-        logger.exception('Failed to store set in cache.')
 
 
+@_graceful(default=False)
 async def has_set_item(name: str, value: str) -> bool:
-    try:
-        r = get_valkey_client()
-
-        return await r.sismember(name, serialize_msgpack_native(value)) == 1
-    except valkey.exceptions.ConnectionError:
-        logger.exception('Failed to check if set has item in cache.')
-
-    return False
+    return await get_valkey_client().sismember(name, serialize_msgpack_native(value)) == 1
 
 
+@_graceful()
 async def add_set_item(name: str, *values: str) -> None:
-    try:
-        r = get_valkey_client()
-        await r.sadd(name, *map(serialize_msgpack_native, values))
-    except valkey.exceptions.ConnectionError:
-        logger.exception('Failed to add set item into cache.')
+    await get_valkey_client().sadd(name, *map(serialize_msgpack_native, values))
 
 
+@_graceful()
 async def delete_set_item(name: str, value: str) -> None:
-    r = get_valkey_client()
-    await r.srem(name, serialize_msgpack_native(value))
+    await get_valkey_client().srem(name, serialize_msgpack_native(value))
 
 
+@_graceful()
 async def get_set_members(name: str) -> set[str] | None:
-    try:
-        r = get_valkey_client()
-        smembers = await r.smembers(name)
-
-        return set(map(deserialize_msgpack_native, smembers))
-    except valkey.exceptions.ConnectionError:
-        logger.exception('Failed to get set members from cache.')
-
-    return None
-
-
-async def exists(name: str) -> bool:
-    r = get_valkey_client()
-
-    return await r.exists(name) == 1
+    return set(map(deserialize_msgpack_native, await get_valkey_client().smembers(name)))

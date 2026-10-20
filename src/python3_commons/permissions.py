@@ -1,5 +1,4 @@
-import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 try:
@@ -14,40 +13,26 @@ from python3_commons.db.models.rbac import RBACApiKeyRole, RBACPermission, RBACR
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
-logger = logging.getLogger(__name__)
+
+async def _has_permission(session: AsyncSession, role_model: Any, subject_filter: Any, permission: str) -> bool:
+    query = sa.select(
+        exists().where(
+            and_(
+                subject_filter,
+                (role_model.expires_at.is_(None) | (role_model.expires_at > func.now())),
+                role_model.role_uid == RBACRolePermission.role_uid,
+                RBACRolePermission.permission_uid == RBACPermission.uid,
+                RBACPermission.name == permission,
+            )
+        )
+    )
+
+    return bool(await session.scalar(query))
 
 
 async def has_api_key_permission(session: AsyncSession, api_key_uid: UUID, permission: str) -> bool:
-    query = sa.select(
-        exists().where(
-            and_(
-                RBACApiKeyRole.api_key_uid == api_key_uid,
-                (RBACApiKeyRole.expires_at.is_(None) | (RBACApiKeyRole.expires_at > func.now())),
-                RBACApiKeyRole.role_uid == RBACRolePermission.role_uid,
-                RBACRolePermission.permission_uid == RBACPermission.uid,
-                RBACPermission.name == permission,
-            )
-        )
-    )
-
-    cursor = await session.execute(query)
-
-    return bool(cursor.scalar())
+    return await _has_permission(session, RBACApiKeyRole, RBACApiKeyRole.api_key_uid == api_key_uid, permission)
 
 
 async def has_user_permission(session: AsyncSession, user_id: UUID, permission: str) -> bool:
-    query = sa.select(
-        exists().where(
-            and_(
-                RBACUserRole.user_id == user_id,
-                (RBACUserRole.expires_at.is_(None) | (RBACUserRole.expires_at > func.now())),
-                RBACUserRole.role_uid == RBACRolePermission.role_uid,
-                RBACRolePermission.permission_uid == RBACPermission.uid,
-                RBACPermission.name == permission,
-            )
-        )
-    )
-
-    cursor = await session.execute(query)
-
-    return bool(cursor.scalar())
+    return await _has_permission(session, RBACUserRole, RBACUserRole.user_id == user_id, permission)

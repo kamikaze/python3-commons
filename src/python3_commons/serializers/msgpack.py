@@ -1,6 +1,5 @@
 import dataclasses
 import json
-import logging
 from datetime import date, datetime
 from decimal import Decimal
 
@@ -9,8 +8,6 @@ from msgpack import ExtType
 
 from python3_commons.serializers.common import ExtendedType
 from python3_commons.serializers.json import CustomJSONEncoder
-
-logger = logging.getLogger(__name__)
 
 
 def msgpack_encoder(obj):
@@ -23,7 +20,9 @@ def msgpack_encoder(obj):
     if dataclasses.is_dataclass(obj):
         return ExtType(ExtendedType.DATACLASS, json.dumps(dataclasses.asdict(obj), cls=CustomJSONEncoder).encode())
 
-    return f'no encoder for {obj}'
+    msg = f'Objects of type {type(obj)} are not supported'
+
+    raise TypeError(msg)
 
 
 def msgpack_decoder(code, data):
@@ -37,7 +36,7 @@ def msgpack_decoder(code, data):
         case ExtendedType.DATACLASS:
             return json.loads(data)
         case _:
-            return f'no decoder for type {code}'
+            return ExtType(code, data)
 
 
 def serialize_msgpack(data) -> bytes:

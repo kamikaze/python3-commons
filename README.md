@@ -47,7 +47,7 @@ result = await fetch_expensive_data(42)
 
 ### API Client
 
-A context manager for `aiohttp` requests with built-in audit logging to S3 and standardized error mapping to Python exceptions.
+An async `request()` context manager for `aiohttp` with standardized error mapping to Python exceptions and optional audit logging to Object Storage.
 
 #### Standardized Exception Mapping
 
@@ -100,9 +100,11 @@ To enable audit logging:
    s3_settings.region = "us-east-1"
    ```
 
-2. **Pass `audit_name` to `request()`**: Provide a non-empty string identifier (such as the target service or operation name) in the `audit_name` argument. If `audit_name` is omitted (default `None`), audit logging is disabled for that call. If S3 credentials are not configured, audit logging is safely bypassed.
+2. **Pass `audit_name` to `request()`**: Provide a non-empty string identifier (such as the target service or operation name) in the `audit_name` argument. If omitted (default `None`), audit logging is disabled for that call. If storage is not configured, audit logging is safely bypassed. Note that `GET` requests without headers or query parameters only have their response audited.
 
-#### Usage Example
+#### Usage
+
+`request()` takes an `aiohttp.ClientSession` that you manage:
 
 ```python
 from aiohttp import ClientSession
@@ -244,21 +246,37 @@ async with client:
 
 ### Valkey Cache
 
-Async caching using Valkey (Redis-compatible) with automatic Msgpack serialization for complex types.
+Async caching using Valkey (Redis-compatible) with automatic Msgpack serialization for complex types. Configure the connection with `VALKEY_DSN` (or `VALKEY_SENTINEL_DSN` for Sentinel).
 
 ```python
 from python3_commons import cache
 
-# Store a dictionary
+# Store any serializable value (msgspec Structs, Pydantic models, dicts, ...)
 await cache.store("user:123", {"name": "Alice", "role": "admin"}, ttl=3600)
+user_data = await cache.get("user:123", default={})
 
-# Retrieve it
-user_data = await cache.get("user:123")
+# Decode into a typed object
+user = await cache.get("user:123", data_type=User)
 
-# Set operations
+# Hashes: whole dict or individual fields
+await cache.store_dict("settings:123", {"theme": "dark", "page_size": 50}, ttl=3600)
+settings = await cache.get_dict("settings:123")
+await cache.set_dict_item("settings:123", "theme", "light")
+theme = await cache.get_dict_item("settings:123", "theme", default="dark")
+
+# Lists and sets
+await cache.store_sequence("recent:123", ["a", "b"], ttl=600)
+recent = await cache.get_sequence("recent:123")
 await cache.add_set_item("active_users", "user:123")
 is_active = await cache.has_set_item("active_users", "user:123")
 ```
+
+#### Failure Handling
+
+The cache never takes your application down. If Valkey is unreachable or times out, every function logs the error and carries on:
+
+- Reads return their fallback: `get()` and `get_dict_item()` return `default`, `get_sequence()` returns an empty sequence, `has_set_item()` and `exists()` return `False`, and the rest return `None`.
+- Writes and deletes do nothing. `store_bytes(..., if_not_set=True)` returns `None`, so treat a falsy result as "not set".
 
 ### Structured Logging
 

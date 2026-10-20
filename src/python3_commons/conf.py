@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from python3_commons.helpers import parse_string_list
 
-StringSeq = Annotated[Sequence[str] | tuple[str, ...], BeforeValidator(parse_string_list)]
+StringSeq = Annotated[Sequence[str], BeforeValidator(parse_string_list)]
 
 
 class CommonSettings(BaseSettings):
@@ -65,17 +65,11 @@ class DBSettings(BaseSettings):
 
     @model_validator(mode='after')
     def build_dsn_if_missing(self) -> DBSettings:
-        if self.dsn is None and all(
-            (
-                self.user,
-                self.password,
-                self.name,
-            )
-        ):
+        if self.dsn is None and self.user and self.password and self.name:
             self.dsn = PostgresDsn.build(
                 scheme=self.scheme,
                 username=self.user,
-                password=self.password.get_secret_value() if self.password else None,
+                password=self.password.get_secret_value(),
                 host=self.host,
                 port=self.port,
                 path=self.name,

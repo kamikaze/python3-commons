@@ -2,7 +2,7 @@ import asyncio
 import io
 import logging
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
 try:
@@ -24,22 +24,28 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+_background_tasks: set[asyncio.Task[Any]] = set()
+
 
 async def write_audit_data(settings: S3Settings = s3_settings, key: str = '', data: bytes = b'') -> None:
     if settings.secret_access_key or api_client_settings.audit_path or object_storage_settings.work_path:
+        clean_key = key.lstrip('/')
+
+        if api_client_settings.audit_path:
+            work_path = api_client_settings.audit_path
+            path = clean_key
+        elif object_storage_settings.work_path:
+            work_path = object_storage_settings.work_path
+            base = work_path.rstrip('/')
+            already_audit_scoped = (
+                key.startswith(base) or base.rsplit('/', 1)[-1] == 'audit' or clean_key.startswith('audit/')
+            )
+            path = clean_key if already_audit_scoped else f'audit/{clean_key}'
+        else:
+            work_path = 'audit'
+            path = clean_key
+
         try:
-            if api_client_settings.audit_path and key.startswith(api_client_settings.audit_path.strip('/')):
-                work_path = api_client_settings.audit_path
-                path = key
-            elif api_client_settings.audit_path:
-                work_path = api_client_settings.audit_path
-                path = key.lstrip('/')
-            elif object_storage_settings.work_path:
-                work_path = object_storage_settings.work_path
-                path = f'audit/{key.lstrip("/")}'
-            else:
-                work_path = 'audit'
-                path = key.lstrip('/')
             await object_storage.put_object(work_path=work_path, path=path, data=io.BytesIO(data), length=len(data))
         except Exception:
             logger.exception('Failed storing object in storage.')
@@ -65,12 +71,11 @@ class ZeepAuditPlugin(Plugin):
         try:
             loop = asyncio.get_running_loop()
         except RuntimeError:
-            loop = None
-
-        if loop and loop.is_running():
-            loop.create_task(coro)
-        else:
             asyncio.run(coro)
+        else:
+            task = loop.create_task(coro)
+            _background_tasks.add(task)
+            task.add_done_callback(_background_tasks.discard)
 
     def ingress(self, envelope, http_headers, operation: AbstractOperation):
         self.store_audit_in_s3(envelope, operation, 'ingress')

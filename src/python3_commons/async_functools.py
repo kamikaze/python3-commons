@@ -115,32 +115,21 @@ def async_lru_cache[AC: Callable[..., Any]](
     """
     Least Recently Used cache for async functions
     """
-    if isinstance(maxsize, int):
-        maxsize = max(maxsize, 0)
-    elif maxsize is None:
-        pass
-    elif callable(maxsize):
+    if callable(maxsize):
         # used as function decorator, first arg is the function to be wrapped
-        func = cast('AC', maxsize)
-        wrapper = CachedLRUAsyncCallable(func, typed=typed, maxsize=128)
-        update_wrapper(cast('Any', wrapper), func)
+        return async_lru_cache(typed=typed)(cast('AC', maxsize))
 
-        return cast('LRUAsyncCallable[AC]', wrapper)
-    else:
-        # This branch handles cases where maxsize is not int, None, or callable.
-        # It also helps avoid "unreachable code" warnings in some IDEs.
+    if maxsize is not None and not isinstance(maxsize, int):
         msg = f"first argument to 'async_lru_cache' must be an int, a callable or None, not {type(maxsize).__name__}"
         raise TypeError(msg)
 
     def lru_decorator(function: AC) -> LRUAsyncCallable[AC]:
-        wrapper: MemoizedLRUAsyncCallable[AC] | UncachedLRUAsyncCallable[AC] | CachedLRUAsyncCallable[AC]
+        wrapper: UncachedLRUAsyncCallable[AC] | CachedLRUAsyncCallable[AC]
 
-        if maxsize is None:
-            wrapper = MemoizedLRUAsyncCallable(function, typed=typed)
-        elif maxsize == 0:
+        if maxsize is not None and maxsize <= 0:
             wrapper = UncachedLRUAsyncCallable(function, typed=typed)
         else:
-            wrapper = CachedLRUAsyncCallable(function, typed=typed, maxsize=cast('int', maxsize))
+            wrapper = CachedLRUAsyncCallable(function, typed=typed, maxsize=maxsize)
 
         update_wrapper(cast('Any', wrapper), function)
 
@@ -173,9 +162,6 @@ class BaseLRUAsyncCallable[AC: Callable[..., Any]]:
         self._misses = 0
         self._in_flight.clear()
 
-    async def _wait_in_flight(self, key: Hashable) -> Any:
-        return await self._in_flight[key]
-
 
 class UncachedLRUAsyncCallable(BaseLRUAsyncCallable[AC]):
     async def __call__(self, *args: Any, **kwargs: Any) -> Any:
@@ -193,57 +179,8 @@ class UncachedLRUAsyncCallable(BaseLRUAsyncCallable[AC]):
         pass
 
 
-class MemoizedLRUAsyncCallable(BaseLRUAsyncCallable[AC]):
-    def __init__(self, func: AC, *, typed: bool):
-        super().__init__(func, typed=typed)
-        self._cache: dict[Hashable, Any] = {}
-
-    async def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        key = self._make_key(args, kwargs)
-
-        if key in self._cache:
-            self._hits += 1
-            return self._cache[key]
-
-        if key in self._in_flight:
-            return await self._in_flight[key]
-
-        self._misses += 1
-        loop = asyncio.get_running_loop()
-        future = loop.create_future()
-        self._in_flight[key] = future
-
-        try:
-            result = await self.__wrapped__(*args, **kwargs)
-
-            self._cache[key] = result
-            future.set_result(result)
-        except Exception as exc:
-            future.set_exception(exc)
-            raise
-        else:
-            return result
-        finally:
-            if self._in_flight.get(key) is future:
-                del self._in_flight[key]
-
-    def cache_parameters(self) -> CacheParameters:
-        return CacheParameters(maxsize=None, typed=self._typed)
-
-    def cache_info(self) -> CacheInfo:
-        return CacheInfo(self._hits, self._misses, None, len(self._cache))
-
-    def cache_clear(self) -> None:
-        super().cache_clear()
-        self._cache.clear()
-
-    def cache_discard(self, *args: Any, **kwargs: Any) -> None:
-        key = self._make_key(args, kwargs)
-        self._cache.pop(key, None)
-
-
 class CachedLRUAsyncCallable(BaseLRUAsyncCallable[AC]):
-    def __init__(self, func: AC, *, typed: bool, maxsize: int):
+    def __init__(self, func: AC, *, typed: bool, maxsize: int | None):
         super().__init__(func, typed=typed)
         self._maxsize = maxsize
         self._cache: OrderedDict[Hashable, Any] = OrderedDict()
@@ -271,9 +208,12 @@ class CachedLRUAsyncCallable(BaseLRUAsyncCallable[AC]):
             future.set_result(result)
 
             if key not in self._cache:
-                if len(self._cache) >= self._maxsize:
+                if self._maxsize is not None and len(self._cache) >= self._maxsize:
                     self._cache.popitem(last=False)
                 self._cache[key] = result
+        except asyncio.CancelledError:
+            future.cancel()
+            raise
         except Exception as exc:
             future.set_exception(exc)
             raise

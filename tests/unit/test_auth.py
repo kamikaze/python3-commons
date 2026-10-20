@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 import pytest
 from pydantic import HttpUrl
 
-from python3_commons.auth import OIDCClient
+from python3_commons.auth import OIDCAuthError, OIDCClient
 
 if TYPE_CHECKING:
     from pytest_mock import MockerFixture
@@ -109,3 +109,47 @@ async def test_get_session_recreates_a_closed_session(client: OIDCClient) -> Non
 
         assert not second.closed
         assert second is not first
+
+
+@pytest.mark.asyncio
+async def test_fetch_token_success(client: OIDCClient, mocker: MockerFixture) -> None:
+    config = {'token_endpoint': 'https://issuer.example/oauth2/token'}
+    mocker.patch.object(client, 'get_config', mocker.AsyncMock(return_value=config))
+
+    mock_resp = mocker.MagicMock()
+    mock_resp.status = 200
+    mock_resp.read = mocker.AsyncMock(
+        return_value=b'{"access_token": "token123", "expires_in": 3600, "id_token": "id123", "token_type": "Bearer"}'
+    )
+
+    mock_ctx = mocker.AsyncMock()
+    mock_ctx.__aenter__.return_value = mock_resp
+    mock_ctx.__aexit__.return_value = None
+
+    mocker.patch('python3_commons.api_client.request', return_value=mock_ctx)
+
+    token = await client.fetch_token(username='user@example.com', password='password123')
+    assert token.access_token == 'token123'
+    assert token.token_type == 'Bearer'
+    assert token.expires_in == 3600
+
+
+@pytest.mark.asyncio
+async def test_fetch_token_auth_error(client: OIDCClient, mocker: MockerFixture) -> None:
+    config = {'token_endpoint': 'https://issuer.example/oauth2/token'}
+    mocker.patch.object(client, 'get_config', mocker.AsyncMock(return_value=config))
+
+    mock_resp = mocker.MagicMock()
+    mock_resp.status = 400
+    mock_resp.read = mocker.AsyncMock(
+        return_value=b'{"error": "invalid_grant", "error_description": "Incorrect username or password."}'
+    )
+
+    mock_ctx = mocker.AsyncMock()
+    mock_ctx.__aenter__.return_value = mock_resp
+    mock_ctx.__aexit__.return_value = None
+
+    mocker.patch('python3_commons.api_client.request', return_value=mock_ctx)
+
+    with pytest.raises(OIDCAuthError, match=r'invalid_grant: Incorrect username or password\.'):
+        await client.fetch_token(username='user@example.com', password='wrongpassword')

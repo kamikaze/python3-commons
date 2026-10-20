@@ -1,5 +1,6 @@
 import errno
 import logging
+import os
 from collections.abc import AsyncGenerator, Mapping, Sequence
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
@@ -24,27 +25,21 @@ from python3_commons.serializers.json import CustomJSONEncoder
 logger = logging.getLogger(__name__)
 
 
+async def _write_audit(audit_name: str, uri_path: str, method: str, request_id: str, kind: str, data: str) -> None:
+    now = datetime.now(tz=UTC)
+    path = f'{now:%Y/%m/%d}/{audit_name}/{uri_path}/{method}_{now:%H%M%S_%f}_{request_id}_{kind}.txt'
+
+    if api_client_settings.audit_path:
+        path = f'{api_client_settings.audit_path.strip("/")}/{path}'
+
+    await audit.write_audit_data(s3_settings, path, data.encode('utf-8'))
+
+
 async def _store_response_for_audit(
     response: ClientResponse, audit_name: str, uri_path: str, method: str, request_id: str
 ) -> None:
-    response_text = await response.text()
-
-    if response_text:
-        now = datetime.now(tz=UTC)
-        date_path = now.strftime('%Y/%m/%d')
-        timestamp = now.strftime('%H%M%S_%f')
-
-        if api_client_settings.audit_path:
-            audit_root = api_client_settings.audit_path.strip('/')
-            path = f'{audit_root}/{date_path}/{audit_name}/{uri_path}/{method}_{timestamp}_{request_id}_response.txt'
-        else:
-            path = f'{date_path}/{audit_name}/{uri_path}/{method}_{timestamp}_{request_id}_response.txt'
-
-        await audit.write_audit_data(
-            s3_settings,
-            path,
-            response_text.encode('utf-8'),
-        )
+    if response_text := await response.text():
+        await _write_audit(audit_name, uri_path, method, request_id, 'response', response_text)
 
 
 @asynccontextmanager
@@ -60,13 +55,9 @@ async def request(
     timeout: ClientTimeout | Enum | None = None,
     audit_name: str | None = None,
 ) -> AsyncGenerator[ClientResponse]:
-    now = datetime.now(tz=UTC)
-    date_path = now.strftime('%Y/%m/%d')
-    timestamp = now.strftime('%H%M%S_%f')
     request_id = str(uuid4())[-12:]
-    uri_path = uri.removesuffix('/')
-    uri_path = uri_path.removeprefix('/')
-    url = f'{u[:-1] if (u := str(base_url)).endswith("/") else u}{uri}' if uri else base_url
+    uri_path = uri.removesuffix('/').removeprefix('/')
+    url = f'{str(base_url).removesuffix("/")}{uri}' if uri else base_url
 
     if audit_name:
         curl_request = None
@@ -81,17 +72,7 @@ async def request(
             )
 
         if curl_request:
-            if api_client_settings.audit_path:
-                audit_root = api_client_settings.audit_path.strip('/')
-                path = f'{audit_root}/{date_path}/{audit_name}/{uri_path}/{method}_{timestamp}_{request_id}_request.txt'
-            else:
-                path = f'{date_path}/{audit_name}/{uri_path}/{method}_{timestamp}_{request_id}_request.txt'
-
-            await audit.write_audit_data(
-                s3_settings,
-                path,
-                curl_request.encode('utf-8'),
-            )
+            await _write_audit(audit_name, uri_path, method, request_id, 'request', curl_request)
 
     client_method = getattr(client, method)
 
@@ -134,10 +115,7 @@ async def request(
             if json:
                 data = dumps(json, cls=CustomJSONEncoder).encode('utf-8')
 
-                if headers:
-                    headers = {**headers, 'Content-Type': 'application/json'}
-                else:
-                    headers = {'Content-Type': 'application/json'}
+                headers = {**(headers or {}), 'Content-Type': 'application/json'}
 
             async with client_method(url, params=query, data=data, headers=headers, timeout=timeout) as response:
                 if audit_name:
@@ -145,18 +123,12 @@ async def request(
 
                 yield response
     except client_exceptions.ClientConnectorError as e:
-        msg = 'Cient connection error'
+        msg = 'Client connection error'
 
         raise ConnectionRefusedError(msg) from e
     except client_exceptions.ClientOSError as e:
-        if e.errno == errno.EPIPE:
-            msg = 'Broken pipe'
-
-            raise ConnectionResetError(msg) from e
-        elif e.errno == errno.ECONNRESET:
-            msg = 'Connection reset by peer'
-
-            raise ConnectionResetError(msg) from e
+        if e.errno in {errno.EPIPE, errno.ECONNRESET}:
+            raise ConnectionResetError(os.strerror(e.errno)) from e
 
         raise
     except client_exceptions.ServerDisconnectedError as e:

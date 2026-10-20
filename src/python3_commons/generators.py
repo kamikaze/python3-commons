@@ -33,15 +33,17 @@ async def tuple_csv_stream(
         strict=strict,
     )
 
+    def drain() -> bytes:
+        data = buffer.getvalue().encode('utf-8')
+        buffer.seek(0)
+        buffer.truncate(0)
+
+        return data
+
     if header:
         writer.writerow(header)
+        yield drain()
 
     async for row in generator:
         writer.writerow(row)
-        buffer.seek(0)
-        data = buffer.read().encode('utf-8')
-
-        yield data
-
-        buffer.seek(0)
-        buffer.truncate(0)
+        yield drain()

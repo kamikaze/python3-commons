@@ -26,9 +26,9 @@ _CLIENT_LOCK = threading.Lock()
 def get_client() -> ObjectStorageClient:
     global _CLIENT  # noqa: PLW0603
 
-    if not _CLIENT:
+    if _CLIENT is None:
         with _CLIENT_LOCK:
-            if not _CLIENT:
+            if _CLIENT is None:
                 _CLIENT = ObjectStorageClient()
 
     return _CLIENT
@@ -39,12 +39,7 @@ class ObjectStorageStream:
         self._stream = stream
 
     async def read(self) -> bytes:
-        chunks = []
-
-        while chunk := await self._stream.next():
-            chunks.append(chunk)
-
-        return b''.join(chunks)
+        return b''.join([chunk async for chunk in self])
 
     async def next(self) -> bytes:
         return await self._stream.next()
@@ -99,25 +94,16 @@ async def put_object(
     data: io.BytesIO | bytes | None = None,
     length: int = 0,
     part_size: int = 0,
-) -> str | None:
+) -> str:
+    content = data.getvalue() if isinstance(data, io.BytesIO) else data or b''
+
     try:
         client = get_client()
-
-        if isinstance(data, io.BytesIO):
-            content = data.getvalue()
-            data.seek(0)
-        elif isinstance(data, bytes):
-            content = data
-        elif data is None:
-            content = b''
-        else:
-            content = bytes(data)
-
         url = build_url(work_path, path)
         await client.put_object(url, content)
         logger.debug('Stored object into object storage: %s', url)
-    except Exception as e:
-        logger.exception('Failed to put object to object storage: %s:%s', work_path, path, exc_info=e)
+    except Exception:
+        logger.exception('Failed to put object to object storage: %s:%s', work_path, path)
         raise
 
     return url
@@ -132,8 +118,8 @@ async def get_object_stream(work_path: str, path: str = '') -> AsyncGenerator[Ob
         url = build_url(work_path, path)
         stream = await client.get_object_stream(url)
         yield ObjectStorageStream(stream)
-    except Exception as e:
-        logger.exception('Failed getting object from object storage: %s:%s', work_path, path, exc_info=e)
+    except Exception:
+        logger.exception('Failed getting object from object storage: %s:%s', work_path, path)
         raise
 
 
@@ -144,8 +130,8 @@ async def get_object(work_path: str, path: str = '') -> bytes:
         client = get_client()
         url = build_url(work_path, path)
         body = await client.get_object(url)
-    except Exception as e:
-        logger.exception('Failed getting object from object storage: %s:%s', work_path, path, exc_info=e)
+    except Exception:
+        logger.exception('Failed getting object from object storage: %s:%s', work_path, path)
         raise
 
     return body
@@ -211,8 +197,8 @@ async def remove_object(work_path: str, path: str = '') -> None:
         client = get_client()
         url = build_url(work_path, path)
         await client.delete_object(url)
-    except Exception as e:
-        logger.exception('Failed to remove object from object storage: %s:%s', work_path, path, exc_info=e)
+    except Exception:
+        logger.exception('Failed to remove object from object storage: %s:%s', work_path, path)
         raise
 
 
@@ -231,8 +217,8 @@ async def remove_objects(
         try:
             await client.delete_objects_by_prefix(url)
             logger.debug('Removed objects by prefix from object storage: %s', url)
-        except Exception as e:
-            logger.exception('Failed to remove objects by prefix: %s', url, exc_info=e)
+        except Exception:
+            logger.exception('Failed to remove objects by prefix: %s', url)
             raise
     elif object_names:
         for name in object_names:
@@ -241,7 +227,7 @@ async def remove_objects(
             try:
                 await client.delete_object(url)
             except Exception as e:
-                logger.exception('Failed to remove object: %s', url, exc_info=e)
+                logger.exception('Failed to remove object: %s', url)
                 errors.append({'Key': name, 'Error': str(e)})
 
     return errors or None

@@ -422,7 +422,7 @@ async def test_api_client_error_unhandled_status(mocker):
         (
             client_exceptions.ClientConnectorError(MagicMock(), OSError('connection failed')),
             ConnectionRefusedError,
-            'Cient connection error',
+            'Client connection error',
         ),
         (
             client_exceptions.ClientOSError(errno.EPIPE, 'Broken pipe'),

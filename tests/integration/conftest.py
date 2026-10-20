@@ -6,7 +6,10 @@ from pydantic import HttpUrl
 
 @pytest.fixture(scope='session')
 def authority_url() -> HttpUrl:
-    return HttpUrl(getenv('TEST_OIDC_AUTHORITY_URL', ''))
+    url = getenv('TEST_OIDC_AUTHORITY_URL')
+    if not url:
+        pytest.skip('TEST_OIDC_AUTHORITY_URL environment variable is not set')
+    return HttpUrl(url)
 
 
 @pytest.fixture(scope='session')

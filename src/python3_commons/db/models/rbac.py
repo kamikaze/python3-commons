@@ -64,17 +64,6 @@ class RBACApiKeyRole(Base):
     __table_args__ = (PrimaryKeyConstraint('api_key_uid', 'role_uid', name='pk_rbac_api_key_roles'),)
 
 
-# class RBACRoleRelation(Base):
-#     __tablename__ = 'rbac_role_relations'
-#
-#     parent_uid: Mapped[uuid.UUID] = mapped_column(UUID)
-#     child_uid: Mapped[uuid.UUID] = mapped_column(UUID)
-#
-#     __table_args__ = (
-#         PrimaryKeyConstraint('parent_uid', 'child_uid', name='pk_rbac_role_relations'),
-#     )
-
-
 class RBACUserRole(Base):
     __tablename__ = 'rbac_user_roles'
 

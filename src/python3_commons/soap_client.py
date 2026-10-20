@@ -38,6 +38,14 @@ def _make_ssl_context(*, verify: bool) -> ssl.SSLContext | bool:
     return ssl.create_default_context(cafile=certifi.where())
 
 
+def _new_session(config: TransportConfig, timeout: int) -> ClientSession:
+    return ClientSession(
+        connector=TCPConnector(ssl=_make_ssl_context(verify=config.verify_ssl)),
+        timeout=ClientTimeout(total=timeout),
+        headers={'User-Agent': f'Zeep/{get_version()} (www.python-zeep.org)'},
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class TransportConfig:
     timeout: int = 300
@@ -57,13 +65,11 @@ class AsyncTransport(Transport):
         *,
         session: ClientSession,
         config: TransportConfig,
-        loop: asyncio.AbstractEventLoop,
         owns_session: bool = False,
     ) -> None:
         super().__init__()
         self._session = session
         self._config = config
-        self._loop = loop
         self._owns_session = owns_session
 
     @classmethod
@@ -74,22 +80,11 @@ class AsyncTransport(Transport):
         session: ClientSession | None = None,
     ) -> AsyncTransport:
         config = config or TransportConfig()
-        loop = asyncio.get_running_loop()
-        owns_session = session is None
 
-        if owns_session:
-            session = ClientSession(
-                connector=TCPConnector(ssl=_make_ssl_context(verify=config.verify_ssl)),
-                timeout=ClientTimeout(total=config.operation_timeout),
-                headers={'User-Agent': f'Zeep/{get_version()} (www.python-zeep.org)'},
-            )
+        if session is None:
+            return cls(session=_new_session(config, config.operation_timeout), config=config, owns_session=True)
 
-        return cls(
-            session=session,
-            config=config,
-            loop=loop,
-            owns_session=owns_session,
-        )
+        return cls(session=session, config=config)
 
     async def aclose(self) -> None:
         if self._owns_session:
@@ -119,38 +114,18 @@ class AsyncTransport(Transport):
 
         return r
 
-    async def _fetch(self, url: str) -> bytes:
-        async with self._session.get(
-            url,
-            proxy=self._config.proxy,
-            timeout=ClientTimeout(total=self._config.timeout),
-        ) as resp:
-            body = await resp.read()
-
-            if resp.status >= 400:
-                raise TransportError(
-                    status_code=resp.status,
-                    message=body.decode(errors='ignore'),
-                )
-
-            return body
-
     def load(self, url: str) -> bytes:
         """
         Called synchronously by zeep during WSDL/XSD parsing.
-        Always runs in a fresh thread with its own isolated event loop —
-        never touches self._loop to avoid deadlock.
+        Always runs in a fresh thread with its own isolated event loop
+        to avoid deadlocking the caller's loop.
         """
         if not url:
             return b''
 
         async def _fetch() -> bytes:
             async with (
-                ClientSession(
-                    connector=TCPConnector(ssl=_make_ssl_context(verify=self._config.verify_ssl)),
-                    timeout=ClientTimeout(total=self._config.timeout),
-                    headers={'User-Agent': f'Zeep/{get_version()} (www.python-zeep.org)'},
-                ) as session,
+                _new_session(self._config, self._config.timeout) as session,
                 session.get(url, proxy=self._config.proxy) as resp,
             ):
                 body = await resp.read()

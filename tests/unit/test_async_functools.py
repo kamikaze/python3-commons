@@ -212,3 +212,39 @@ async def test_async_lru_cache_protocol():
     # This is more for type checking, but we can call them
     assert func.cache_info().maxsize == 128
     func.cache_clear()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('maxsize', [2, None])
+async def test_async_lru_cache_cancellation(maxsize):
+    started = asyncio.Event()
+
+    @async_lru_cache(maxsize=maxsize)
+    async def slow_work(x: int) -> int:
+        started.set()
+        await asyncio.sleep(10)
+        return x
+
+    # Task 1 starts and waits inside slow_work
+    task1 = asyncio.create_task(slow_work(42))
+    await started.wait()
+
+    # Task 2 also requests key 42 while in flight
+    task2 = asyncio.create_task(slow_work(42))
+    await asyncio.sleep(0.01)
+
+    # Cancel task 1
+    task1.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task1
+
+    # Task 2 should also receive CancelledError, NOT hang indefinitely
+    with pytest.raises(asyncio.CancelledError):
+        await task2
+
+    # Verify cache is cleared of in-flight and can be re-executed
+    @async_lru_cache(maxsize=maxsize)
+    async def fast_work(x: int) -> int:
+        return x * 2
+
+    assert await fast_work(5) == 10

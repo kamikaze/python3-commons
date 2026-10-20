@@ -1,5 +1,5 @@
+import contextlib
 import functools
-import inspect
 import logging
 import re
 import shlex
@@ -27,21 +27,18 @@ class SingletonMeta(ABCMeta):
     A metaclass that creates a Singleton base class when called.
     """
 
-    __instances: ClassVar[MutableMapping] = {}
-    __locks: ClassVar[defaultdict] = defaultdict(threading.Lock)
+    _instances: ClassVar[MutableMapping] = {}
+    _locks: ClassVar[defaultdict] = defaultdict(threading.Lock)
 
     def __call__(cls, *args, **kwargs):
         try:
-            return cls.__instances[cls]
+            return cls._instances[cls]
         except KeyError:
-            with cls.__locks[cls]:
-                try:
-                    return cls.__instances[cls]
-                except KeyError:
-                    instance = super().__call__(*args, **kwargs)
-                    cls.__instances[cls] = instance
+            with cls._locks[cls]:
+                if cls not in cls._instances:
+                    cls._instances[cls] = super().__call__(*args, **kwargs)
 
-                    return instance
+                return cls._instances[cls]
 
 
 def date_from_string(string: str, fmt: str = '%d.%m.%Y') -> date:
@@ -65,15 +62,13 @@ def date_range(start_date, end_date):
 
 def tries(times):
     def func_wrapper(f):
+        @functools.wraps(f)
         async def wrapper(*args, **kwargs):
-            for _time in range(times if times > 0 else 1):
-                # noinspection PyBroadException
-                try:
+            for _ in range(times - 1):
+                with contextlib.suppress(Exception):
                     return await f(*args, **kwargs)
-                except Exception:
-                    if _time >= times:
-                        raise
-            return None
+
+            return await f(*args, **kwargs)
 
         return wrapper
 
@@ -114,7 +109,7 @@ def request_to_curl(
     elif data:
         body = None
 
-        if isinstance(data, dict):
+        if isinstance(data, Mapping):
             body = urlencode(data, doseq=True)
         elif isinstance(data, bytes):
             body = data.decode('utf-8')
@@ -137,8 +132,6 @@ def log_execution_time(func):
         finally:
             elapsed = time.monotonic() - start_time
             _logger.info('%s.%s executed in %.4f seconds', func.__module__, func.__name__, elapsed)
-
-    wrapper.__signature__ = inspect.signature(func)
 
     return wrapper
 

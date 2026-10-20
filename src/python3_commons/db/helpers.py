@@ -1,4 +1,3 @@
-import logging
 from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
@@ -10,14 +9,12 @@ except ImportError as e:
     raise RuntimeError(msg) from e
 
 if TYPE_CHECKING:
-    from sqlalchemy.sql.elements import ColumnElement
-
-logger = logging.getLogger(__name__)
+    from sqlalchemy.sql.elements import ColumnElement, OrderByList, UnaryExpression
 
 
 def get_query(
     search: Mapping[str, str] | None = None, order_by: str | None = None, columns: Mapping | None = None
-) -> tuple[ColumnElement[bool] | None, tuple[ColumnElement[bool]] | None]:
+) -> tuple[ColumnElement[bool] | None, tuple[UnaryExpression | OrderByList, ...] | None]:
     """
     :columns:
         Param name ->
@@ -27,41 +24,22 @@ def get_query(
         3: exact match if True, LIKE %value% if False
     """
 
-    order_by_cols = {}
+    order_by_clauses = None
+    where_clause = None
 
     if order_by and columns:
-        for order_by_col in order_by.split(','):
-            if order_by_col.startswith('-'):
-                direction = desc
-                order_by_col_clean = order_by_col[1:]
-            else:
-                direction = asc
-                order_by_col_clean = order_by_col
-
-            order_by_cols[order_by_col_clean] = direction
-
         order_by_clauses = tuple(
-            direction(columns[order_by_col][0]) for order_by_col, direction in order_by_cols.items()
+            desc(columns[col[1:]][0]) if col.startswith('-') else asc(columns[col][0]) for col in order_by.split(',')
         )
-    else:
-        order_by_clauses = None
 
     if search and columns:
-        where_parts = [
-            *(
-                (func.upper(columns[k][0]) if columns[k][1] else columns[k][0]) == columns[k][2](v)
-                for k, v in search.items()
-                if columns[k][3]
-            ),
-            *(
-                (func.upper(columns[k][0]) if columns[k][1] else columns[k][0]).like(f'%{v.upper()}%')
-                for k, v in search.items()
-                if not columns[k][3]
-            ),
-        ]
-    else:
-        where_parts = None
+        where_parts = []
 
-    where_clause = sa.and_(*where_parts) if where_parts else None
+        for k, v in search.items():
+            column, case_insensitive, cast, exact = columns[k]
+            column = func.upper(column) if case_insensitive else column
+            where_parts.append(column == cast(v) if exact else column.like(f'%{v.upper()}%'))
+
+        where_clause = sa.and_(*where_parts)
 
     return where_clause, order_by_clauses
