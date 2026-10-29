@@ -83,22 +83,25 @@ To enable audit logging:
    export S3_SECRET_ACCESS_KEY="your-secret-access-key"
    export S3_REGION="us-east-1"
    # Optional configurations:
-   # export S3_ALLOW_HTTP="false"
-   # export S3_ADDRESSING_STYLE="virtual"  # or "path"
-   # export S3_CERT_VERIFY="true"
+   # export S3_ENDPOINT="http://localhost:3900"          # S3-compatible store; an http:// endpoint enables plain HTTP
+   # export AWS_VIRTUAL_HOSTED_STYLE_REQUEST="true"      # virtual-hosted addressing (default: path-style)
+   # export AWS_ALLOW_INVALID_CERTIFICATES="true"        # skip TLS certificate verification
+   # export S3_ALLOW_HTTP="true"                         # allow plain HTTP (only the exact value "true" is honoured)
    ```
-   Alternatively, you can configure them directly in Python:
+   Credentials and storage options are read from the process environment by
+   [object-storage-client](https://pypi.org/project/object-storage-client/), not from `s3_settings`.
+   See its configuration docs for the full list (GCS and Azure included).
+
+   The audit paths can also be configured directly in Python:
    ```python
-   from python3_commons.conf import api_client_settings, object_storage_settings, s3_settings
-   from pydantic import SecretStr
+   from python3_commons.conf import api_client_settings, object_storage_settings
 
    api_client_settings.audit_path = "s3://bucket/audit"
    # or object_storage_settings.work_path = "my-audit-bucket"
-
-   s3_settings.access_key_id = SecretStr("your-access-key-id")
-   s3_settings.secret_access_key = SecretStr("your-secret-access-key")
-   s3_settings.region = "us-east-1"
    ```
+
+   Object keys must not contain empty path segments (`a//b` raises `ValueError`), and
+   percent-escapes in keys are decoded (`a%20b` addresses the key `a b`).
 
 2. **Pass `audit_name` to `request()`**: Provide a non-empty string identifier (such as the target service or operation name) in the `audit_name` argument. If omitted (default `None`), audit logging is disabled for that call. If storage is not configured, audit logging is safely bypassed. Note that `GET` requests without headers or query parameters only have their response audited.
 
