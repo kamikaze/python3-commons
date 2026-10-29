@@ -85,7 +85,6 @@ class S3Settings(BaseSettings):
     access_key_id: SecretStr | None = None
     addressing_style: Literal['path', 'virtual'] = 'virtual'
     allow_http: bool = False
-    cert_verify: bool = True
     region: str | None = None
     secret_access_key: SecretStr | None = None
 
