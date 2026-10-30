@@ -13,7 +13,7 @@ uv add python3-commons
 Some features require extra dependencies. You can install them individually or all at once:
 
 - `api-client`: For `python3_commons.api_client`
-- `audit`: For `python3_commons.audit`
+- `audit`: For `python3_commons.zeep_audit`
 - `authn`: For `python3_commons.auth`
 - `authz`: For `python3_commons.permissions`
 - `cache`: For `python3_commons.cache`

@@ -1497,9 +1497,7 @@ all = [
 api-client = [
     { name = "aiohttp", extra = ["speedups"] },
     { name = "certifi" },
-    { name = "lxml" },
     { name = "object-storage-client" },
-    { name = "zeep", extra = ["async"] },
 ]
 audit = [
     { name = "lxml" },
@@ -1509,18 +1507,14 @@ audit = [
 authn = [
     { name = "aiohttp", extra = ["speedups"] },
     { name = "certifi" },
-    { name = "lxml" },
     { name = "object-storage-client" },
-    { name = "zeep", extra = ["async"] },
 ]
 authz = [
     { name = "aiohttp", extra = ["speedups"] },
     { name = "asyncpg" },
     { name = "certifi" },
-    { name = "lxml" },
     { name = "object-storage-client" },
     { name = "sqlalchemy", extra = ["asyncio"] },
-    { name = "zeep", extra = ["async"] },
 ]
 cache = [
     { name = "valkey", extra = ["libvalkey"] },
@@ -1577,8 +1571,8 @@ requires-dist = [
     { name = "python3-commons", extras = ["api-client"], marker = "extra == 'authn'" },
     { name = "python3-commons", extras = ["api-client"], marker = "extra == 'authz'" },
     { name = "python3-commons", extras = ["api-client", "audit", "authn", "authz", "cache", "database", "object-storage", "soap-client"], marker = "extra == 'all'" },
-    { name = "python3-commons", extras = ["audit", "object-storage"], marker = "extra == 'api-client'" },
     { name = "python3-commons", extras = ["database"], marker = "extra == 'authz'" },
+    { name = "python3-commons", extras = ["object-storage"], marker = "extra == 'api-client'" },
     { name = "python3-commons", extras = ["object-storage"], marker = "extra == 'audit'" },
     { name = "requests", marker = "extra == 'soap-client'", specifier = "~=2.34.2" },
     { name = "sqlalchemy", extras = ["asyncio"], marker = "extra == 'database'", specifier = "~=2.1.6" },

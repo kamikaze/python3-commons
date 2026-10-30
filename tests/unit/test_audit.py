@@ -8,7 +8,7 @@ from lxml import etree
 from pydantic import SecretStr
 from zeep.plugins import HistoryPlugin
 
-from python3_commons import audit
+from python3_commons import audit, zeep_audit
 from python3_commons.audit import ZeepAuditPlugin, get_history_plugin
 from python3_commons.conf import (
     ApiClientSettings,
@@ -282,10 +282,27 @@ def test_get_history_plugin(mocker):
     assert get_history_plugin(client) is None
 
 
-def test_audit_import_error():
+def test_zeep_audit_import_error():
     with (
         patch.dict(sys.modules, {'zeep.plugins': None}),
         pytest.raises(RuntimeError, match=r'Install python3-commons\[audit\] to use this feature'),
     ):
+        importlib.reload(sys.modules['python3_commons.zeep_audit'])
+    importlib.reload(sys.modules['python3_commons.zeep_audit'])
+
+
+def test_zeep_names_from_audit():
+    # Old imports keep working
+    assert audit.ZeepAuditPlugin is zeep_audit.ZeepAuditPlugin
+    assert audit.get_history_plugin is zeep_audit.get_history_plugin
+    with pytest.raises(AttributeError, match="has no attribute 'missing'"):
+        _ = audit.missing
+
+
+def test_api_client_without_zeep():
+    # api_client imports audit: neither needs zeep any more (it was loaded by every service with authn)
+    with patch.dict(sys.modules, {'zeep': None, 'zeep.plugins': None}):
         importlib.reload(sys.modules['python3_commons.audit'])
+        importlib.reload(sys.modules['python3_commons.api_client'])
     importlib.reload(sys.modules['python3_commons.audit'])
+    importlib.reload(sys.modules['python3_commons.api_client'])
