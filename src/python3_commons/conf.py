@@ -29,6 +29,9 @@ class OIDCSettings(BaseSettings):
         'email',
     )
     audience: StringSeq | str | None = None
+    issuer: str | None = None  # expected iss claim of tokens; not checked when empty
+    leeway: int = Field(default=0, ge=0)  # allowed clock skew for exp and nbf of tokens, seconds
+    jwks_refresh_interval: float = Field(default=60.0, ge=0)  # min seconds between JWKS refreshes on unknown kid
     verify_cert: bool = True
     timeout: float = 10
     connection_limit: int = 100
