@@ -346,7 +346,10 @@ Typed application settings powered by Pydantic Settings:
 - `S3Settings` / `s3_settings`: S3 credentials and connection configuration (`S3_` environment prefix: `ACCESS_KEY_ID`, `SECRET_ACCESS_KEY`, `REGION`).
 - `ObjectStorageSettings` / `object_storage_settings`: Object storage root configuration (`OBJECT_STORAGE_` environment prefix: `WORK_PATH`).
 - `ApiClientSettings` / `api_client_settings`: API client configuration (`API_CLIENT_` environment prefix: `AUDIT_PATH` full object storage path like `s3://bucket/audit`).
-- `OIDCSettings`: OpenID Connect configuration (`OIDC_` environment prefix).
+- `OIDCSettings`: OpenID Connect configuration (`OIDC_` environment prefix), including the checks of tokens by
+  verifiers built on it: `AUDIENCE`, `ISSUER` (expected `iss`, not checked when empty), `LEEWAY` (clock skew for
+  `exp` and `nbf`, seconds, default 0), `JWKS_REFRESH_INTERVAL` (min seconds between JWKS refreshes on a token of
+  an unknown key, default 60).
 - `ValkeySettings` / `valkey_settings`: Valkey/Redis cache configuration (`VALKEY_` environment prefix).
 
 ### File System Utilities
