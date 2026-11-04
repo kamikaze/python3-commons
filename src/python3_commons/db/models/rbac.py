@@ -1,15 +1,26 @@
+# pyright: strict
 import uuid
 from datetime import datetime
 
-try:
-    from sqlalchemy import CheckConstraint, DateTime, ForeignKey, PrimaryKeyConstraint, String
-    from sqlalchemy.dialects.postgresql import UUID
-    from sqlalchemy.orm import Mapped, mapped_column
-except ImportError as e:
-    msg = 'Install python3-commons[database] to use this feature'
-    raise RuntimeError(msg) from e
+from python3_commons._extras import require
+
+require('database', 'sqlalchemy')
+
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, PrimaryKeyConstraint, String
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped, mapped_column
 
 from python3_commons.db import Base
+from python3_commons.db.models.auth import ApiKey
+from python3_commons.db.models.users import User
+
+__all__ = [
+    'RBACApiKeyRole',
+    'RBACPermission',
+    'RBACRole',
+    'RBACRolePermission',
+    'RBACUserRole',
+]
 
 
 class RBACRole(Base):
@@ -31,12 +42,12 @@ class RBACPermission(Base):
 class RBACRolePermission(Base):
     __tablename__ = 'rbac_role_permissions'
 
-    role_uid: Mapped[uuid.UUID | None] = mapped_column(
+    role_uid: Mapped[uuid.UUID] = mapped_column(
         UUID,
         ForeignKey('rbac_roles.uid', name='fk_rbac_role_permissions_role', ondelete='CASCADE'),
         index=True,
     )
-    permission_uid: Mapped[uuid.UUID | None] = mapped_column(
+    permission_uid: Mapped[uuid.UUID] = mapped_column(
         UUID,
         ForeignKey('rbac_permissions.uid', name='fk_rbac_role_permissions_permission', ondelete='CASCADE'),
         index=True,
@@ -48,12 +59,12 @@ class RBACRolePermission(Base):
 class RBACApiKeyRole(Base):
     __tablename__ = 'rbac_api_key_roles'
 
-    api_key_uid: Mapped[uuid.UUID | None] = mapped_column(
+    api_key_uid: Mapped[uuid.UUID] = mapped_column(
         UUID,
-        ForeignKey('api_keys.uid', name='fk_rbac_api_key_roles_user', ondelete='CASCADE'),
+        ForeignKey(ApiKey.__table__.c.uid, name='fk_rbac_api_key_roles_user', ondelete='CASCADE'),
         index=True,
     )
-    role_uid: Mapped[uuid.UUID | None] = mapped_column(
+    role_uid: Mapped[uuid.UUID] = mapped_column(
         UUID,
         ForeignKey('rbac_roles.uid', name='fk_rbac_api_key_roles_role', ondelete='CASCADE'),
         index=True,
@@ -67,12 +78,12 @@ class RBACApiKeyRole(Base):
 class RBACUserRole(Base):
     __tablename__ = 'rbac_user_roles'
 
-    user_id: Mapped[uuid.UUID | None] = mapped_column(
+    user_id: Mapped[uuid.UUID] = mapped_column(
         UUID,
-        ForeignKey('users.uid', name='fk_rbac_user_roles_user', ondelete='CASCADE'),
+        ForeignKey(User.__table__.c.uid, name='fk_rbac_user_roles_user', ondelete='CASCADE'),
         index=True,
     )
-    role_uid: Mapped[uuid.UUID | None] = mapped_column(
+    role_uid: Mapped[uuid.UUID] = mapped_column(
         UUID,
         ForeignKey('rbac_roles.uid', name='fk_rbac_user_roles_role', ondelete='CASCADE'),
         index=True,

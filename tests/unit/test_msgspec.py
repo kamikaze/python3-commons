@@ -1,8 +1,9 @@
+# ruff: noqa: SLF001
 from datetime import date, datetime
 from decimal import Decimal
 
-import msgspec.json as msgspec_json
 import pytest
+from msgspec import msgpack as mpk
 
 from python3_commons.serializers import msgspec
 from python3_commons.serializers.common import ExtendedType
@@ -10,7 +11,8 @@ from python3_commons.serializers.common import ExtendedType
 
 def test_encode_decode_dict_to_msgpack(data_dict) -> None:
     """
-    enc_hook is not being called on complex types like dict
+    A dict of datetime, date and Decimal values is encoded through enc_hook and decodes (untyped) to the
+    string forms of those values; the round trip is deliberately lossy without a target type.
     """
     expected_result = {
         'A': 1,
@@ -76,43 +78,127 @@ def test_encode_decode_pydantic_struct_to_msgpack_native(pydantic_struct) -> Non
     assert decoded_struct == pydantic_struct
 
 
-def test_encode_decode_struct_to_json(msgspec_struct) -> None:
-    data = msgspec_json.encode(msgspec_struct)
-    struct = msgspec_json.decode(data, type=msgspec_struct.__class__)
+def test_enc_hook_pydantic_and_unsupported(pydantic_struct) -> None:
+    assert msgspec._enc_hook(pydantic_struct) == pydantic_struct.model_dump(mode='python')
 
-    assert struct == msgspec_struct
-
-
-def test_enc_hook_and_ext_hook(data_dataclass) -> None:
-    # Decimal
-    dec = Decimal('123.456')
-    ext_dec = msgspec.enc_hook(dec)
-    assert ext_dec.code == ExtendedType.DECIMAL
-    assert msgspec.ext_hook(ext_dec.code, memoryview(ext_dec.data)) == dec
-
-    # Datetime
-    dt = datetime(2026, 9, 30, 12, 0, 0)
-    ext_dt = msgspec.enc_hook(dt)
-    assert ext_dt.code == ExtendedType.DATETIME
-    assert msgspec.ext_hook(ext_dt.code, memoryview(ext_dt.data)) == dt
-
-    # Date
-    d = date(2026, 9, 30)
-    ext_d = msgspec.enc_hook(d)
-    assert ext_d.code == ExtendedType.DATE
-    assert msgspec.ext_hook(ext_d.code, memoryview(ext_d.data)) == d
-
-    # Dataclass
-    ext_dc = msgspec.enc_hook(data_dataclass)
-    assert ext_dc.code == ExtendedType.DATACLASS
-    decoded_dc = msgspec.ext_hook(ext_dc.code, memoryview(ext_dc.data))
-    assert decoded_dc['a'] == data_dataclass.a
-    assert decoded_dc['b'] == data_dataclass.b
-
-    # Unsupported type raises NotImplementedError
     with pytest.raises(NotImplementedError, match='not supported'):
-        msgspec.enc_hook(object())
+        msgspec._enc_hook(object())
 
-    # Unsupported extension code raises NotImplementedError
+
+def test_ext_hook_legacy_codes(data_dataclass) -> None:
+    dec = Decimal('123.456')
+    assert msgspec._ext_hook(ExtendedType.DECIMAL, memoryview(str(dec).encode())) == dec
+
+    dt = datetime(2026, 9, 30, 12, 0, 0)
+    assert msgspec._ext_hook(ExtendedType.DATETIME, memoryview(dt.isoformat().encode())) == dt
+
+    d = date(2026, 9, 30)
+    assert msgspec._ext_hook(ExtendedType.DATE, memoryview(d.isoformat().encode())) == d
+
+    assert msgspec._ext_hook(ExtendedType.DATACLASS, memoryview(b'{"a": 1}')) == {'a': 1}
+
+
+def test_unknown_ext_code_raises_not_implemented() -> None:
     with pytest.raises(NotImplementedError, match='Extension type code'):
-        msgspec.ext_hook(999, memoryview(b'test'))
+        msgspec._ext_hook(999, memoryview(b'test'))
+
+    data = mpk.encode(mpk.Ext(99, b'x'))
+
+    with pytest.raises(NotImplementedError, match='Extension type code'):
+        msgspec.deserialize_msgpack(data)
+
+
+def test_legacy_ext_coded_data_decodes() -> None:
+    data = mpk.encode([mpk.Ext(int(ExtendedType.DECIMAL), b'1.25'), mpk.Ext(int(ExtendedType.DATE), b'2023-07-24')])
+
+    assert msgspec.deserialize_msgpack(data) == [Decimal('1.25'), date(2023, 7, 24)]
+
+
+def test_unsupported_type_raises_not_implemented() -> None:
+    with pytest.raises(NotImplementedError, match='not supported'):
+        msgspec.serialize_msgpack(object())
+
+
+def test_unsupported_type_native_raises_type_error() -> None:
+    with pytest.raises(TypeError):
+        msgspec.serialize_msgpack_native(object())
+
+
+@pytest.mark.parametrize(
+    ('serialize', 'deserialize'),
+    [
+        (msgspec.serialize_msgpack, msgspec.deserialize_msgpack),
+        (msgspec.serialize_msgpack_native, msgspec.deserialize_msgpack_native),
+    ],
+)
+class TestGenericRoundTrips:
+    def test_list_of_struct(self, serialize, deserialize, msgspec_struct) -> None:
+        value = [msgspec_struct, msgspec_struct]
+
+        assert deserialize(serialize(value), list[msgspec_struct.__class__]) == value  # ty: ignore[invalid-type-form]
+
+    def test_dict_of_models(self, serialize, deserialize, pydantic_struct) -> None:
+        value = {'k': pydantic_struct}
+
+        assert deserialize(serialize(value), dict[str, pydantic_struct.__class__]) == value  # ty: ignore[invalid-type-form]
+
+    def test_list_of_models(self, serialize, deserialize, pydantic_struct) -> None:
+        value = [pydantic_struct, pydantic_struct]
+
+        assert deserialize(serialize(value), list[pydantic_struct.__class__]) == value  # ty: ignore[invalid-type-form]
+
+    def test_optional_model(self, serialize, deserialize, pydantic_struct) -> None:
+        tp = pydantic_struct.__class__ | None
+
+        assert deserialize(serialize(pydantic_struct), tp) == pydantic_struct
+        assert deserialize(serialize(None), tp) is None
+
+    def test_union_falls_back_to_type_adapter(self, serialize, deserialize, pydantic_struct) -> None:
+        tp = pydantic_struct.__class__ | int
+
+        assert deserialize(serialize(pydantic_struct), tp) == pydantic_struct
+        assert deserialize(serialize(5), tp) == 5
+
+    def test_nested_model_in_dict_encodes(self, serialize, deserialize, pydantic_struct) -> None:
+        decoded = deserialize(serialize({'m': pydantic_struct}))
+
+        assert decoded['m']['a'] == pydantic_struct.a
+        assert decoded['m']['sub']['name'] == pydantic_struct.sub.name
+
+    def test_plain_generics(self, serialize, deserialize) -> None:
+        assert deserialize(serialize([1, 2]), list[int]) == [1, 2]
+        assert deserialize(serialize({'a': 1}), dict[str, int]) == {'a': 1}
+        assert deserialize(serialize(None), int | None) is None
+
+    def test_untyped_returns_plain_values(self, serialize, deserialize) -> None:
+        decoded = deserialize(serialize({'amount': Decimal('1.5'), 'tags': {'a'}}))
+
+        assert decoded == {'amount': '1.5', 'tags': ['a']}
+
+
+@pytest.mark.parametrize(
+    ('old', 'new'),
+    [
+        ('enc_hook', '_enc_hook'),
+        ('ext_hook', '_ext_hook'),
+        ('MSGPACK_ENCODER', '_MSGPACK_ENCODER'),
+        ('MSGPACK_ENCODER_NATIVE', '_MSGPACK_ENCODER_NATIVE'),
+        ('MSGPACK_DECODER', '_MSGPACK_DECODER'),
+        ('MSGPACK_DECODER_NATIVE', '_MSGPACK_DECODER_NATIVE'),
+    ],
+)
+def test_deprecated_internal_alias_resolves_to_renamed_object(old: str, new: str) -> None:
+    with pytest.warns(DeprecationWarning, match='1.0'):
+        value = getattr(msgspec, old)
+
+    assert value is getattr(msgspec, new)
+
+
+def test_unknown_attribute_raises_attribute_error() -> None:
+    with pytest.raises(AttributeError):
+        msgspec.does_not_exist  # noqa: B018
+
+
+def test_pydantic_dec_hook_rejects_non_model_types() -> None:
+    with pytest.raises(NotImplementedError, match='not supported'):
+        msgspec._pydantic_dec_hook(Decimal, '1')

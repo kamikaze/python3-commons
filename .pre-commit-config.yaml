@@ -11,19 +11,11 @@ repos:
       # Run the linter.
       - id: ruff-check
         args: [ --fix ]
-        files: ^(migrations/|src/|tests/).*
-        types_or: [ python, pyi ]
-      # Run the import sort.
-      - id: ruff-check
-        args:
-          - --select
-          - I
-          - --fix
-        files: ^(migrations/|src/|tests/).*
+        files: ^(src|tests)/.*
         types_or: [ python, pyi ]
       # Run the formatter.
       - id: ruff-format
-        files: ^(migrations/|src/|tests/).*
+        files: ^(src|tests)/.*
         types_or: [ python, pyi ]
 
 #  - repo: local

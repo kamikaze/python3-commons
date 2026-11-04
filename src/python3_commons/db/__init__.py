@@ -1,28 +1,45 @@
+# pyright: strict
 import asyncio
 import contextlib
 import logging
 import time
+import warnings
 from collections.abc import AsyncGenerator, Callable, Mapping
-from typing import TYPE_CHECKING
+from contextlib import AbstractAsyncContextManager
+from typing import Self
 
-try:
-    from sqlalchemy import MetaData, text
-    from sqlalchemy.exc import OperationalError, SQLAlchemyError
-    from sqlalchemy.exc import TimeoutError as SATimeoutError
-    from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_engine_from_config
-    from sqlalchemy.ext.asyncio.session import async_sessionmaker
-    from sqlalchemy.orm import declarative_base
-except ImportError as e:
-    msg = 'Install python3-commons[database] to use this feature'
-    raise RuntimeError(msg) from e
+from python3_commons._extras import require
 
-if TYPE_CHECKING:
-    from python3_commons.conf import DBSettings
+require('database', 'sqlalchemy')
 
+from sqlalchemy import MetaData, make_url, text
+from sqlalchemy.exc import OperationalError, SQLAlchemyError
+from sqlalchemy.exc import TimeoutError as SATimeoutError
+from sqlalchemy.ext.asyncio import AsyncAttrs, AsyncEngine, AsyncSession, async_engine_from_config
+from sqlalchemy.ext.asyncio.session import async_sessionmaker
+from sqlalchemy.orm import DeclarativeBase
+
+from python3_commons.conf import DBSettings
+
+__all__ = [
+    'AsyncSessionManager',
+    'Base',
+    'DatabaseError',
+    'EngineCreationError',
+    'SessionAcquireError',
+    'is_healthy',
+    'metadata',
+]
 logger = logging.getLogger(__name__)
 
 metadata = MetaData()
-Base = declarative_base(metadata=metadata)
+
+
+class Base(AsyncAttrs, DeclarativeBase):
+    """Shared declarative base; ``Base.metadata`` is the module-level ``metadata`` object."""
+
+    metadata = metadata
+
 
 # How long (seconds) to wait for a connection from the pool before giving up.
 # This is the main guard against silent hangs.
@@ -46,26 +63,84 @@ class SessionAcquireError(DatabaseError):
 
 
 class AsyncSessionManager:
+    """
+    Owns one lazily built ``AsyncEngine`` per configured database name.
+
+    Use it as an async resource so pooled connections are closed on shutdown::
+
+        async with AsyncSessionManager(cfgs, probe_connection=True) as db:
+            app.state.db = db
+            yield
+
+    ``probe_connection`` controls the pre-acquire connection probe done by the
+    dependencies from ``get_async_session``. ``None`` (the default) keeps the
+    probe on and warns; the probe becomes opt-in in 1.0.
+    """
+
     def __init__(
         self,
         db_configs: Mapping[str, DBSettings],
         pool_acquire_timeout: float = _DEFAULT_POOL_ACQUIRE_TIMEOUT,
+        *,
+        probe_connection: bool | None = None,
     ) -> None:
+        if probe_connection is None:
+            warnings.warn(
+                'the connection probe becomes opt-in in 1.0; pass probe_connection=True to keep it',
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
         self.db_configs: Mapping[str, DBSettings] = db_configs
         self.pool_acquire_timeout = pool_acquire_timeout
-        self.engines: dict[str, AsyncEngine] = {}
-        self.session_makers: dict[str, async_sessionmaker] = {}
+        self._probe_connection: bool = probe_connection is not False
+        self._engines: dict[str, AsyncEngine] = {}
+        self._session_makers: dict[str, async_sessionmaker[AsyncSession]] = {}
+        self._dependencies: dict[str, Callable[[], AsyncGenerator[AsyncSession]]] = {}
+
+    @property
+    def engines(self) -> dict[str, AsyncEngine]:
+        warnings.warn(
+            'AsyncSessionManager.engines is deprecated and will be removed in 1.0',
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
+        return self._engines
+
+    @property
+    def session_makers(self) -> dict[str, async_sessionmaker[AsyncSession]]:
+        warnings.warn(
+            'AsyncSessionManager.session_makers is deprecated and will be removed in 1.0',
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
+        return self._session_makers
+
+    async def __aenter__(self) -> Self:
+        return self
+
+    async def __aexit__(self, *exc: object) -> None:
+        await self.aclose()
 
     def get_db_config(self, name: str) -> DBSettings:
         try:
             return self.db_configs[name]
-        except KeyError:
-            logger.exception('Missing database config for key %r. Available: %s', name, list(self.db_configs))
+        except KeyError as e:
+            e.add_note(f'Missing database config for key {name!r}. Available: {list(self.db_configs)}')
+
             raise
 
     def _build_engine(self, name: str) -> AsyncEngine:
         db_config = self.get_db_config(name)
         dsn = db_config.dsn
+
+        if dsn is None or not str(dsn):
+            msg = f'DSN not configured for {name!r}'
+
+            raise EngineCreationError(msg)
+
         str_dsn = str(dsn)
 
         logger.debug('Building engine for %r (dsn=%s)', name, dsn)
@@ -74,7 +149,20 @@ class AsyncSessionManager:
         # Cap it at the manager's acquire timeout so the pool never blocks
         # longer than the deadline we advertise to callers; falls back to the
         # default so the pool never waits forever.
-        pool_timeout = min(db_config.pool_timeout or _DEFAULT_POOL_ACQUIRE_TIMEOUT, self.pool_acquire_timeout)
+        configured_pool_timeout = db_config.pool_timeout or _DEFAULT_POOL_ACQUIRE_TIMEOUT
+        pool_timeout = min(configured_pool_timeout, self.pool_acquire_timeout)
+
+        # Warn only about a value someone set (DB_POOL_TIMEOUT or pool_timeout=); the default (30) is always above the
+        # default acquire timeout (10) and is capped silently.
+        explicitly_set = 'pool_timeout' in getattr(db_config, 'model_fields_set', ())
+
+        if explicitly_set and configured_pool_timeout > self.pool_acquire_timeout:
+            logger.warning(
+                'Pool timeout for %r is capped: configured pool_timeout=%s exceeds pool_acquire_timeout=%s',
+                name,
+                configured_pool_timeout,
+                self.pool_acquire_timeout,
+            )
 
         configuration = {
             'url': str_dsn,
@@ -85,22 +173,28 @@ class AsyncSessionManager:
             'pool_recycle': db_config.pool_recycle,
             'pool_pre_ping': db_config.pool_pre_ping,
         }
-        connect_args = {'timeout': _DEFAULT_CONNECT_TIMEOUT}
-        # For asyncpg, command_timeout provides a per-statement timeout.
-        if 'postgresql' in str_dsn:
-            connect_args['command_timeout'] = float(db_config.statement_timeout)
 
         try:
+            connect_args: dict[str, float] = {}
+
+            # These keyword arguments are asyncpg-specific.
+            if make_url(str_dsn).get_driver_name() == 'asyncpg':
+                connect_args['timeout'] = _DEFAULT_CONNECT_TIMEOUT
+                # statement_timeout is applied as asyncpg's client-side command_timeout
+                # (a per-statement deadline), not as the server-side statement_timeout.
+                connect_args['command_timeout'] = float(db_config.statement_timeout)
+
             engine = async_engine_from_config(
                 configuration,
                 prefix='',
                 connect_args=connect_args,
             )
         except Exception as e:
-            logger.exception('Failed to create engine for %r', name)
-
             msg = f'Could not create engine for {name!r}'
-            raise EngineCreationError(msg) from e
+            exc = EngineCreationError(msg)
+            exc.add_note(f'Engine creation failed for {name!r}: {e!r}')
+
+            raise exc from e
 
         logger.info(
             'Engine created for %r (pool_size=%s, max_overflow=%s, pool_timeout=%s)',
@@ -113,54 +207,71 @@ class AsyncSessionManager:
         return engine
 
     def get_engine(self, name: str) -> AsyncEngine:
-        try:
-            return self.engines[name]
-        except KeyError:
+        if (engine := self._engines.get(name)) is None:
             engine = self._build_engine(name)
-            self.engines[name] = engine
+            self._engines[name] = engine
 
-            return engine
+        return engine
 
     async def dispose_engine(self, name: str) -> None:
         """Gracefully close all pooled connections for *name*."""
-        engine = self.engines.pop(name, None)
-        self.session_makers.pop(name, None)
+        engine = self._engines.pop(name, None)
+        self._session_makers.pop(name, None)
 
         if engine is not None:
             logger.info('Disposing engine for %r', name)
 
             await engine.dispose()
 
-    async def dispose_all(self) -> None:
-        """Gracefully close every managed engine."""
-        for name in list(self.engines):
-            await self.dispose_engine(name)
+    async def aclose(self) -> None:
+        """
+        Dispose every managed engine concurrently; a failing engine does not stop the others.
 
-    def get_session_maker(self, name: str) -> async_sessionmaker:
-        try:
-            return self.session_makers[name]
-        except KeyError:
+        The manager stays usable: engines are rebuilt lazily on the next use.
+        """
+        engines, self._engines = self._engines, {}
+        self._session_makers = {}
+
+        results = await asyncio.gather(*(engine.dispose() for engine in engines.values()), return_exceptions=True)
+
+        for name, result in zip(engines, results, strict=True):
+            if isinstance(result, BaseException):
+                logger.error('Failed to dispose engine for %r: %r', name, result)
+            else:
+                logger.info('Disposed engine for %r', name)
+
+    async def dispose_all(self) -> None:
+        """Gracefully close every managed engine (alias of :meth:`aclose`)."""
+        await self.aclose()
+
+    def get_session_maker(self, name: str) -> async_sessionmaker[AsyncSession]:
+        if (session_maker := self._session_makers.get(name)) is None:
             logger.debug('Creating session maker for %r', name)
             engine = self.get_engine(name)
             session_maker = async_sessionmaker(engine, expire_on_commit=False)
-            self.session_makers[name] = session_maker
+            self._session_makers[name] = session_maker
 
-            return session_maker
+        return session_maker
 
     def get_async_session(self, name: str) -> Callable[[], AsyncGenerator[AsyncSession]]:
         """
-        Return a dependency-injection-friendly async generator that yields a
-        session, wrapped in an outer timeout so it can never hang silently.
+        Return a dependency-injection-friendly async generator function that yields a
+        session. The same callable is returned for the same *name*, so FastAPI
+        shares one session per request when it is used in several dependencies.
 
         Usage (FastAPI / any DI framework):
-            session: AsyncSession = Depends(manager.get_async_session("default"))
+            get_db = manager.get_async_session("default")
+            session: AsyncSession = Depends(get_db)
         """
+        if (dependency := self._dependencies.get(name)) is not None:
+            return dependency
 
         async def get_session() -> AsyncGenerator[AsyncSession]:
             session_maker = self.get_session_maker(name)
 
             async with session_maker() as session:
-                await self._acquire_connection(name, session)
+                if self._probe_connection:
+                    await self._acquire_connection(name, session)
 
                 try:
                     yield session
@@ -170,7 +281,19 @@ class AsyncSessionManager:
 
                     raise
 
+        self._dependencies[name] = get_session
+
         return get_session
+
+    def session(self, name: str = 'default') -> AbstractAsyncContextManager[AsyncSession]:
+        """
+        Return an async context manager that yields a session.
+
+        Usage:
+            async with manager.session("default") as session:
+                ...
+        """
+        return contextlib.asynccontextmanager(self.get_async_session(name))()
 
     async def _acquire_connection(self, name: str, session: AsyncSession) -> None:
         t0 = time.monotonic()
@@ -191,37 +314,34 @@ class AsyncSessionManager:
                 await session.rollback()
         except TimeoutError as e:
             elapsed = time.monotonic() - t0
-            logger.exception(
-                'Timed out waiting for a session for %r after %.3fs (limit=%.1fs)',
-                name,
-                elapsed,
-                self.pool_acquire_timeout,
-            )
-
             msg = f'Could not acquire a session for {name!r} within {self.pool_acquire_timeout}s'
-            raise SessionAcquireError(msg) from e
+            exc = SessionAcquireError(msg)
+            exc.add_note(f'Timed out waiting for a session for {name!r} after {elapsed:.3f}s')
+
+            raise exc from e
         except (OperationalError, SATimeoutError) as e:
             elapsed = time.monotonic() - t0
-
-            logger.exception('DB error acquiring session for %r after %.3fs', name, elapsed)
-
             msg = f'DB error for {name!r}: {e}'
-            raise SessionAcquireError(msg) from e
-        except SQLAlchemyError as e:
-            logger.exception('Unexpected SQLAlchemy error for %r', name)
+            exc = SessionAcquireError(msg)
+            exc.add_note(f'DB error acquiring session for {name!r} after {elapsed:.3f}s')
 
+            raise exc from e
+        except SQLAlchemyError as e:
             msg = f'SQLAlchemy error for {name!r}'
 
             raise SessionAcquireError(msg) from e
 
         logger.debug('Session acquired for %r in %.3fs', name, time.monotonic() - t0)
 
-    def get_session_context(self, name: str):
+    @warnings.deprecated(
+        'get_session_context is deprecated and will be removed in 1.0; use `async with manager.session(name)`'
+    )
+    def get_session_context(self, name: str) -> Callable[[], AbstractAsyncContextManager[AsyncSession]]:
         """
-        Return an async context manager that yields a session.
+        Return a factory of async context managers that yield a session.
 
         Usage:
-            async with manager.get_session_context("default") as session:
+            async with manager.get_session_context("default")() as session:
                 ...
         """
         return contextlib.asynccontextmanager(self.get_async_session(name))
@@ -250,11 +370,11 @@ async def is_healthy(
             logger.warning('Health check query returned unexpected result')
     except TimeoutError:
         elapsed = time.monotonic() - t0
-        logger.exception('Health check timed out after %.3fs (limit=%.1fs)', elapsed, timeout)
+        logger.warning('Health check timed out after %.3fs (limit=%.1fs)', elapsed, timeout)
 
         return False
-    except Exception:
-        logger.exception('Health check failed')
+    except Exception as exc:  # noqa: BLE001  # documented: never raises
+        logger.warning('Health check failed: %r', exc)
 
         return False
 

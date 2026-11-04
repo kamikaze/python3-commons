@@ -1,4 +1,7 @@
+# pyright: strict
 from enum import IntEnum
+
+__all__ = ['ExtendedType']
 
 
 class ExtendedType(IntEnum):

@@ -1,6 +1,10 @@
+import logging
+import logging.config
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from decimal import Decimal
+from typing import Any
 from uuid import UUID, uuid4
 
 import msgspec
@@ -21,7 +25,7 @@ def data_dict():
 
 
 @dataclass
-class TestData:
+class SampleData:
     a: int
     b: str
     c: str | None
@@ -32,7 +36,7 @@ class TestData:
 
 @pytest.fixture
 def data_dataclass():
-    return TestData(a=1, b='B', c=None, d=datetime(2023, 7, 25, 1, 2, 3), e=date(2023, 7, 24), f=Decimal('1.23'))
+    return SampleData(a=1, b='B', c=None, d=datetime(2023, 7, 25, 1, 2, 3), e=date(2023, 7, 24), f=Decimal('1.23'))
 
 
 class SubStruc(msgspec.Struct):
@@ -40,7 +44,7 @@ class SubStruc(msgspec.Struct):
     name: str
 
 
-class TestStruct(msgspec.Struct):
+class SampleStruct(msgspec.Struct):
     a: int
     b: str
     c: str | None
@@ -55,7 +59,7 @@ class PydanticSubStruc(BaseModel):
     name: str
 
 
-class PydanticTestStruct(BaseModel):
+class PydanticSampleStruct(BaseModel):
     a: int
     b: str
     c: str | None
@@ -66,8 +70,8 @@ class PydanticTestStruct(BaseModel):
 
 
 @pytest.fixture
-def msgspec_struct() -> TestStruct:
-    return TestStruct(
+def msgspec_struct() -> SampleStruct:
+    return SampleStruct(
         a=1,
         b='B',
         c=None,
@@ -79,8 +83,8 @@ def msgspec_struct() -> TestStruct:
 
 
 @pytest.fixture
-def pydantic_struct() -> PydanticTestStruct:
-    return PydanticTestStruct(
+def pydantic_struct() -> PydanticSampleStruct:
+    return PydanticSampleStruct(
         a=1,
         b='B',
         c=None,
@@ -92,46 +96,34 @@ def pydantic_struct() -> PydanticTestStruct:
 
 
 @pytest.fixture
-def s3_file_objects() -> tuple:
-    return (
-        (
-            'file_a.txt',
-            datetime(2024, 1, 1, tzinfo=UTC),
-            b'ABCDE',
-        ),
-        (
-            'file_b.txt',
-            datetime(2024, 1, 2, tzinfo=UTC),
-            b'FGHIJ',
-        ),
-        (
-            'file_c.txt',
-            datetime(2024, 1, 3, tzinfo=UTC),
-            b'KLMNO',
-        ),
-        (
-            'file_d.txt',
-            datetime(2024, 1, 4, tzinfo=UTC),
-            b'PQRST',
-        ),
-    )
+def apply_dict_config() -> Iterator[Callable[[dict[str, Any]], None]]:
+    """Apply a ``logging.config.dictConfig`` dict and undo it afterwards.
 
+    ``disable_existing_loggers`` is forced to False: True would silence every logger created before, in later tests.
+    The root logger and the named loggers of the config get their handlers, level and propagation back.
+    """
+    touched: dict[str, tuple[list[logging.Handler], int, bool]] = {}
 
-@pytest.fixture(scope='session')
-def valkey_cache():
-    from testcontainers.community.valkey import ValkeyContainer  # noqa: PLC0415
+    def apply(config: dict[str, Any]) -> None:
+        for name in ('', *config.get('loggers', {})):
+            logger = logging.getLogger(name)
+            touched.setdefault(name, (logger.handlers[:], logger.level, logger.propagate))
 
-    from python3_commons.cache import AsyncValkeyClient  # noqa: PLC0415
-    from python3_commons.conf import valkey_settings  # noqa: PLC0415
+        logging.config.dictConfig({**config, 'disable_existing_loggers': False})
 
-    try:
-        container = ValkeyContainer().start()
-    except Exception as exc:
-        pytest.skip(f'Valkey container is not available: {exc}')
+    yield apply
 
-    try:
-        valkey_settings.dsn = f'redis://{container.get_container_host_ip()}:{container.get_exposed_port(6379)}'
-        AsyncValkeyClient._instances.pop(AsyncValkeyClient, None)  # noqa: SLF001
-        yield
-    finally:
-        container.stop()
+    for name, (handlers, level, propagate) in touched.items():
+        logger = logging.getLogger(name)
+
+        for handler in logger.handlers[:]:
+            if handler not in handlers:
+                logger.removeHandler(handler)
+                handler.close()
+
+        for handler in handlers:
+            if handler not in logger.handlers:
+                logger.addHandler(handler)
+
+        logger.setLevel(level)
+        logger.propagate = propagate

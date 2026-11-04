@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools", "wheel", "setuptools_scm"]
+requires = ["setuptools>=80", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -13,14 +13,23 @@ license = "GPL-3.0-only"
 readme = "README.md"
 classifiers = [
     "Development Status :: 4 - Beta",
-    "Programming Language :: Python"
+    "Framework :: AsyncIO",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
+    "Typing :: Typed"
 ]
-keywords = []
+keywords = ["asyncio", "commons", "utilities", "aiohttp", "pydantic", "sqlalchemy"]
 requires-python = ">=3.14.10,<3.16.0"
 dependencies = [
-    "msgpack~=1.2.4",
-    "msgspec~=0.22.0",
-    "pydantic-settings~=2.16.2"
+    "msgpack>=1.2.3,<2",
+    "msgspec>=0.22.0,<1",
+    "pydantic>=2.14.1,<3",
+    "pydantic-settings>=2.16.1,<3"
 ]
 
 [project.optional-dependencies]
@@ -28,18 +37,18 @@ all = [
     "python3_commons[api-client,audit,authn,authz,cache,database,object-storage,soap-client]"
 ]
 api-client = [
-    "aiohttp[speedups]>=3.14.5,<3.15.0",
-    "certifi~=2026.10.23",
+    "aiohttp[speedups]>=3.14.5,<4",
+    "certifi>=2026.10.19",
     "python3_commons[audit,object-storage]"
 ]
 audit = [
-    "lxml~=6.1.3",
-    "zeep[async]~=4.3.3",
+    "lxml>=6.1.3,<7",
+    "zeep[async]>=4.3.3,<5",
     "python3_commons[object-storage]"
 ]
 authn = [
-    "aiohttp[speedups]>=3.14.5,<3.15.0",
-    "certifi~=2026.10.23",
+    "aiohttp[speedups]>=3.14.5,<4",
+    "certifi>=2026.10.19",
     "python3_commons[api-client]"
 ]
 authz = [
@@ -47,55 +56,54 @@ authz = [
     "python3_commons[api-client]"
 ]
 cache = [
-    "valkey[libvalkey]~=6.1.1"
+    "valkey[libvalkey]>=6.1.1,<7"
 ]
 database = [
-    "asyncpg~=0.32.0",
-    "SQLAlchemy[asyncio]~=2.1.6",
+    "asyncpg>=0.32.0,<1",
+    "SQLAlchemy[asyncio]>=2.1.5,<3",
 ]
 object-storage = [
-    "object-storage-client~=0.3.0",
+    "object-storage-client>=0.4.1,<0.5",
 ]
 soap-client = [
-    "aiohttp[speedups]>=3.14.5,<3.15.0",
-    "certifi~=2026.10.23",
-    "lxml~=6.1.3",
-    "requests~=2.34.2",
-    "zeep[async]~=4.3.3",
+    "aiohttp[speedups]>=3.14.5,<4",
+    "certifi>=2026.10.19",
+    "lxml>=6.1.3,<7",
+    "requests>=2.34.2,<3",
+    "zeep[async]>=4.3.3,<5",
 ]
 
 
 [dependency-groups]
 dev = [
-    "build",
     "pre-commit",
     "pyright",
     "ruff",
-    "setuptools",
-    "setuptools_scm",
     "ty",
-    "wheel",
+    "types-lxml>=2026.2.16",
 ]
 testing = [
-    "pytest",
-    "pytest-asyncio",
-    "pytest-cov",
-    "pytest-mock",
-    "testcontainers[valkey]>=4.15.0",
+    "pytest>=9.2.0",
+    "pytest-asyncio>=1.4.1",
+    "pytest-cov>=7.1.0",
+    "pytest-mock>=3.17.0",
+    "testcontainers[postgres,valkey]>=4.15.0",
 ]
 
 [project.urls]
 Homepage = "https://github.com/kamikaze/python3-commons"
 Documentation = "https://github.com/kamikaze/python3-commons/wiki"
+Source = "https://github.com/kamikaze/python3-commons"
+Issues = "https://github.com/kamikaze/python3-commons/issues"
+Changelog = "https://github.com/kamikaze/python3-commons/blob/master/CHANGELOG.md"
+
+[tool.uv]
+default-groups = ["dev", "testing"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
-exclude = ["tests"]
 
 [tool.setuptools_scm]
-
-[tool.bdist_wheel]
-universal = true
 
 [tool.ruff]
 line-length = 120
@@ -107,19 +115,20 @@ detect-string-imports = true
 
 [tool.ruff.lint]
 select = [
-    "FAST",
     "YTT",
-    #    "ANN",
+    "ANN",
     "I",
     "E",
     "W",
     "PYI",
     "A",
-    #    "ARG",
+    "ARG",
     "ASYNC",
+    "BLE",
     "B",
     "C4",
-    #    "DTZ",
+    "C90",
+    "DTZ",
     "EM",
     "EXE",
     "F",
@@ -133,13 +142,11 @@ select = [
     "ISC",
     "LOG",
     "N",
-    "NPY",
-    "PD",
     "PERF",
     "PIE",
     "PLC",
     "PLE",
-    #    "PLR",
+    "PLR",
     "PLW",
     "PT",
     "PTH",
@@ -158,12 +165,26 @@ select = [
     "UP",
 ]
 ignore = [
+    "ANN401", # Any is the honest type for pass-through arguments
     "ASYNC109",
+    "TC001", # public signatures import their types at runtime (get_type_hints), 3.E
+    "TC002", # same; on py315 the autofix would emit `lazy from`, which 3.14 rejects
     "TC003", # msgspec
 ]
 
+[tool.ruff.lint.flake8-type-checking]
+runtime-evaluated-base-classes = ["sqlalchemy.orm.DeclarativeBase", "python3_commons.db.Base"]
+
+[tool.ruff.lint.flake8-annotations]
+mypy-init-return = true
+
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["DTZ", "S101", "S105", "S106"]
+"tests/**" = ["ANN", "ARG", "BLE001", "DTZ", "PLR0911", "PLR2004", "S101", "S105", "S106"]
+# A10 frozen code (convention 17): exempted here, never edited
+"src/python3_commons/serializers/msgpack.py" = ["ANN"]
+"src/python3_commons/helpers.py" = ["ANN"]
+# imports follow the `require(...)` extras guard (2.C)
+"src/python3_commons/{api_client.py,auth.py,cache.py,object_storage.py,permissions.py,soap_client.py,zeep_audit.py,db/__init__.py,db/models/auth.py,db/models/common.py,db/models/rbac.py,db/models/users.py}" = ["E402"]
 
 [tool.ruff.lint.flake8-quotes]
 docstring-quotes = "double"
@@ -178,19 +199,58 @@ quote-style = "single"
 pythonVersion = "3.15"
 venvPath = "."
 venv = ".venv"
+typeCheckingMode = "standard"
 reportMatchNotExhaustive = "error"
 reportUnnecessaryComparison = "error"
+reportMissingParameterType = "error"
+reportMissingTypeArgument = "error"
+reportPrivateUsage = "error"
+reportDeprecated = "error"
+# A10 frozen files (convention 17): exempt through configuration, never through edits.
+ignore = [
+    "src/python3_commons/serializers/msgpack.py",
+    "src/python3_commons/db/helpers.py",
+    "src/python3_commons/helpers.py",
+]
 
-[tool.ty.rules]
-unknown-argument = "ignore"  # false positives for Pydantic model fields
+[[tool.pyright.executionEnvironments]]
+# The deprecation policy exercises every shim under pytest.warns, so reportDeprecated applies to src only.
+# Tests also read private state on purpose and take fixtures as parameters, so the two rules below apply to src only.
+root = "tests"
+extraPaths = [".", "src"]
+reportDeprecated = false
+reportPrivateUsage = false
+reportMissingParameterType = false
 
-[tool.pytest.ini_options]
-pythonpath = ["src"]
+[[tool.ty.overrides]]
+include = ["tests/**"]
+
+[tool.ty.overrides.rules]
+deprecated = "ignore"
+
+[tool.pytest]
 asyncio_mode = "strict"
 asyncio_default_fixture_loop_scope = "function"
-addopts = "--cov python3_commons --cov-fail-under=15 --cov-report term-missing --verbose"
+asyncio_debug = true
+strict = true
+addopts = ["--verbose"]
 norecursedirs = ["dist", "build", ".tox"]
 testpaths = ["tests"]
+filterwarnings = ["error"]
 markers = [
+    "integration: needs containers or external services",
     "functional: marks tests as functional",
 ]
+
+[tool.coverage.run]
+branch = true
+source = ["python3_commons"]
+
+[tool.coverage.report]
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "@overload",
+    "\\.\\.\\.$",
+    "class .*\\(Protocol(\\[.*\\])?\\):",
+]
+fail_under = 75

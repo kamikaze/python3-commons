@@ -1,3 +1,7 @@
+"""Opt-in test against a real OIDC provider (Cognito): skipped unless TEST_OIDC_AUTHORITY_URL is set, also under
+REQUIRE_CONTAINERS=1 (it needs no container). The hermetic OIDC client tests are tests/unit/test_auth_idp.py.
+"""
+
 from typing import TYPE_CHECKING
 
 import pytest
@@ -17,7 +21,6 @@ async def test_get_token_cognito(
             authority_url=authority_url,
             client_id=client_id,
             client_secret=client_secret,
-            verify_cert=False,
             timeout=10,
         ) as client,
     ):

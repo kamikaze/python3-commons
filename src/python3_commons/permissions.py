@@ -1,20 +1,31 @@
-from typing import TYPE_CHECKING, Any
+# pyright: strict
 from uuid import UUID
 
-try:
-    import sqlalchemy as sa
-    from sqlalchemy import and_, exists, func
-except ImportError as e:
-    msg = 'Install python3-commons[authz] to use this feature'
-    raise RuntimeError(msg) from e
+from python3_commons._extras import require
 
+require('authz', 'sqlalchemy')
+
+import sqlalchemy as sa
+from sqlalchemy import ColumnElement, and_, exists, func
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from python3_commons.db.models import load_models
 from python3_commons.db.models.rbac import RBACApiKeyRole, RBACPermission, RBACRolePermission, RBACUserRole
 
-if TYPE_CHECKING:
-    from sqlalchemy.ext.asyncio import AsyncSession
+__all__ = [
+    'has_api_key_permission',
+    'has_user_permission',
+]
 
 
-async def _has_permission(session: AsyncSession, role_model: Any, subject_filter: Any, permission: str) -> bool:
+async def _has_permission(
+    session: AsyncSession,
+    role_model: type[RBACUserRole | RBACApiKeyRole],
+    subject_filter: ColumnElement[bool],
+    permission: str,
+) -> bool:
+    load_models()
+
     query = sa.select(
         exists().where(
             and_(

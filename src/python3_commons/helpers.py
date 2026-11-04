@@ -1,25 +1,78 @@
 import contextlib
 import functools
+import importlib
 import logging
-import re
-import shlex
 import threading
-import time
+import warnings
 from abc import ABCMeta
 from collections import defaultdict
-from collections.abc import Mapping, MutableMapping, Sequence
-from datetime import date, datetime, timedelta
-from decimal import ROUND_HALF_UP, Decimal
-from http.cookies import BaseCookie
-from json import dumps
-from typing import ClassVar, Literal
-from urllib.parse import urlencode
+from collections.abc import MutableMapping
+from typing import TYPE_CHECKING, Any, ClassVar
 
-from pydantic import HttpUrl
+if TYPE_CHECKING:
+    # deprecated alias of the internal _logger, served by __getattr__ below
+    logger: logging.Logger
 
-from python3_commons.serializers.json import CustomJSONEncoder
+    from python3_commons.dates import date_from_string as date_from_string  # noqa: PLC0414
+    from python3_commons.dates import date_range as date_range  # noqa: PLC0414
+    from python3_commons.dates import datetime_from_string as datetime_from_string  # noqa: PLC0414
+    from python3_commons.decimals import round_decimal as round_decimal  # noqa: PLC0414
+    from python3_commons.decorators import log_execution_time as log_execution_time  # noqa: PLC0414
+    from python3_commons.text import parse_string_list as parse_string_list  # noqa: PLC0414
+    from python3_commons.text import to_snake_case as to_snake_case  # noqa: PLC0414
+    from python3_commons.urls import replace_origin as replace_origin  # noqa: PLC0414
+    from python3_commons.urls import request_to_curl as request_to_curl  # noqa: PLC0414
 
-logger = logging.getLogger(__name__)
+# The moved names stay in __all__ until 1.0 so that a star-import keeps binding them; each one warns on access.
+__all__ = [
+    'SingletonMeta',
+    'date_from_string',
+    'date_range',
+    'datetime_from_string',
+    'log_execution_time',
+    'parse_string_list',
+    'replace_origin',
+    'request_to_curl',
+    'round_decimal',
+    'to_snake_case',
+    'tries',
+]
+_logger = logging.getLogger(__name__)
+
+_MOVED: dict[str, str] = {
+    'date_from_string': 'python3_commons.dates',
+    'date_range': 'python3_commons.dates',
+    'datetime_from_string': 'python3_commons.dates',
+    'log_execution_time': 'python3_commons.decorators',
+    'parse_string_list': 'python3_commons.text',
+    'replace_origin': 'python3_commons.urls',
+    'request_to_curl': 'python3_commons.urls',
+    'round_decimal': 'python3_commons.decimals',
+    'to_snake_case': 'python3_commons.text',
+}
+
+
+def __getattr__(name: str) -> Any:
+    if name == 'logger':
+        warnings.warn(
+            'python3_commons.helpers.logger is internal and deprecated; it is removed in 1.0',
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
+        return _logger
+
+    if (module_name := _MOVED.get(name)) is None:
+        msg = f'module {__name__!r} has no attribute {name!r}'
+        raise AttributeError(msg)
+
+    warnings.warn(
+        f'python3_commons.helpers.{name} moved to {module_name}.{name}; the helpers.{name} alias is removed in 1.0',
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+    return getattr(importlib.import_module(module_name), name)
 
 
 class SingletonMeta(ABCMeta):
@@ -41,25 +94,6 @@ class SingletonMeta(ABCMeta):
                 return cls._instances[cls]
 
 
-def date_from_string(string: str, fmt: str = '%d.%m.%Y') -> date:
-    try:
-        return datetime.strptime(string, fmt).date()
-    except ValueError:
-        return date.fromisoformat(string)
-
-
-def datetime_from_string(string: str) -> datetime:
-    try:
-        return datetime.strptime(string, '%d.%m.%Y %H:%M:%S')
-    except ValueError:
-        return datetime.fromisoformat(string)
-
-
-def date_range(start_date, end_date):
-    for n in range(int((end_date - start_date).days + 1)):
-        yield start_date + timedelta(days=n)
-
-
 def tries(times):
     def func_wrapper(f):
         @functools.wraps(f)
@@ -73,100 +107,3 @@ def tries(times):
         return wrapper
 
     return func_wrapper
-
-
-def round_decimal(value: Decimal, decimal_places=2, rounding_mode=ROUND_HALF_UP) -> Decimal:
-    try:
-        return value.quantize(Decimal(10) ** -decimal_places, rounding=rounding_mode)
-    except AttributeError:
-        return value
-
-
-def request_to_curl(
-    url: str,
-    query: Mapping | None = None,
-    method: Literal['get', 'post', 'put', 'patch', 'options', 'head', 'delete'] = 'get',
-    headers: Mapping | None = None,
-    cookies: BaseCookie[str] | None = None,
-    json: Mapping | Sequence | str | None = None,
-    data: Mapping | bytes | None = None,
-) -> str:
-    if query:
-        url = f'{url}?{urlencode(query, doseq=True)}'
-
-    curl_cmd: list[str] = ['curl', '-i', '-X', method.upper(), url]
-
-    if headers:
-        for key, value in headers.items():
-            curl_cmd += ['-H', f'{key}: {value}']
-
-    if cookies:
-        cookie_str = '; '.join(f'{k}={v.value}' for k, v in cookies.items())
-        curl_cmd += ['-b', cookie_str]
-
-    if json:
-        curl_cmd += ['-H', 'Content-Type: application/json', '-d', dumps(json, cls=CustomJSONEncoder)]
-    elif data:
-        body = None
-
-        if isinstance(data, Mapping):
-            body = urlencode(data, doseq=True)
-        elif isinstance(data, bytes):
-            body = data.decode('utf-8')
-
-        if body:
-            curl_cmd += ['-d', body]
-
-    return ' '.join(shlex.quote(part) for part in curl_cmd)
-
-
-def log_execution_time(func):
-    _logger = logging.getLogger(func.__module__)
-
-    @functools.wraps(func)
-    async def wrapper(*args, **kwargs):
-        start_time = time.monotonic()
-
-        try:
-            return await func(*args, **kwargs)
-        finally:
-            elapsed = time.monotonic() - start_time
-            _logger.info('%s.%s executed in %.4f seconds', func.__module__, func.__name__, elapsed)
-
-    return wrapper
-
-
-def to_snake_case(s: str) -> str:
-    # Lowercase and strip whitespace
-    s = s.strip().lower()
-
-    # Replace all whitespace with underscores
-    s = re.sub(r'\s+', '_', s)
-
-    # Keep only alphanumeric and underscore characters
-    s = re.sub(r'[^a-z0-9_]', '', s)
-
-    # Collapse consecutive underscores
-    return re.sub(r'_+', '_', s)
-
-
-def parse_string_list(v: str | Sequence[str]) -> Sequence[str]:
-    if isinstance(v, str):
-        return tuple(map(str.strip, v.split(',')))
-
-    return v
-
-
-def replace_origin(url: HttpUrl, host_url: HttpUrl) -> HttpUrl:
-    if host_url.host is None:
-        msg = 'Host URL must have a host'
-        raise ValueError(msg)
-
-    return HttpUrl.build(
-        scheme=host_url.scheme,
-        host=host_url.host,
-        port=host_url.port,
-        path=url_path.lstrip('/') if (url_path := url.path) else url_path,
-        query=url.query,
-        fragment=url.fragment,
-    )

@@ -50,3 +50,6 @@ MANIFEST
 .venv*/
 
 .env
+
+# JetBrains Junie
+.junie/

@@ -1,14 +1,20 @@
+# pyright: strict
 import uuid
 
-try:
-    from sqlalchemy import UUID, ForeignKey, String
-    from sqlalchemy.orm import Mapped, mapped_column
-except ImportError as e:
-    msg = 'Install python3-commons[database] to use this feature'
-    raise RuntimeError(msg) from e
+from python3_commons._extras import require
+
+require('database', 'sqlalchemy')
+
+from sqlalchemy import UUID, ForeignKey, String
+from sqlalchemy.orm import Mapped, mapped_column
 
 from python3_commons.db import Base
 from python3_commons.db.models.common import BaseDBUUIDModel
+
+__all__ = [
+    'User',
+    'UserGroup',
+]
 
 
 class UserGroup(BaseDBUUIDModel, Base):

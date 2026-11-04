@@ -1,0 +1,3 @@
+# setuptools-scm adds every git-tracked file to the sdist; the tests stay, CI and env templates go
+prune .github
+exclude .env_template

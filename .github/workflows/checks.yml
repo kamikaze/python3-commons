@@ -1,7 +1,12 @@
 name: Checks
 
 on:
-  push:
+  push: {}
+  pull_request: {}
+  workflow_call: {}
+
+permissions:
+  contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -12,52 +17,110 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check Out Repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
         with:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
 
       - name: "Set up Python"
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version-file: "pyproject.toml"
 
       - name: Install the project
-        run: uv sync --locked --all-extras --dev
+        run: uv sync --locked --only-group dev
 
       - name: Ruff format check
-        run: |
-          uvx ruff format --diff ./src/ ./tests/
+        run: uv run --no-sync ruff format --check src tests
 
       - name: Ruff default rules and import check
-        run: |
-          uvx ruff check --extend-select I ./src/ ./tests/
+        run: uv run --no-sync ruff check src tests
 
-  #      - name: Pyright check
-  #        run: |
-  #          uvx pyright ./src/
-  tests:
+  typecheck:
     runs-on: ubuntu-latest
     steps:
       - name: Check Out Repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
         with:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
 
       - name: "Set up Python"
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version-file: "pyproject.toml"
 
       - name: Install the project
-        run: uv sync --locked --all-extras --all-groups --dev
+        run: uv sync --locked --all-extras --group dev
 
+      - name: Ty check
+        run: uv run --no-sync ty check src tests
+
+      - name: Ty check (warnings are errors)
+        run: uv run --no-sync ty check --error-on-warning src tests
+
+      - name: Pyright check
+        run: uv run --no-sync pyright src tests
+
+      # An editable install resolves python3_commons as a local import, so --verifytypes needs a regular install
+      - name: Type completeness ratchet
+        env:
+          UV_PROJECT_ENVIRONMENT: ${{ runner.temp }}/verifytypes-venv
+        run: |
+          uv sync --locked --all-extras --group dev --no-editable
+          # pyright exits 1 below 100%, so the score is what is checked
+          uv run --no-sync pyright --pythonpath "$UV_PROJECT_ENVIRONMENT/bin/python" \
+            --verifytypes python3_commons --ignoreexternal --outputjson > "$RUNNER_TEMP/verifytypes.json" || true
+          uv run --no-sync python - "$RUNNER_TEMP/verifytypes.json" tests/contract/type_completeness.json <<'PY'
+          import json
+          import sys
+
+          score = json.load(open(sys.argv[1]))['typeCompleteness']['completenessScore']
+          baseline = json.load(open(sys.argv[2]))['completenessScore']
+          print(f'type completeness {score:.6f}, baseline {baseline:.6f}')
+          sys.exit(0 if score >= baseline - 1e-9 else 'type completeness dropped below the baseline')
+          PY
+
+      - name: Typing consumer check
+        run: uv run --no-sync ty check tests/contract/typing_consumer.py && uv run --no-sync pyright tests/contract/typing_consumer.py
+
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # the oldest patch requires-python allows, and the interpreter .python-version pins
+        python: ['3.14.10', '3.15']
+    steps:
+      - name: Check Out Repo
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: "Set up Python"
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install the project
+        run: uv sync --locked --python ${{ matrix.python }} --all-extras --group testing
+
+      # --no-sync: .python-version pins 3.15, so a plain `uv run` would re-sync onto it and test it on every leg
       - name: Run unittests
-        run: uv run pytest tests/unit/
+        run: uv run --no-sync pytest tests/unit tests/contract --cov --cov-report=term-missing --cov-report=xml
