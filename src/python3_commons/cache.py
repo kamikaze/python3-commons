@@ -274,9 +274,7 @@ async def scan(
     _type: str | None = None,
     **kwargs: Any,
 ) -> tuple[int, list[bytes]]:
-    return cast(
-        'tuple[int, list[bytes]]', await _result(get_valkey_client().scan(cursor, match, count, _type, **kwargs))
-    )
+    return await _result(get_valkey_client().scan(cursor, match, count, _type, **kwargs))
 
 
 @_graceful()
@@ -725,9 +723,7 @@ class ValkeyCache:
         **kwargs: Any,
     ) -> tuple[int, Sequence[bytes]]:
         """One SCAN step; *key_type* is SCAN's ``TYPE`` filter."""
-        return cast(
-            'tuple[int, Sequence[bytes]]', await _result(self._client.scan(cursor, match, count, key_type, **kwargs))
-        )
+        return await _result(self._client.scan(cursor, match, count, key_type, **kwargs))
 
     @_fail_open(default=0)
     async def delete(self, *names: str | bytes | memoryview) -> int:

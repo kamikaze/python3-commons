@@ -1,6 +1,6 @@
 import asyncio
 import warnings
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
 
 import msgspec
@@ -20,7 +20,6 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
     from pydantic import BaseModel
-    from valkey.asyncio.connection import AbstractConnection
 
     from tests.conftest import SampleStruct
 
@@ -452,7 +451,7 @@ async def test_valkeycache_aclose_closes_the_connections_and_is_idempotent(serve
     pool = vcache.client.connection_pool
 
     await vcache.store_string('v2:close', 'x', 60)
-    connections = cast('list[AbstractConnection]', list(pool._available_connections))  # noqa: SLF001
+    connections = list(pool._available_connections)  # noqa: SLF001
     assert connections
     assert all(conn.is_connected for conn in connections)
 
