@@ -274,7 +274,7 @@ async def test_verify_ssl_false_disables_certificate_verification():
     transport = AsyncTransport.from_config(TransportConfig(verify_ssl=False))
 
     try:
-        assert transport._session.connector._ssl is False  # type: ignore[union-attr]  # noqa: SLF001  # ty: ignore[unresolved-attribute]
+        assert transport._session.connector._ssl is False  # type: ignore[union-attr]  # noqa: SLF001  # ty: ignore[missing-attribute]
     finally:
         await transport.aclose()
 

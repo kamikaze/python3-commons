@@ -36,7 +36,7 @@ LIBRARY_TABLES = frozenset(
 class AppTokenData(TokenData):
     """Shape of the template's AppTokenData (api/v1/auth.py:27-37): adds `groups`, overrides `roles`."""
 
-    groups: Sequence[str] | None = None  # ty: ignore[invalid-attribute-override]  # pyright: ignore[reportIncompatibleVariableOverride]  # the template widens it
+    groups: Sequence[str] | None = None  # ty: ignore[incompatible-attribute-override]  # pyright: ignore[reportIncompatibleVariableOverride]  # the template widens it
 
     @property
     def roles(self) -> list[str]:
